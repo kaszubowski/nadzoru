@@ -1,0 +1,12 @@
+Task:
+    -> change os.execute to lua file system
+    -> remove loaded automatons
+
+Features:
+    ->Operations
+    ->Automaton Editor
+    ->Simulator - PIC serial Communication and Integration
+    ->I18N
+
+Bugs: :(
+    "Bugs? You must be kidding, there are no bugs in this software" --copy from pacman

@@ -1,0 +1,101 @@
+Automaton = require('automaton')
+CodeGen   = require('code_gen')
+Gui       = require('gui')
+
+Controller    = {}
+Controller_MT = { __index = Controller }
+
+function Controller.new()
+    local self = {}
+    setmetatable( self, Controller_MT )
+
+    self.gui        = Gui.new()
+    self.automatons = {
+        active = nil,
+    }
+    self.tabs       = {}
+
+    self.gui:run()
+    self:build()
+
+    return self
+end
+
+function Controller:build()
+    -----------------------------------
+    --            ACTIONS            --
+    -----------------------------------
+    --Build open IDES:
+    self.gui:add_action('import_ides', "_Import IDES", "Import a IDES (.xmd) automaton file", nil, self.import_ides, self)
+    self.gui:add_action('simulategraphviz', "Simulate _Graphviz", "Simulate Automata in a Graphviz render", nil, self.simulate_graphviz, self)
+
+
+    --Menu Itens
+    self.gui:add_menu('automatonlist', "_Automatons")
+    self.gui:add_menu('code', "_Code")
+    self.gui:add_menu('simulate', "_Simulate")
+    self.gui:add_menu('operations', "_Operations")
+
+    self.gui:add_menu_item('file','import_ides')
+end
+
+function Controller:exec()
+    gtk.main()
+end
+
+function Controller:automaton_add( new_automaton )
+    self.automatons[#self.automatons +1] = new_automaton
+end
+
+function Controller:automaton_remove( automaton_pos )
+    self.automatons[automaton_pos] = self.automatons[#self.automatons]
+    self.automatons[#self.automatons] = nil
+    if self.automatons.active == automaton_pos then
+        self.automatons.active = nil
+    end
+end
+
+function Controller:automaton_active( automaton_pos )
+    self.automatons.active = self.automatons[ automaton ]
+end
+
+------------------------------------------------------------------------
+--                           CALLBACKS                                --
+------------------------------------------------------------------------
+
+function Controller.import_ides( data )
+    local dialog = gtk.FileChooserDialog.new(
+        "Select the file", window, gtk.FILE_CHOOSER_ACTION_OPEN,
+        "gtk-cancel", gtk.RESPONSE_CANCEL,
+        "gtk-ok", gtk.RESPONSE_OK
+    )
+    local filter = gtk.FileFilter.new()
+    filter:add_pattern("*.xmd")
+    filter:set_name("IDES3 automaton")
+    dialog:add_filter(filter)
+    dialog:set("select-multiple", false)
+    local response = dialog:run()
+    dialog:hide()
+    local names = dialog:get_filenames()
+    if response == gtk.RESPONSE_OK and names and names[1] then
+        local new_automaton = Automaton.new()
+        new_automaton:read_IDES( names[1] )
+        data.param:add_automaton( new_automaton )
+
+        --cria uma janela do contexto cairo (gui.graphviz)
+
+        --mostra em uma página da aba
+
+    end
+end
+
+function Controller.simulate_graphviz( simulate_graphviz )
+
+end
+------------------------------------------------------------------------
+--                          Main Chuck                                --
+------------------------------------------------------------------------
+
+local controller_instance = Controller.new()
+controller_instance:exec()
+
