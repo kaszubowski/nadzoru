@@ -1,0 +1,12 @@
+*~
+*.swp
+*.ppu
+*.pp
+*.o
+*.so
+*.out
+*.old
+*.dcu
+*.log
+*.vim
+*.~*
