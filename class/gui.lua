@@ -84,7 +84,7 @@ function Gui:run()
 end
 
 function Gui:add_action(name, caption, hint, icon, callback, param)
-    self.actions[name] = gtk.Action.new( name, caption, hint, icon, callback, param)
+    self.actions[name] = gtk.Action.new( name, caption, hint, icon)
     self.actions[name]:connect("activate", callback, { gui = self, param = param })
 end
 
