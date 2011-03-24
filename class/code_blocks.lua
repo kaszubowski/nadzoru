@@ -16,13 +16,13 @@
 
     Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
 --]]
-local Blocks = {}
+CodeBlocks = {}
 
 ------------------------------------------------------------------------
 --                             PIC C                                  --
 ------------------------------------------------------------------------
 
-Blocks.pic_c_header = function()
+CodeBlocks.pic_c_header = function()
     return [[
 
 typedef struct SEventInfo {
@@ -31,7 +31,7 @@ typedef struct SEventInfo {
 ]]
 end
 
-Blocks.pic_c_callback_function = function( list )
+CodeBlocks.pic_c_callback_function = function( list )
 
 return string.format([[
 unsigned char input_read( unsigned char ev ){
@@ -49,7 +49,7 @@ void callback( unsigned char ev, unsigned long int s, unsigned long int t){
 
 end
 
-Blocks.pic_c_main_loop  = function( automaton )
+CodeBlocks.pic_c_main_loop  = function( automaton )
 
 return string.format([[
 
@@ -137,5 +137,3 @@ void main(){
 ]], automaton.initial - 1)
 
 end
-
-return Blocks

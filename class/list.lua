@@ -21,8 +21,8 @@
 [a,b,c] -4:[1,1] -3:[1,1], -2:[2,2], -1:[3,3], 0:[3,4], 1:[1,1], 2:[2,2], 3:[3,3], 4:[3,4]
 --]]
 
-local List    = {}
-local List_MT = { __index = List }
+List    = {}
+List_MT = { __index = List }
 
 function List.new()
     self = {
@@ -138,5 +138,3 @@ function List:prepend( data )
     self:add( data, 1) --first position
     return 1
 end
-
-return List

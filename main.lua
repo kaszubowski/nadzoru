@@ -18,12 +18,15 @@
     Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
 --]]
 
-Automaton         = require('class.automaton')
-CodeGen           = require('class.code_gen')
-Gui               = require('class.gui')
-List              = require('class.list')
-Treeview          = require('class.treeview')
-Simulator         = require('class.simulator')
+--Utils
+require('class.list')
+require('class.treeview')
+
+require('class.automaton')
+require('class.code_gen')
+require('class.gui')
+require('class.simulator')
+require('class.graphviz_simulator')
 
 Controller    = {}
 Controller_MT = { __index = Controller }
@@ -49,7 +52,7 @@ function Controller:build()
     --Build open IDES:
     self.gui:add_action('import_ides', "_Import IDES", "Import a IDES (.xmd) automaton file", nil, self.import_ides, self)
 
-    self.gui:add_action('remove_automaton', "_Remove Automaton", "Remove Automaton", nil, self.import_ides, self)
+    self.gui:add_action('remove_automaton', "_Close Automaton", "Close Activate Automaton", nil, self.close_automaton, self)
 
     self.gui:add_action('simulategraphviz', "Simulate _Graphviz", "Simulate Automata in a Graphviz render", nil, self.simulate_graphviz, self)
 
@@ -144,7 +147,7 @@ function Controller.simulate_graphviz( data )
     if data.param.active_automaton then
         local automaton = data.param.automatons:get( data.param.active_automaton )
         if automaton then
-            Simulator.new( data.gui, automaton )
+            GraphvizSimulator.new( data.gui, automaton )
         end
     end
 end
@@ -166,6 +169,12 @@ function Controller.code_gen_pic_c( data )
                 gen:pic_c( names[1] )
             end
         end
+    end
+end
+
+function Controller.close_automaton( data )
+    if data.param.active_automaton then
+        data.param:automaton_remove( data.param.active_automaton )
     end
 end
 ------------------------------------------------------------------------

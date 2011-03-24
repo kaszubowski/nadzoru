@@ -18,8 +18,8 @@
 --]]
 require('lxp')
 
-local Automaton = {}
-local Automaton_MT = { __index = Automaton }
+Automaton = {}
+Automaton_MT = { __index = Automaton }
 
 function Automaton.new()
     local self       = {}
@@ -277,5 +277,3 @@ end
 function Automaton:get_event_name( ev_num )
     return self.events[ev_num].name
 end
-
-return Automaton

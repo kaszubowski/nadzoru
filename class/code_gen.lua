@@ -16,10 +16,10 @@
 
     Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
 --]]
-local CodeGen = {}
-local CodeGen_MT = { __index = CodeGen}
+CodeGen = {}
+CodeGen_MT = { __index = CodeGen}
 
-local code_blocks = require( 'class.code_blocks' )
+require( 'class.code_blocks' )
 
 function CodeGen.new( automaton )
     local self = {
@@ -34,7 +34,7 @@ end
 function CodeGen:pic_c( file_name )
     local code_h = {
         [[#include <stdio.h>]],
-        code_blocks.pic_c_header(),
+        CodeBlocks.pic_c_header(),
     }
 
     local code_c = {
@@ -81,10 +81,10 @@ TEventInfo events[%i] = {
     for ch_ev, ev in ipairs( self.automaton.events ) do
         ev_list_switch[#ev_list_switch + 1] = string.format('       case EV_%s:\n        \n        break;', ev.name)
     end
-    code_c[#code_c +1] = code_blocks.pic_c_callback_function( table.concat(ev_list_switch,'\n'), table.concat(ev_list_switch,'\n') )
+    code_c[#code_c +1] = CodeBlocks.pic_c_callback_function( table.concat(ev_list_switch,'\n'), table.concat(ev_list_switch,'\n') )
 
     --main loop( automata player )
-    code_c[#code_c +1] = code_blocks.pic_c_main_loop( self.automaton )
+    code_c[#code_c +1] = CodeBlocks.pic_c_main_loop( self.automaton )
 
     --return
     local file = io.open( file_name .. '.h', "w")
@@ -94,5 +94,3 @@ TEventInfo events[%i] = {
     file:write( table.concat(code_c,'\n') )
     file:close()
 end
-
-return CodeGen

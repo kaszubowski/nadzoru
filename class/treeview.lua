@@ -17,8 +17,8 @@
     Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
 --]]
 
-local Treeview    = {}
-local Treeview_MT = { __index = Treeview }
+Treeview    = {}
+Treeview_MT = { __index = Treeview }
 
 function Treeview.new()
     local self = {
@@ -128,5 +128,3 @@ function Treeview:add_row( row )
 
     return self
 end
-
-return Treeview

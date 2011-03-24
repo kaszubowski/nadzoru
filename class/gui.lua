@@ -21,8 +21,8 @@ require('lgob.gdk')
 require('lgob.gtk')
 require('lgob.cairo')
 
-local Gui          = {}
-local Gui_MT = { __index = Gui }
+Gui          = {}
+Gui_MT = { __index = Gui }
 
 ---
 -- Constructor
@@ -225,6 +225,4 @@ function Gui:remove_current_tab( )
     end
     self.window:show_all()
 end
-
-return Gui
 
