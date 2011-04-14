@@ -20,13 +20,14 @@
 Treeview    = {}
 Treeview_MT = { __index = Treeview }
 
+setmetatable( Treeview, Object_MT )
+
 function Treeview.new()
-    local self = {
-        data       = {},
-        columns    = {},
-        render     = {},
-        model_list = {},
-    }
+    local self = Object.new()
+    self.data       = {}
+    self.columns    = {}
+    self.render     = {}
+    self.model_list = {}
     self.view      = gtk.TreeView.new()
     self.iter      = gtk.TreeIter.new()
     self.selection = self.view:get_selection()

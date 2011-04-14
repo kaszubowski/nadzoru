@@ -19,12 +19,14 @@
 CodeGen = {}
 CodeGen_MT = { __index = CodeGen}
 
+setmetatable( CodeGen, Object_MT )
+
 require( 'class.code_blocks' )
 
 function CodeGen.new( automaton )
-    local self = {
-        automaton = automaton,
-    }
+    local self     = Object.new()
+    self.automaton = automaton,
+
     setmetatable( self, CodeGen_MT )
 
     return self

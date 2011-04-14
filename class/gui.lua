@@ -16,30 +16,27 @@
 
     Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
 --]]
-
-require('lgob.gdk')
-require('lgob.gtk')
-require('lgob.cairo')
-
 Gui          = {}
 Gui_MT = { __index = Gui }
+
+setmetatable( Gui, Object_MT )
 
 ---
 -- Constructor
 --
 -- @return A new Gui instance
 function Gui.new()
-    local self = {}
+    local self     = Object.new()
     setmetatable( self, Gui_MT )
 
-    self.note = gtk.Notebook.new()
-    self.tab  = List.new()
+    self.note         = gtk.Notebook.new()
+    self.tab          = List.new()
 
     self.window       = gtk.Window.new(gtk.WINDOW_TOPLEVEL)
     self.vbox         = gtk.VBox.new(false, 0)
 
     self.menubar      = gtk.MenuBar.new()
-    self.toolbar      = gtk.Toolbar.new()
+    -- self.toolbar      = gtk.Toolbar.new()
     self.hbox         = gtk.HBox.new(false, 0)
     self.statusbar    = gtk.Statusbar.new()
 
@@ -55,8 +52,8 @@ function Gui.new()
     self:add_action('remove_current_tab', "Remove Tab", "Remove The Active Tab", 'gtk-delete', function( data ) data.gui:remove_current_tab() end, self )
 
     --ToolBar
-    self:add_toolbar('quit')
-    self:add_toolbar('remove_current_tab')
+    --~ self:add_toolbar('quit')
+    --~ self:add_toolbar('remove_current_tab')
 
     --Menu
     self:append_menu('file', "_File")
@@ -64,7 +61,7 @@ function Gui.new()
 
     --** Packing it! (vbox) **--
     self.vbox:pack_start(self.menubar, false, false, 0)
-    self.vbox:pack_start(self.toolbar, false, false, 0)
+    --self.vbox:pack_start(self.toolbar, false, false, 0)
     self.vbox:pack_start(self.note   , true, true, 0)
     self.vbox:pack_start(self.statusbar, false, false, 0)
     self.window:add(self.vbox)
@@ -198,17 +195,17 @@ function Gui:remove_menu_item( menu_name, menu_item )
     end
 end
 
-function Gui:add_toolbar( action_name, ... )
-    self.toolbar:add( self.actions[action_name]:create_tool_item() )
-    self.window:show_all()
-    if (...) then
-        self:add_toolbar( ... )
-    end
-end
+--~ function Gui:add_toolbar( action_name, ... )
+    --~ self.toolbar:add( self.actions[action_name]:create_tool_item() )
+    --~ self.window:show_all()
+    --~ if (...) then
+        --~ self:add_toolbar( ... )
+    --~ end
+--~ end
 
 function Gui:add_tab( widget, title, destroy_callback, param )
     local note =  self.note:insert_page( widget, gtk.Label.new(title), -1)
-    self.tab:add({ destroy_callback = destroy_callback, param = param}, note + 1)
+    self.tab:add({ destroy_callback = destroy_callback, param = param }, note + 1)
     self.window:show_all()
 
     return note

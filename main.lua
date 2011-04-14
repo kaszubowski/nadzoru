@@ -17,27 +17,42 @@
 
     Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
 --]]
+--External Libs
+require('lgob.gdk')
+require('lgob.gtk')
+require('lgob.cairo')
+require('lgob.gtkglext')
+require('luagl')
+require('lxp')
+
 
 --Utils
+require('class.object')
+
 require('class.list')
 require('class.treeview')
+require('class.gl_render')
 
 require('class.automaton')
 require('class.code_gen')
 require('class.gui')
 require('class.simulator')
 require('class.graphviz_simulator')
+require('class.plant_simulator')
 
 Controller    = {}
 Controller_MT = { __index = Controller }
 
+setmetatable( Controller, Object_MT )
+
 function Controller.new()
-    local self = {}
+    local self = Object.new()
     setmetatable( self, Controller_MT )
 
     self.gui              = Gui.new()
     self.automatons       = List.new()
     self.active_automaton = nil
+    self.simulators       = {}
 
     self.gui:run()
     self:build()
@@ -55,6 +70,7 @@ function Controller:build()
     self.gui:add_action('remove_automaton', "_Close Automaton", "Close Activate Automaton", nil, self.close_automaton, self)
 
     self.gui:add_action('simulategraphviz', "Simulate _Graphviz", "Simulate Automata in a Graphviz render", nil, self.simulate_graphviz, self)
+    self.gui:add_action('simulateplant', "Simulate _Plant", "Simulate the Plant in a OpenGL render", nil, self.simulate_plant, self)
 
     self.gui:add_action('codegen_pic_c', "PIC C - extreme memory safe (monolitic)", "Generate C code for PIC - Monolitic", nil, self.code_gen_pic_c, self)
 
@@ -76,6 +92,7 @@ function Controller:build()
 
     --Simulate
     self.gui:append_menu_item('simulate', 'simulategraphviz')
+    self.gui:append_menu_item('simulate', 'simulateplant')
 
     --Operations
 
@@ -147,7 +164,20 @@ function Controller.simulate_graphviz( data )
     if data.param.active_automaton then
         local automaton = data.param.automatons:get( data.param.active_automaton )
         if automaton then
-            GraphvizSimulator.new( data.gui, automaton )
+            local graphvizsimulator = GraphvizSimulator.new( data.gui, automaton )
+            data.param.simulators[ graphvizsimulator ] = true
+            graphvizsimulator:bind('destroy', function( graphvizsimulator, controller)
+                controller.simulators[ graphvizsimulator ] = nil
+            end, data.param )
+        end
+    end
+end
+
+function Controller.simulate_plant( data )
+    if type(data.param.simulators) == 'table' then
+        --abrir uma janela mostrando as simulações para escolher uma
+        for sim, _ in pairs( data.param.simulators ) do
+            PlantSimulator.new( data.gui, sim )
         end
     end
 end

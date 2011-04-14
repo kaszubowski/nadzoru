@@ -20,8 +20,10 @@
 Simulator = {}
 Simulator_MT = { __index = Simulator }
 
+setmetatable( Simulator, Object_MT )
+
 function Simulator.new( gui, automaton )
-    local self = { }
+    local self = Object.new()
     setmetatable( self, Simulator_MT )
     self.gui       = gui
     self.automaton = automaton

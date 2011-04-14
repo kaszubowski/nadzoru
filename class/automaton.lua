@@ -16,13 +16,13 @@
 
     Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
 --]]
-require('lxp')
-
 Automaton = {}
 Automaton_MT = { __index = Automaton }
 
+setmetatable( Automaton, Object_MT )
+
 function Automaton.new()
-    local self       = {}
+    local self       = Object.new()
     self.states      = {}
     self.events      = {}
     self.transitions = {}

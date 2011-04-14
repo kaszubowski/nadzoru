@@ -38,7 +38,7 @@ function GraphvizSimulator.new( gui, automaton )
     self.scrolled:add_with_viewport(self.drawing_area)
     self.hbox:pack_start( self.treeview:build(), false, false, 0 )
     self.hbox:pack_start( self.scrolled, true, true, 0 )
-    gui:add_tab( self.hbox, automaton:get_info('short_file_name') or '-x-', self.destroy, self )
+    gui:add_tab( self.hbox, 'SG ' .. (automaton:get_info('short_file_name') or '-x-'), self.destroy, self )
 
     --Build
     self:update_treeview()
@@ -173,6 +173,7 @@ digraph test123 {
 end
 
 function GraphvizSimulator:destroy()
+    self:trigger('destroy')
     if self.image then
         self.image:destroy()
     end

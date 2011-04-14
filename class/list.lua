@@ -24,11 +24,12 @@
 List    = {}
 List_MT = { __index = List }
 
+setmetatable( List, Object_MT )
+
 function List.new()
-    self = {
-        root  = nil,
-        itens = 0
-    }
+    local self = Object.new()
+    self.root  = nil
+    self.itens = 0
 
     return setmetatable( self, List_MT )
 end
