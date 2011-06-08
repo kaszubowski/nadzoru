@@ -18,12 +18,40 @@
     Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
 --]]
 --External Libs
-require('lgob.gdk')
-require('lgob.gtk')
-require('lgob.cairo')
-require('lgob.gtkglext')
-require('luagl')
-require('lxp')
+LibLoad = {}
+local function safeload( libs, id, required, msg )
+    local function safeload_call()
+        libs = type(libs) == 'table' and libs or { libs }
+        for _, lib in ipairs( libs ) do
+            require( lib )
+        end
+    end
+    LibLoad[id], LibLoad[id .. '_info'] = pcall( safeload_call )
+    if not LibLoad[id] then
+        if required then
+            print('ERRO: fail load library "id"')
+            if msg then print( msg ) end
+            os.exit()
+        else
+            print('WARNING: fail load library "id", some features may not work')
+            if msg then print( msg ) end
+        end
+    end
+end
+
+safeload({'lgob.gdk','lgob.gtk','lgob.cairo'}, 'gtk', true, [[You need install 'lgob' to run this software, you can found 'lgob' at http://oproj.tuxfamily.org]])
+safeload({'lgob.gtkglext', 'luagl' }, 'opengl', false, [[OpenGL features are disable, a 'lgob' version with 'gtkglext' suport and 'luagl' are required to enable this features]])
+safeload('lxp', 'lxp', false, [[no library 'lxp' to manipulate xml format]])
+
+function table.complete( dst, src )
+    for k, v in pairs( src ) do
+        if dst[ k ] == nil then
+            dst[ k ] = v
+        end
+    end
+    return dst
+end
+
 
 
 --Utils
@@ -32,6 +60,7 @@ require('class.object')
 require('class.list')
 require('class.treeview')
 require('class.gl_render')
+require('class.selector')
 
 require('class.automaton')
 require('class.code_gen')
@@ -50,7 +79,7 @@ function Controller.new()
     setmetatable( self, Controller_MT )
 
     self.gui              = Gui.new()
-    self.automatons       = List.new()
+    self.sed              = List.new()
     self.active_automaton = nil
     self.simulators       = {}
 
@@ -62,40 +91,52 @@ end
 
 function Controller:build()
     -----------------------------------
-    --            ACTIONS            --
+    --          MENU/ACTIONS         --
     -----------------------------------
-    --Build open IDES:
+
+    -- ** Menu Itens ** --
+    --self.gui:append_menu('automatonlist', "_Automatons")
+    self.gui:append_menu('operations', "_Operations")
+    self.gui:append_menu('simulate', "_Simulate")
+    self.gui:append_menu('code', "_Code")
+
+
+
+    -- ** Actions * --
+
+    --File
     self.gui:add_action('import_ides', "_Import IDES", "Import a IDES (.xmd) automaton file", nil, self.import_ides, self)
 
-    self.gui:add_action('remove_automaton', "_Close Automaton", "Close Activate Automaton", nil, self.close_automaton, self)
+    --Automatons
+    --~ self.gui:add_action('remove_automaton', "_Close Automaton", "Close Activate Automaton", nil, self.close_automaton, self)
 
+    --Operations
+    self.gui:add_action('operations_coaccessible', "_Coaccessible", "Calcule the coaccessible automata", nil, self.operations_coaccessible, self)
+
+    --Simulate
     self.gui:add_action('simulategraphviz', "Simulate _Graphviz", "Simulate Automata in a Graphviz render", nil, self.simulate_graphviz, self)
     self.gui:add_action('simulateplant', "Simulate _Plant", "Simulate the Plant in a OpenGL render", nil, self.simulate_plant, self)
 
+    --Code
     self.gui:add_action('codegen_pic_c', "PIC C - extreme memory safe (monolitic)", "Generate C code for PIC - Monolitic", nil, self.code_gen_pic_c, self)
 
 
-    --Menu Itens
-    self.gui:append_menu('automatonlist', "_Automatons")
-    self.gui:append_menu('code', "_Code")
-    self.gui:append_menu('simulate', "_Simulate")
-    self.gui:append_menu('operations', "_Operations")
-
+    -- ** Menu-Action Link ** --
     --File
     self.gui:prepend_menu_item('file','import_ides')
 
     --Automaton
-    self.gui:prepend_menu_item('automatonlist','remove_automaton')
+    --~ self.gui:prepend_menu_item('automatonlist','remove_automaton')
 
-    --Code
-    self.gui:prepend_menu_item('code','codegen_pic_c')
+    --Operations
+    self.gui:prepend_menu_item('operations','operations_coaccessible')
 
     --Simulate
     self.gui:append_menu_item('simulate', 'simulategraphviz')
     self.gui:append_menu_item('simulate', 'simulateplant')
 
-    --Operations
-
+    --Code
+    self.gui:prepend_menu_item('code','codegen_pic_c')
 end
 
 function Controller:exec()
@@ -103,13 +144,13 @@ function Controller:exec()
 end
 
 function Controller:automaton_add( new_automaton )
-    local position = self.automatons:append( new_automaton )
-    new_automaton:set_info( 'position', position )
-
+    self.sed:append( new_automaton )
+--[[
+    new_automaton:info_set( 'position', position )
     local menu_item = self.gui:append_menu_item(
         'automatonlist',
         {
-            caption = new_automaton:get_info( 'short_file_name' ) or new_automaton:get_info( 'file_name' ),
+            caption = new_automaton:info_get( 'short_file_name' ) or new_automaton:info_get( 'file_name' ),
             fn      = function( data )
                 data.param.controller.active_automaton = data.param.position
             end,
@@ -118,17 +159,20 @@ function Controller:automaton_add( new_automaton )
         }
     )
 
-    new_automaton:set_info( 'menu_item', menu_item )
+    new_automaton:info_set( 'menu_item', menu_item )
+--]]
 end
 
+--[[
 function Controller:automaton_remove( automaton_pos )
-    local r_automaton = self.automatons:remove( automaton_pos )
+    local r_automaton = self.sed:remove( automaton_pos )
     if self.active_automaton == automaton_pos then
         self.active_automaton = nil
     end
     local menu_item = r_automaton:get_info( 'menu_item' )
     self.gui:remove_menu_item( 'automatonlist', menu_item )
 end
+--]]
 
 
 
@@ -138,7 +182,7 @@ end
 
 function Controller.import_ides( data )
     local dialog = gtk.FileChooserDialog.new(
-        "Select the file", window, gtk.FILE_CHOOSER_ACTION_OPEN,
+        "Select the file", nil, gtk.FILE_CHOOSER_ACTION_OPEN,
         "gtk-cancel", gtk.RESPONSE_CANCEL,
         "gtk-ok", gtk.RESPONSE_OK
     )
@@ -152,39 +196,65 @@ function Controller.import_ides( data )
     local names = dialog:get_filenames()
     if response == gtk.RESPONSE_OK and names and names[1] then
         local new_automaton = Automaton.new()
-        new_automaton:read_IDES( names[1] )
-        new_automaton:set_info('file_name', names[1])
-        new_automaton:set_info('short_file_name', select( 3, names[1]:find( '.-([^/^\\]*)$' ) ) )
+        new_automaton:IDES_import( names[1] )
+        new_automaton:info_set('file_name', names[1])
+        new_automaton:info_set('short_file_name', select( 3, names[1]:find( '.-([^/^\\]*)$' ) ) )
         data.param:automaton_add( new_automaton )
 
     end
 end
 
 function Controller.simulate_graphviz( data )
-    if data.param.active_automaton then
-        local automaton = data.param.automatons:get( data.param.active_automaton )
-        if automaton then
-            local graphvizsimulator = GraphvizSimulator.new( data.gui, automaton )
-            data.param.simulators[ graphvizsimulator ] = true
-            graphvizsimulator:bind('destroy', function( graphvizsimulator, controller)
-                controller.simulators[ graphvizsimulator ] = nil
-            end, data.param )
-        end
-    end
+    Selector.new({
+        title = 'Select automaton to simulate',
+        success_fn = function( results, numresult )
+            local automaton = results[1]
+            if automaton then
+                local graphvizsimulator = GraphvizSimulator.new( data.gui, automaton )
+                data.param.simulators[ graphvizsimulator ] = true
+                graphvizsimulator:bind('destroy', function( graphvizsimulator, controller)
+                    controller.simulators[ graphvizsimulator ] = nil
+                end, data.param )
+            end
+        end,
+    })
+    :add_combobox{
+        list = data.param.sed,
+        text_fn  = function( a )
+            return a:info_get( 'short_file_name' )
+        end,
+        text = 'Automaton:'
+    }
+    :run()
 end
 
 function Controller.simulate_plant( data )
-    if type(data.param.simulators) == 'table' then
-        --abrir uma janela mostrando as simulações para escolher uma
-        for sim, _ in pairs( data.param.simulators ) do
-            PlantSimulator.new( data.gui, sim )
-        end
+    local simulators = List.new()
+    for c,v in pairs( data.param.simulators ) do
+        simulators:add( c )
     end
+    Selector.new({
+        title = 'Select automaton to simulate',
+        success_fn = function( results, numresult )
+            local automaton = results[1]
+            if automaton then
+                PlantSimulator.new( data.gui, automaton )
+            end
+        end,
+    })
+    :add_combobox{
+        list = simulators,
+        text_fn  = function( a )
+            return a.automaton:info_get( 'short_file_name' )
+        end,
+        text = 'Automaton:'
+    }
+    :run()
 end
 
 function Controller.code_gen_pic_c( data )
     if data.param.active_automaton then
-        local automaton = data.param.automatons:get( data.param.active_automaton )
+        local automaton = data.param.sed:get( data.param.active_automaton )
         if automaton then
             local dialog = gtk.FileChooserDialog.new(
                 "Create the file", window,gtk.FILE_CHOOSER_ACTION_SAVE,
@@ -202,10 +272,35 @@ function Controller.code_gen_pic_c( data )
     end
 end
 
-function Controller.close_automaton( data )
-    if data.param.active_automaton then
-        data.param:automaton_remove( data.param.active_automaton )
-    end
+--~ function Controller.close_automaton( data )
+    --~ if data.param.active_automaton then
+        --~ data.param:automaton_remove( data.param.active_automaton )
+    --~ end
+--~ end
+
+-- ** Operations ** --
+function Controller.operations_coaccessible( data )
+    Selector.new({
+        title = 'nadzoru',
+        success_fn = function( results, numresult )
+            local automaton = results[1]
+            if automaton then
+                print(automaton:info_get('short_file_name'))
+                local new_automaton = automaton:clone()
+                new_automaton:coaccessible()
+                new_automaton:info_set('short_file_name', 'coaccessible(' .. automaton:info_get('short_file_name') .. ')')
+                data.param.sed:append( new_automaton )
+            end
+        end,
+    })
+    :add_combobox{
+        list = data.param.sed,
+        text_fn  = function( a )
+            return a:info_get( 'short_file_name' )
+        end,
+        text = 'Automaton:'
+    }
+    :run()
 end
 ------------------------------------------------------------------------
 --                          Main Chuck                                --
