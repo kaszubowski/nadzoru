@@ -36,12 +36,12 @@ function Gui.new()
     self.vbox         = gtk.VBox.new(false, 0)
 
     self.menubar      = gtk.MenuBar.new()
-    -- self.toolbar      = gtk.Toolbar.new()
-    self.hbox         = gtk.HBox.new(false, 0)
-    self.statusbar    = gtk.Statusbar.new()
+    --self.toolbar      = gtk.Toolbar.new()
+    --self.hbox         = gtk.HBox.new(false, 0)
+    --self.statusbar    = gtk.Statusbar.new()
 
-    self.context      = self.statusbar:get_context_id("default")
-    self.statusbar:push(self.context, "Statusbar message")
+    --self.context      = self.statusbar:get_context_id("default")
+    --self.statusbar:push(self.context, "Statusbar message")
 
     self.actions   = {}
     self.menu      = {}
@@ -63,7 +63,7 @@ function Gui.new()
     self.vbox:pack_start(self.menubar, false, false, 0)
     --self.vbox:pack_start(self.toolbar, false, false, 0)
     self.vbox:pack_start(self.note   , true, true, 0)
-    self.vbox:pack_start(self.statusbar, false, false, 0)
+    --self.vbox:pack_start(self.statusbar, false, false, 0)
     self.window:add(self.vbox)
 
     --** window defines **--

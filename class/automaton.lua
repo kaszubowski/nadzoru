@@ -23,10 +23,9 @@ setmetatable( Automaton, Object_MT )
 
 function Automaton.new()
     local self       = Object.new()
-    self.states      = {}
-    self.events      = {}
-    self.transitions = {}
-    self.forbiden_ev = {}
+    self.states      = List.new()
+    self.events      = List.new()
+    self.transitions = List.new()
     self.info        = {}
     self.initial     = nil
 
@@ -35,140 +34,205 @@ function Automaton.new()
 end
 
 ------------------------------------------------------------------------
---               automaton manipulation and definition                --
+--                        automaton informations                      --
 ------------------------------------------------------------------------
-
-function Automaton:set_info( key, value )
+function Automaton:info_set( key, value )
     if key ~= nil then
         self.info[key] = value
     end
 end
 
-function Automaton:unset_info( key )
+function Automaton:info_unset( key )
     if key ~= nil then
         self.info[key] = nil
     end
 end
 
-function Automaton:get_info( key )
+function Automaton:info_get( key )
     if key ~= nil then
         return self.info[key]
     end
 end
 
-function Automaton:state_add( name, marked, initial )
-    self.states[#self.states +1] = {
-        id           = id,
-        initial      = initial or false,
-        marked       = marked  or false,
-        event_target = {},
-        event_source = {},
-        transitions  = {},
-        forbiden_ev  = {},
-        name         = name,
-    }
+------------------------------------------------------------------------
+--               automaton manipulation and definition                --
+------------------------------------------------------------------------
 
-    return #self.states
+--States
+function Automaton:state_add( name, marked, initial )
+    return self.states:append{
+        --~ id           = id,
+        initial         = initial or false,
+        marked          = marked  or false,
+        event_target    = {},
+        event_source    = {},
+        transitions_in  = List.new(),
+        transitions_out = List.new(),
+        name            = name,
+    }
+end
+
+function Automaton:state_remove( id )
+    local state, state_id = self.states:find( id )
+    if not state  then return end
+
+    while true do
+        local trans = state.transitions_in:find( function() return true end )
+        if not trans then break end
+
+        self:transition_remove( trans )
+    end
+    while true do
+        local trans = state.transitions_out:find( function() return true end )
+        if not trans then break end
+
+        self:transition_remove( trans )
+    end
+
+    self.states:remove( state_id )
 end
 
 function Automaton:state_set_initial( id )
-    if not self.states[id] then
-        return false
-    end
+    local state = self.states:find( id )
+    if not state then return end
 
-    for ch_sta, sta in ipairs( self.states ) do
+    for ch_sta, sta in self.states:ipairs() do
         sta.initial = false
     end
-    self.states[id].initial = true
-    self.initial            = id
+    state.initial = true
+    self.initial  = id
 
     return true
 end
 
 function Automaton:state_set_marked( id )
-    if not self.states[id] then
-        return false
-    end
+    local state = self.states:find( id )
+    if not state then return end
 
-    self.states[id].marked = true
+    state.marked = true
 
     return true
 end
 
 function Automaton:state_set_name( id, name )
-    if not self.states[id] then
-        return false
-    end
+    local state = self.states:find( id )
+    if not state then return end
 
-    self.states[id].name = name
+    state.name = name
 
     return true
 end
 
+--Events
 function Automaton:event_add(name, observable, controllable)
-    self.events[#self.events +1] = {
+    return self.events:append{
         observable   = observable or false,
         controllable = controllable or false,
         name         = name,
-        transitions  = {},
+        transitions  = List.new(),
     }
+end
 
-    return #self.events
+function Automaton:event_remove( id )
+    local event, event_id = self.events:find( id )
+    if not event  then return end
+
+    while true do
+        local trans = event.transitions:find( function() return true end )
+        if not trans then break end
+
+        self:transition_remove( trans )
+    end
+
+    self.events:remove( event_id )
 end
 
 function Automaton:event_set_observable( id )
-    if not self.events[id] then
-        return false
-    end
+    local event = self.events:find( id )
+    if not event then return end
 
-    self.events[id].observable = true
+    event.observable = true
+
+    return true
+end
+
+function Automaton:event_unset_observable( id )
+    local event = self.events:find( id )
+    if not event then return end
+
+    event.observable = false
 
     return true
 end
 
 function Automaton:event_set_controllable( id )
-    if not self.events[id] then
-        return false
-    end
+    local event = self.events:find( id )
+    if not event then return end
 
-    self.events[id].controllable = true
+    event.controllable = true
+
+    return true
+end
+
+function Automaton:event_unset_controllable( id )
+    local event = self.events:find( id )
+    if not event then return end
+
+    event.controllable = false
 
     return true
 end
 
 function Automaton:event_set_name( id, name )
-    if not self.events[id] then
-        return false
-    end
+    local event = self.events:find( id )
+    if not event then return end
 
-    self.events[id].name = name
+    event.name = name
 
     return true
 end
 
-function Automaton:transition_add( source, target, event )
-    self.states[source].event_target[event]         = target
-    self.states[target].event_source[event]         = self.states[target].event_source[event] or {}
-    self.states[target].event_source[event][source] = true
 
-    local pos_transitions = #self.transitions +1
+--Transitions
+function Automaton:transition_add( source_id, target_id, event_id )
+    event  = self.events:find( event_id )
+    source = self.states:find( source_id )
+    target = self.states:find( target_id )
+    if not event or not source or not target then return end
 
-    self.transitions[ pos_transitions ] = {
+    --Index by the table because the id can change, eg if remove a state, or event
+    source.event_target[event]         = target
+    target.event_source[event]         = target.event_source[event] or {}
+    target.event_source[event][source] = true
+
+    local transition = {
         source = source,
         target = target,
         event  = event,
     }
+    self.transitions:append( transition )
 
-    self.states[source].transitions = pos_transitions
-    self.states[target].transitions = pos_transitions
-    self.events[event].transitions  = pos_transitions
+    source.transitions_out:append( transition )
+    target.transitions_in:append( transition )
+    event.transitions:append( transition )
+end
+
+function Automaton:transition_remove( id )
+    local trans, trans_id = self.transitions:find( id )
+    if not trans then return end
+
+    trans.event.transitions:find_remove( trans )
+    trans.source.transitions_out:find_remove( trans )
+    trans.target.transitions_in:find_remove( trans )
+    self.transitions:remove( trans_id )
+
 end
 
 ------------------------------------------------------------------------
 --                          operations                               --
 ------------------------------------------------------------------------
 
-function Automaton:read_IDES( file_name )
+function Automaton:IDES_import( file_name )
     local t         = { s = 1, e = 2, t = 3, }
     local sm        = 0
     local last_tag  = ''
@@ -270,10 +334,91 @@ function Automaton:read_IDES( file_name )
 end
 
 --utils
-function Automaton:get_event( ev_num )
-    return self.events[ev_num]
+function Automaton:state_len( )
+    return self.states:len()
 end
 
-function Automaton:get_event_name( ev_num )
-    return self.events[ev_num].name
+function Automaton:event_len( )
+    return self.events:len()
 end
+
+function Automaton:event_get( ev_num )
+    return self.events:get(ev_num)
+end
+
+function Automaton:event_get_name( ev_num )
+    return self.events:get(ev_num).name
+end
+
+function Automaton:transition_len( )
+    return self.transitions:len()
+end
+
+
+
+--Operations :)
+function Automaton:clone()
+    local new_automaton = Automaton.new()
+    local state_map = {}
+    local event_map = {}
+    for c, v in self.states:ipairs() do
+        state_map[v] = new_automaton:state_add( v.name, v.marked, v.initial )
+    end
+    for c, v in self.events:ipairs() do
+        event_map[v] = new_automaton:event_add(v.name, v.observable, v.controllable)
+    end
+    for c, v in self.transitions:ipairs() do
+        new_automaton:transition_add( state_map[v.source], state_map[v.target], event_map[v.event] )
+    end
+
+    return new_automaton
+
+end
+
+function Automaton:accessible( remove_states )
+
+end
+
+local function coaccessible_search( s )
+    if not s.no_coaccessible then
+        s.no_coaccessible = true
+        for k_t_in, t_in in s.transitions_in:ipairs() do
+            coaccessible_search( t_in.source )
+        end
+    end
+end
+
+function Automaton:coaccessible( remove_states )
+    --uncleck all states
+    local total = self.states:len()
+    for k_s, s in self.states:ipairs() do
+        s.no_coaccessible = nil
+    end
+    for k_s, s in self.states:ipairs() do
+        if not s.no_coaccessible and s.marked then
+            coaccessible_search( s )
+            print(k_s, total)
+        end
+    end
+end
+
+--test
+--~ require('object')
+--~ require('list')
+--~ require('lxp')
+--~ local test = Automaton.new()
+--~ test:IDES_import('../examples/G3.xmd')
+--~ print(test:state_len())
+--~ print(test:event_len())
+--~ print(test:transition_len())
+--~ for c,v in test.transitions:ipairs() do
+    --~ print(c, v.event.name )
+--~ end
+--~ test:state_remove(2)
+--~ print(test:state_len())
+--~ print(test:event_len())
+--~ print(test:transition_len())
+--~ for c,v in test.transitions:ipairs() do
+    --~ print(c, v.event.name )
+--~ end
+

@@ -20,7 +20,7 @@ function PlantSimulator.new( gui, simulator )
         self.hbox:pack_start(self.scrolled, true, true, 0)
             self.scrolled:add_with_viewport(self.drawing_area)
 
-    gui:add_tab( self.vbox, 'PS ' .. (self.automaton:get_info('short_file_name') or '-x-' ) )
+    gui:add_tab( self.vbox, 'PS ' .. (self.automaton:info_get('short_file_name') or '-x-' ) )
 
     self.glrender = GLRender.new( self.drawing_area )
     --Jogar para o :run()

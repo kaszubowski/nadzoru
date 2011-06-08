@@ -21,16 +21,6 @@ CodeBlocks = {}
 ------------------------------------------------------------------------
 --                             PIC C                                  --
 ------------------------------------------------------------------------
-
-CodeBlocks.pic_c_header = function()
-    return [[
-
-typedef struct SEventInfo {
-    unsigned char controllable;
-} TEventInfo;
-]]
-end
-
 CodeBlocks.pic_c_callback_function = function( list )
 
 return string.format([[
@@ -43,13 +33,15 @@ unsigned char input_read( unsigned char ev ){
 }
 
 void callback( unsigned char ev, unsigned long int s, unsigned long int t){
-
+    switch( ev ){
+%s
+    }
 }
 ]], list, list)
 
 end
 
-CodeBlocks.pic_c_main_loop  = function( automaton )
+CodeBlocks.pic_c_main_loop  = function( gen )
 
 return string.format([[
 
@@ -90,7 +82,7 @@ void state_machine_loop(){
             for( i=1; i<(aux_num_ev*3); i+=3 ){
                 aux_ev = states[pnt+i];
                 if( loop == 0 || loop == 2 ){
-                    if( !events[ aux_ev ].controllable ){
+                    if( !events[ aux_ev ] ){
                         quit = input_read( aux_ev );
                         if( quit ){
                             next_state = ((unsigned long int) states[ pnt+i+1 ] ) * 255 + ((unsigned long int) states[ pnt+i+2 ]);
@@ -98,10 +90,10 @@ void state_machine_loop(){
                             break;
                         }
                     }
-                    if( loop == 0  && events[ aux_ev ].controllable ){
+                    if( loop == 0  && events[ aux_ev ] ){
                         controllable_events++;
                     }
-                } else if( loop == 1 && controllable_events && events[ aux_ev ].controllable ) {
+                } else if( loop == 1 && controllable_events && events[ aux_ev ] ) {
                     ex_event--;
                     if(! ex_event){
                         next_state = states[ pnt+i+1 ]*255 + states[ pnt+i+2 ];
@@ -134,6 +126,6 @@ void main(){
     state_machine_loop();
 }
 
-]], automaton.initial - 1)
+]], gen.automaton.initial - 1)
 
 end

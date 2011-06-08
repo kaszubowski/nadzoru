@@ -22,13 +22,16 @@
 --]]
 
 List    = {}
-List_MT = { __index = List }
+List_MT = {
+    __index = List,
+}
 
 setmetatable( List, Object_MT )
 
 function List.new()
     local self = Object.new()
     self.root  = nil
+    --self.last  = nil
     self.itens = 0
 
     return setmetatable( self, List_MT )
@@ -60,18 +63,24 @@ function List:add( data, pos )
         data = data,
     }
 
-    local p_atual = nil
-    local p_next  = self.root
+    local p_prev  = nil
+    local p_atual = self.root
+    --local p_next  = nil
 
-    while ipos > 0 and p_next do
+    while ipos > 1 and p_atual do
         ipos = ipos - 1
-        p_atual = p_next
-        p_next  = p_next.next
+        p_prev   = p_atual
+        p_atual  = p_atual.next
     end
 
-    if p_atual then
-        node.next    = p_next
-        p_atual.next = node
+    if p_atual and p_prev then
+        node.next    = p_atual
+        p_prev.next  = node
+    elseif p_atual then
+        node.next    = p_atual
+        self.root    = node
+    elseif p_prev then
+        p_prev.next = node
     else
         self.root = node
     end
@@ -86,13 +95,11 @@ function List:get( pos )
         return
     end
 
-    local p_atual = nil
-    local p_next  = self.root
+    local p_atual = self.root
 
-    while gpos > 0 and p_next do
+    while gpos > 1 and p_atual do
         gpos = gpos - 1
-        p_atual = p_next
-        p_next  = p_next.next
+        p_atual = p_atual.next
     end
 
     if p_atual then
@@ -138,4 +145,47 @@ end
 function List:prepend( data )
     self:add( data, 1) --first position
     return 1
+end
+
+function List:ipairs()
+    local iter = function( list, last_pos )
+        local pos  = last_pos and last_pos + 1 or 1
+        if pos > self.itens then return end
+        local data = list:get( pos )
+        return pos, data
+    end
+    return iter, self, nil
+end
+
+function List:find( arg, force_data )
+    force_data = force_data or false
+    local t = type( arg )
+    if t == 'number' and not force_data then
+        return self:get( arg ), arg
+    end
+
+    for pos, data in self:ipairs() do
+        if t == 'function' then
+            if arg( data ) then
+                return data, pos
+            end
+        else
+            if data == arg then
+                return data, pos
+            end
+        end
+    end
+end
+
+function List:find_remove( arg, force_data )
+     while true do
+        local _, pos = self:find( arg, force_data )
+        if not pos then return end
+
+        self:remove( pos )
+    end
+end
+
+function List:len()
+    return self.itens
 end

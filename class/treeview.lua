@@ -22,16 +22,17 @@ Treeview_MT = { __index = Treeview }
 
 setmetatable( Treeview, Object_MT )
 
-function Treeview.new()
+function Treeview.new( multiple )
     local self = Object.new()
-    self.data       = {}
+    self.data       = List.new()
     self.columns    = {}
     self.render     = {}
     self.model_list = {}
-    self.view      = gtk.TreeView.new()
-    self.iter      = gtk.TreeIter.new()
-    self.selection = self.view:get_selection()
-    self.selection:set_mode( gtk.SELECTION_BROWSE )
+    self.view       = gtk.TreeView.new()
+    self.iter       = gtk.TreeIter.new()
+    self.selection  = self.view:get_selection()
+    self.selection:set_mode( multiple and gtk.SELECTION_MULTIPLE or gtk.SELECTION_BROWSE )
+    self.multiple   = multiple or false
     setmetatable( self, Treeview_MT )
     return self
 end
@@ -59,7 +60,7 @@ function Treeview:add_column_text( caption, width )
     return self
 end
 
-function Treeview:add_column_togglw( caption, callback, param )
+function Treeview:add_column_toggle( caption, callback, param )
     self.render[#self.render +1] = gtk.CellRendererToggle.new()
     self.columns[#self.columns +1] = gtk.TreeViewColumn.new_with_attributes(
         caption,
@@ -76,8 +77,6 @@ function Treeview:add_column_togglw( caption, callback, param )
     return self
 end
 
-
-
 function Treeview:build(  )
     self.model = gtk.ListStore.new( unpack( self.model_list ) )
     self.view:set( 'model', self.model )
@@ -86,7 +85,9 @@ function Treeview:build(  )
 end
 
 function Treeview:clear_data()
-    self.data = {}
+    while self.data:get( 1 ) do
+        self.data:remove( 1 )
+    end
 
     return self
 end
@@ -107,7 +108,7 @@ end
 
 function Treeview:update()
     self:clear_gui()
-    for ch_row, row in ipairs( self.data ) do
+    for ch_row, row in self.data:ipairs() do
         self.model:append( self.iter )
         for ch_fld, fld in ipairs( row ) do
             self.model:set( self.iter, ch_fld - 1, fld )
@@ -117,15 +118,56 @@ function Treeview:update()
     return self
 end
 
-function Treeview:get_select( column )
-    local res, model = self.selection:get_selected( self.iter )
-    if res then
-        return model:get( self.iter, column - 1 )
+function Treeview:get_selected( column )
+    if not self.multiple then
+        local res, model = self.selection:get_selected( self.iter )
+        if res then
+            local path = model:get_path( self.iter )
+            local pos  = path:get_indices( 0 )[ 1 ]
+            if column then
+                return model:get( self.iter, column - 1 ), pos + 1
+            else
+                return pos + 1
+            end
+        end
+    else
+        local position                = self.selection:get_selected_rows()
+        local result_data, result_pos = {}, {}
+        for c,v in ipairs( position ) do
+            result_pos[#result_pos +1]   = v + 1
+            --local model = self.view:get_model() -- need by implementend in lgob.gtk
+            --local model:get_iter( self.iter, tostring(v) )
+            --result_data[#result_data +1] = model:get( self.iter, column - 1 )
+        end
+
+        if column then
+            return result_data, result_pos
+        else
+            return result_pos
+        end
     end
 end
 
 function Treeview:add_row( row )
-    self.data[#self.data +1] = row
+    self.data:append( row )
 
     return self
 end
+
+function Treeview:remove_row( pos )
+    self.data:remove( pos )
+
+    return self
+end
+
+function Treeview:remove_selected( )
+    local pos = self:get_selected()
+    if pos then
+        self:remove( pos )
+    end
+    return self
+end
+
+
+--gtk_tree_selection_selected_foreach
+--(*GtkTreeSelectionForeachFunc)      (GtkTreeModel *model,GtkTreePath *path,GtkTreeIter *iter,gpointer data);

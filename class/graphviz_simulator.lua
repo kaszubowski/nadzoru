@@ -38,7 +38,7 @@ function GraphvizSimulator.new( gui, automaton )
     self.scrolled:add_with_viewport(self.drawing_area)
     self.hbox:pack_start( self.treeview:build(), false, false, 0 )
     self.hbox:pack_start( self.scrolled, true, true, 0 )
-    gui:add_tab( self.hbox, 'SG ' .. (automaton:get_info('short_file_name') or '-x-'), self.destroy, self )
+    gui:add_tab( self.hbox, 'SG ' .. (automaton:info_get('short_file_name') or '-x-'), self.destroy, self )
 
     --Build
     self:update_treeview()
@@ -49,9 +49,9 @@ function GraphvizSimulator.new( gui, automaton )
 end
 
 function GraphvizSimulator.state_change(self, ud_treepath, ud_treeviewcolumn)
-    local event_name  = self.treeview:get_select( 1 )
+    local event_name, pos  = self.treeview:get_selected( 1 )
     if not event_name then return true end
-    local ev_num = self.event_map[ event_name ]
+    local ev_num = self.event_name_map[ event_name ]
     self:execute_event( ev_num )
     self:update_treeview()
     self:draw()
@@ -108,20 +108,19 @@ function GraphvizSimulator:update_treeview()
 end
 
 function GraphvizSimulator:generate_graphviz( forward_deep )
-    local state, node = self:get_current_state()
-    local used, list, list_p, list_tam = { [state] = {} }, { state }, 1, nil
+    local state_index, node            = self:get_current_state()
+    local used, list, list_p, list_tam = { [state_index] = {} }, { state_index }, 1, nil
     local graphviz_nodes = {
         [[    INICIO [shape = box, height = .001, width = .001, color = white, fontcolor = white, fontsize = 1];]],
-        string.format(
-            [[    S%i [shape=%s, color = blue];]],
-            state-1,
+        string.format( [[    S%i [shape=%s, color = blue];]],
+            state_index-1,
             node.marked and [[doublecircle, style="bold"]] or [[circle]]
         ),
     }
     local graphviz_edges = {}
     if node.initial then
         graphviz_edges[#graphviz_edges +1] = string.format([[    INICIO -> S%i;]],
-            state-1)
+            state_index-1)
     end
 
     local first = true
@@ -130,28 +129,30 @@ function GraphvizSimulator:generate_graphviz( forward_deep )
         forward_deep = forward_deep - 1
         list_tam = #list
         for i = list_p, list_tam do
-            for num_event, num_target in pairs( self.automaton.states[ list[i] ].event_target ) do
-                if not used[num_target] then
-                    used[num_target] = {}
-                    list[#list +1]   = num_target
-                    local target_node = self.automaton.states[num_target]
+            for event, target in pairs( self.automaton.states:get( list[i] ).event_target ) do
+                event_index  = self.event_map[ event ]
+                target_index = self.state_map[ target ]
+                if not used[target_index] then
+                    used[target_index] = {}
+                    list[#list +1]   = target_index
                     graphviz_nodes[#graphviz_nodes +1] = string.format(
-                        [[    S%i [shape=%s];]],
-                        num_target-1,
-                        target_node.marked and [[doublecircle, style="bold"]] or [[circle]]
+                        [[    S%i [shape=%s, color = %s];]],
+                        target_index-1,
+                        target.marked and [[doublecircle, style="bold"]] or [[circle]],
+                        target.no_coaccessible and 'yellow' or 'black'
                     )
-                    if target_node.initial then
-                        graphviz_edges[#graphviz_edges +1] = string.format([[    INICIO -> S%i;]], num_target-1)
+                    if target.initial then
+                        graphviz_edges[#graphviz_edges +1] = string.format([[    INICIO -> S%i;]], target_index-1)
                     end
                 end
-                if not used[num_target][num_event] then
-                    used[num_target][num_event] = true
+                if not used[target_index][event_index] then
+                    used[target_index][event_index] = true
                     graphviz_edges[#graphviz_edges +1] = string.format(
                         [[    S%i -> S%i [label="%s", color = %s, style = %s];]],
                         list[i]-1,
-                        num_target-1,
-                        self.automaton.events[num_event].name,
-                        self.automaton.events[num_event].controllable and 'black' or 'red',
+                        target_index-1,
+                        event.name,
+                        event.controllable and 'black' or 'red',
                         first and 'bold' or 'dashed' --solid
                     )
                 end

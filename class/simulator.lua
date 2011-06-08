@@ -25,47 +25,57 @@ setmetatable( Simulator, Object_MT )
 function Simulator.new( gui, automaton )
     local self = Object.new()
     setmetatable( self, Simulator_MT )
-    self.gui       = gui
-    self.automaton = automaton
-    self.event_map = {}
-    self.state     = self.automaton.initial
+    self.gui            = gui
 
-    --Events
-    for ch_ev, ev in ipairs( automaton.events ) do
-        self.event_map[ev.name] = ch_ev
-    end
+    self:automaton_load( automaton )
 
     return self
 end
 
+function Simulator:automaton_load( automaton )
+    self.automaton      = automaton or self.automaton
+    self.event_name_map = {}
+    self.event_map      = {}
+    self.state_map      = {}
+    self.state          = self.automaton.initial
+
+    --Events
+    for event_index, event in automaton.events:ipairs() do
+        self.event_name_map[event.name] = event_index
+        self.event_map[event]           = event_index
+    end
+
+    --States
+    for state_index, state in automaton.states:ipairs() do
+        self.state_map[state]= state_index
+    end
+end
+
 function Simulator:get_current_state()
-    local node  = self.automaton.states[self.state]
+    local node  = self.automaton.states:get( self.state )
     return self.state, node
 end
 
 function Simulator:get_current_state_info()
-    local state, node = self:get_current_state()
+    local state_index, node = self:get_current_state()
     return {
-        state   = state,
-        name    = node.name,
-        initial = node.initial,
-        marked  = node.marked,
+        state_index   = state_index,
+        name          = node.name,
+        initial       = node.initial,
+        marked        = node.marked,
     }
 end
 
 function Simulator:get_current_state_events_info()
-    local state, node = self:get_current_state()
-    local events = {}
-    for i in ipairs( self.automaton.events ) do
-        if node.event_target[i] then
-            local ev = self.automaton.events[i]
-            local ts = self.automaton.states[ node.event_target[i] ]
+    local state_index, node = self:get_current_state()
+    local events            = {}
+    for event_index, event in self.automaton.events:ipairs() do
+        if node.event_target[ event ] then
             events[#events +1] = {
-                target_state_num = node.event_target[i],
-                num_ev           = i,
-                event            = ev,
-                target_state     = ts,
-                source_state     = node,
+                event        = event,
+                event_index  = event_index,
+                target_state = node.event_target[ event ],
+                source_state = node,
             }
         end
     end
@@ -73,13 +83,15 @@ function Simulator:get_current_state_events_info()
     return events
 end
 
-function Simulator:execute_event( event )
-    event = tonumber( event )
-    if not event then return end
+function Simulator:execute_event( event_index )
+    event_index = tonumber( event_index )
+    if not event_index then return end
 
     local state, node   = self:get_current_state()
-    if node.event_target[event] then
-        self.state = node.event_target[event]
+    local event         = self.automaton.events:get( event_index )
+    if event then
+        local new_state = node.event_target[ event ]
+        self.state      = self.state_map[ new_state ]
         return true
     end
     return false

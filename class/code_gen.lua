@@ -23,9 +23,10 @@ setmetatable( CodeGen, Object_MT )
 
 require( 'class.code_blocks' )
 
-function CodeGen.new( automaton )
+function CodeGen.new( automaton, args )
     local self     = Object.new()
-    self.automaton = automaton,
+    self.automaton = automaton
+    self.args      = args or {}
 
     setmetatable( self, CodeGen_MT )
 
@@ -36,7 +37,6 @@ end
 function CodeGen:pic_c( file_name )
     local code_h = {
         [[#include <stdio.h>]],
-        CodeBlocks.pic_c_header(),
     }
 
     local code_c = {
@@ -70,13 +70,11 @@ function CodeGen:pic_c( file_name )
     --callback and events info
     local events_info_list = {}
     for ch_ev, ev in ipairs( self.automaton.events ) do
-         events_info_list[#events_info_list +1] = string.format([[    { %i }]], ev.controllable and 1 or 0 )
+         events_info_list[#events_info_list +1] = string.format([[ %i]], ev.controllable and 1 or 0 )
     end
     code_c[#code_c +1] = string.format([[
-TEventInfo events[%i] = {
-%s
-};
-    ]], #self.automaton.events,  table.concat( events_info_list, ',\n' ))
+const unsigned char events[%i] = {%s };
+    ]], #self.automaton.events,  table.concat( events_info_list, ',' ))
 
     --callback function
     local ev_list_switch = {}
@@ -86,7 +84,7 @@ TEventInfo events[%i] = {
     code_c[#code_c +1] = CodeBlocks.pic_c_callback_function( table.concat(ev_list_switch,'\n'), table.concat(ev_list_switch,'\n') )
 
     --main loop( automata player )
-    code_c[#code_c +1] = CodeBlocks.pic_c_main_loop( self.automaton )
+    code_c[#code_c +1] = CodeBlocks.pic_c_main_loop( self )
 
     --return
     local file = io.open( file_name .. '.h', "w")
