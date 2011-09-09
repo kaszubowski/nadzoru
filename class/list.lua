@@ -37,6 +37,15 @@ function List.new()
     return setmetatable( self, List_MT )
 end
 
+function List.new_from_table( tbl )
+    local self = List.new()
+    for k,v in ipairs( tbl ) do
+        self:append( v )
+    end
+
+    return self
+end
+
 function List:normalize_position( pos )
     --return GET, INSERT
     if self.itens == 0 then
@@ -137,6 +146,7 @@ function List:remove( pos )
     end
 end
 
+--Todo
 function List:append( data )
     self:add( data, 0) --last position
     return self.itens
@@ -148,11 +158,19 @@ function List:prepend( data )
 end
 
 function List:ipairs()
+    local node
     local iter = function( list, last_pos )
         local pos  = last_pos and last_pos + 1 or 1
-        if pos > self.itens then return end
-        local data = list:get( pos )
-        return pos, data
+        --~ if pos > self.itens then return end
+        --~ local data = list:get( pos )
+        --~ return pos, data
+        if pos == 1 then
+            node = self.root
+        else
+            node = node.next
+        end
+        if not node then return end
+        return  pos, node.data
     end
     return iter, self, nil
 end

@@ -39,14 +39,12 @@ function Selector.new( options )
     function success()
         if type(options.success_fn) == 'function' then
             local result = {}
-
             for c,k in ipairs( self.result ) do
                 result[c] = k()
             end
-            options.success_fn( result, #self.result )
-
+            self.window:destroy()
+            options.success_fn( result, #self.result, self )
         end
-        self.window:destroy()
     end
 
     self.btn_cancel:connect("clicked", self.window.destroy, self.window )
@@ -189,31 +187,89 @@ function Selector:add_combobox( options )
 end
 
 function Selector:add_multipler( options )
-     options = table.complete( options or {}, {
+    options = table.complete( options or {}, {
         list        = List.new(),
         text_fn     = nil,
         text        = 'input',
     })
     local treeview = Treeview.new( true )
         :add_column_text(options.text)
-
     for k, v in options.list:ipairs() do
         treeview:add_row{ type( options.text_fn ) == 'function' and options.text_fn( v ) or tostring( v ) }
     end
-
     self.result[#self.result + 1] = function()
         local selecteds_pos = treeview:get_selected()
         local result = {}
         for c,v in ipairs( selecteds_pos ) do
             result[#result + 1] = options.list:get( v )
         end
-
         return result
     end
-
     self.hbox_main:pack_start( treeview:build() , true, true, 0 )
     treeview:update()
     self.num_columns = self.num_columns + 1
+    return self
+end
+
+function Selector:add_checkbox( options )
+     options = table.complete( options or {}, {
+        text        = 'input',
+    })
+    local checkbutton = gtk.CheckButton.new_with_mnemonic( options.text )
+    if not self.single_box then
+        self.single_box = gtk.VBox.new(false, 0)
+        self.hbox_main:pack_start( self.single_box , true, true, 0 )
+        self.num_columns = self.num_columns + 1
+    end
+    self.single_box:pack_start( checkbutton , false, false, 0 )
+    self.result[#self.result + 1] = function()
+        return checkbutton:get_active()
+    end
+
+    return self
+end
+
+function Selector:add_file( options )
+     options = table.complete( options or {}, {
+        text        = 'input',
+    })
+    local vbox_file = gtk.VBox.new(false, 0)
+        local label_info     = gtk.Label.new_with_mnemonic( options.text )
+        local hbox_file      = gtk.HBox.new(false, 5)
+            local label_file = gtk.Label.new( )
+            local button     = gtk.Button.new_with_mnemonic( '...' )
+
+    local dialog = gtk.FileChooserDialog.new(
+        "Create the file", self.window,gtk.FILE_CHOOSER_ACTION_SAVE,
+        "gtk-cancel", gtk.RESPONSE_CANCEL,
+        "gtk-ok", gtk.RESPONSE_OK
+    )
+    local file = ''
+    if not self.single_box then
+        self.single_box = gtk.VBox.new(false, 0)
+        self.hbox_main:pack_start( self.single_box , true, true, 0 )
+        self.num_columns = self.num_columns + 1
+    end
+    self.single_box:pack_start( vbox_file , false, false, 0 )
+        vbox_file:pack_start( label_info , false, false, 0 )
+        vbox_file:pack_start( hbox_file , false, false, 0 )
+            hbox_file:pack_start( label_file , true, true, 0 )
+            hbox_file:pack_start( button , false, false, 0 )
+
+    button:connect( 'clicked', function()
+        local response = dialog:run()
+        dialog:hide()
+        local names = dialog:get_filenames()
+        if response == gtk.RESPONSE_OK and names and names[1] then
+            local display = (#names[1] <= 25) and names[1] or (names[1]:sub(1,5) .. '...' .. names[1]:sub(-17,-1))
+            label_file:set_text( display )
+            file = names[1]
+        end
+    end)
+
+    self.result[#self.result + 1] = function()
+        return file
+    end
 
     return self
 end

@@ -22,30 +22,113 @@ GraphvizSimulator_MT = { __index = GraphvizSimulator }
 
 setmetatable( GraphvizSimulator, Simulator_MT )
 
+--Info
+local info = {
+    {'coaccessible', "Coaccessible"},
+    {'length', "Length  "},
+}
+
+function info.length( self )
+    gtk.InfoDialog.showInfo(
+        "Automanton States: " .. self.automaton.states:len() .. "\n" ..
+        "Automanton Events: " .. self.automaton.events:len() .. "\n" ..
+        "Automanton Transitions: " .. self.automaton.transitions:len() .. "\n"
+    )
+end
+
+function info.coaccessible( self )
+    if not self.automaton.coaccessible_calc then
+        gtk.InfoDialog.showInfo("Coaccessible are NOT processed!")
+        return
+    end
+    local no_ca_states = {}
+    local count        = 0
+    for k,v in self.automaton.states:ipairs() do
+        if v.no_coaccessible then
+            if count % 20 == 0 then
+                no_ca_states[#no_ca_states + 1] = {}
+            end
+            table.insert( no_ca_states[#no_ca_states], tostring(k) ) --v.name or '???'
+            count = count + 1
+        end
+    end
+    local text_lines = {}
+    for k, v in ipairs( no_ca_states ) do
+        text_lines[#text_lines + 1] = table.concat( v, ", " )
+    end
+
+    gtk.InfoDialog.showInfo( string.format("No Coaccessible States: (found: %i)\n", count) .. table.concat( text_lines, ", \n" ) )
+end
+
 function GraphvizSimulator.new( gui, automaton )
     local self = Simulator.new( gui, automaton )
     setmetatable( self, GraphvizSimulator_MT )
 
-    self.image     = nil
+    self.image         = nil
 
-    self.scrolled     = gtk.ScrolledWindow.new()
-    self.drawing_area = gtk.DrawingArea.new( )
-    self.treeview     = Treeview.new()
-        :add_column_text("Eventos",150)
-        :bind_ondoubleclick(GraphvizSimulator.state_change, self)
-    self.hbox         = gtk.HBox.new(false, 0)
+    self.hbox          = gtk.HBox.new( false, 0 )
+        self.scrolled      = gtk.ScrolledWindow.new()
+            self.drawing_area  = gtk.DrawingArea.new( )
+        self.vbox_leftmenu = gtk.VBox.new( false, 0 )
+            self.treeview      = Treeview.new()
+                :add_column_text("Events",150)
+                :bind_ondoubleclick(GraphvizSimulator.state_change, self)
+            self.hbox_jumpstate = gtk.HBox.new( false, 0 )
+                self.sb_statejump = gtk.SpinButton.new_with_range(1, automaton.states:len(), 1)
+                self.btn_statejump = gtk.Button.new_with_mnemonic ("Jump to State")
+            self.hbox_info = gtk.HBox.new( false, 0 )
+                self.cbx_info = gtk.ComboBox.new_text( )
+                self.btn_info = gtk.Button.new_with_mnemonic ("Show Info")
+            self.hbox_draw_deep = gtk.HBox.new( false, 0 )
+                self.lbl_draw_deep = gtk.Label.new_with_mnemonic("Deep")
+                self.sb_draw_deep = gtk.SpinButton.new_with_range(1, 20, 1)
+                --self.btn_statejump = gtk.Button.new_with_mnemonic ('Jump to State')
+
+    for k, v in ipairs( info ) do
+        self.cbx_info:append_text( v[2] )
+    end
+    self.btn_info:connect('clicked', self.info, self)
 
     self.scrolled:add_with_viewport(self.drawing_area)
-    self.hbox:pack_start( self.treeview:build(), false, false, 0 )
+    self.sb_statejump:set_digits( 0 )
+    self.sb_draw_deep:set_digits( 0 )
+
+
+    self.hbox:pack_start( self.vbox_leftmenu, false, false, 0 )
+        self.vbox_leftmenu:pack_start( self.treeview:build(), true, true, 0 )
+        self.vbox_leftmenu:pack_start( self.hbox_jumpstate, false, false, 0 )
+            self.hbox_jumpstate:pack_start( self.sb_statejump, false, false, 0 )
+            self.hbox_jumpstate:pack_start( self.btn_statejump, false, false, 0 )
+        self.vbox_leftmenu:pack_start( self.hbox_info, false, false, 0 )
+            self.hbox_info:pack_start( self.cbx_info, false, false, 0 )
+            self.hbox_info:pack_start( self.btn_info, false, false, 0 )
+        self.vbox_leftmenu:pack_start( self.hbox_draw_deep, false, false, 0 )
+            self.hbox_draw_deep:pack_start( self.lbl_draw_deep, false, false, 0 )
+            self.hbox_draw_deep:pack_start( self.sb_draw_deep, false, false, 0 )
     self.hbox:pack_start( self.scrolled, true, true, 0 )
+
     gui:add_tab( self.hbox, 'SG ' .. (automaton:info_get('short_file_name') or '-x-'), self.destroy, self )
 
     --Build
     self:update_treeview()
     self:draw()
     self.drawing_area:connect("expose-event", self.drawing_area_expose, self )
+    self.btn_statejump:connect('clicked', self.statejump_cb, self)
+
 
     return self
+end
+
+function GraphvizSimulator.info( self )
+    local fn_name = info[ self.cbx_info:get_active() + 1 ][1]
+    info[fn_name]( self )
+end
+
+function GraphvizSimulator.statejump_cb( self )
+    local st = self.sb_statejump:get_value()
+    self.state = st
+    self:update_treeview()
+    self:draw()
 end
 
 function GraphvizSimulator.state_change(self, ud_treepath, ud_treeviewcolumn)
@@ -79,8 +162,9 @@ function GraphvizSimulator:drawing_area_expose()
 end
 
 function GraphvizSimulator:draw()
-    local deep = 2
-    local dot  = self:generate_graphviz( deep )
+    local deep         = self.sb_draw_deep:get_value()
+    local backwaredeep = true
+    local dot  = self:generate_graphviz( deep, backwaredeep )
     if dot then
         local file_dot = io.open("temp.dot", "w+")
         file_dot:write( dot )
@@ -107,59 +191,108 @@ function GraphvizSimulator:update_treeview()
     self.treeview:update()
 end
 
-function GraphvizSimulator:generate_graphviz( forward_deep )
+function get_state_color( s, current )
+    if current then
+        if s.no_coaccessible and s.no_accessible then return 'darkyellow'
+        elseif s.no_coaccessible then return 'darkgreen'
+        elseif s.no_accessible then return 'blueviolet'
+        else return 'gray' end
+    else
+        if s.no_coaccessible and s.no_accessible then return 'yellow'
+        elseif s.no_coaccessible then return 'green'
+        elseif s.no_accessible then return 'blue'
+        else return 'black' end
+    end
+end
+
+function GraphvizSimulator:generate_graphviz( deep, backwaredeep )
+    deep  = deep or 1
     local state_index, node            = self:get_current_state()
     local used, list, list_p, list_tam = { [state_index] = {} }, { state_index }, 1, nil
     local graphviz_nodes = {
         [[    INICIO [shape = box, height = .001, width = .001, color = white, fontcolor = white, fontsize = 1];]],
-        string.format( [[    S%i [shape=%s, color = blue];]],
-            state_index-1,
-            node.marked and [[doublecircle, style="bold"]] or [[circle]]
+        string.format( [[    S%i [shape=%s, color = %s];]],
+            state_index,
+            node.marked and [[doublecircle, style="bold"]] or [[circle]],
+            get_state_color( node, true )
         ),
     }
     local graphviz_edges = {}
     if node.initial then
         graphviz_edges[#graphviz_edges +1] = string.format([[    INICIO -> S%i;]],
-            state_index-1)
+            state_index)
     end
 
     local first = true
 
-    while forward_deep > 0 do
-        forward_deep = forward_deep - 1
+    function add_node_transition( source, event, target, insert_source )
+        event_index  = self.event_map[ event ]
+        target_index = self.state_map[ target ]
+        source_index = self.state_map[ source ]
+        if not used[target_index] then
+                used[target_index] = {}
+                list[#list +1]     = target_index
+
+                graphviz_nodes[#graphviz_nodes +1] = string.format(
+                    [[    S%i [shape=%s, color = %s];]],
+                    target_index,
+                    target.marked and [[doublecircle, style="bold"]] or [[circle]],
+                    get_state_color( target )
+                )
+                if target.initial then
+                    graphviz_edges[#graphviz_edges +1] = string.format([[    INICIO -> S%i;]], target_index)
+                end
+        end
+        if not used[source_index] then
+                used[source_index] = {}
+                if insert_source then
+                    list[#list +1] = source_index
+                end
+
+                graphviz_nodes[#graphviz_nodes +1] = string.format(
+                    [[    S%i [shape=%s, color = %s];]],
+                    source_index,
+                    source.marked and [[doublecircle, style="bold"]] or [[circle]],
+                    get_state_color( source )
+                )
+                if source.initial then
+                    graphviz_edges[#graphviz_edges +1] = string.format([[    INICIO -> S%i;]], source_index)
+                end
+        end
+
+        if not used[source_index][event_index] then
+            used[source_index][event_index] = true
+            graphviz_edges[#graphviz_edges +1] = string.format(
+                [[    S%i -> S%i [label="%s", color = %s, style = %s];]],
+                source_index,--list[ source_index ],
+                target_index,
+                event.name,
+                event.controllable and 'black' or 'red',
+                first and 'bold' or 'dashed' --solid
+            )
+        end
+    end
+
+
+    while deep > 0 do
+        deep = deep - 1
         list_tam = #list
         for i = list_p, list_tam do
-            for event, target in pairs( self.automaton.states:get( list[i] ).event_target ) do
-                event_index  = self.event_map[ event ]
-                target_index = self.state_map[ target ]
-                if not used[target_index] then
-                    used[target_index] = {}
-                    list[#list +1]   = target_index
-                    graphviz_nodes[#graphviz_nodes +1] = string.format(
-                        [[    S%i [shape=%s, color = %s];]],
-                        target_index-1,
-                        target.marked and [[doublecircle, style="bold"]] or [[circle]],
-                        target.no_coaccessible and 'yellow' or 'black'
-                    )
-                    if target.initial then
-                        graphviz_edges[#graphviz_edges +1] = string.format([[    INICIO -> S%i;]], target_index-1)
+            local current = self.automaton.states:get( list[i] )
+
+            for event, target in pairs( current.event_target ) do
+                add_node_transition( current, event, target, false)
+            end
+            first = false
+            if backwaredeep then
+                for event, sources in pairs( current.event_source ) do
+                    for source, _ in pairs( sources ) do
+                        add_node_transition( source, event, current, true)
                     end
-                end
-                if not used[target_index][event_index] then
-                    used[target_index][event_index] = true
-                    graphviz_edges[#graphviz_edges +1] = string.format(
-                        [[    S%i -> S%i [label="%s", color = %s, style = %s];]],
-                        list[i]-1,
-                        target_index-1,
-                        event.name,
-                        event.controllable and 'black' or 'red',
-                        first and 'bold' or 'dashed' --solid
-                    )
                 end
             end
         end
         list_p = list_tam + 1
-        first = false
     end
 
     local dot = [[
@@ -179,4 +312,3 @@ function GraphvizSimulator:destroy()
         self.image:destroy()
     end
 end
-

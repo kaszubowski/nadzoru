@@ -60,7 +60,7 @@ end
 
 --States
 function Automaton:state_add( name, marked, initial )
-    return self.states:append{
+    local id = self.states:append{
         --~ id           = id,
         initial         = initial or false,
         marked          = marked  or false,
@@ -68,8 +68,13 @@ function Automaton:state_add( name, marked, initial )
         event_source    = {},
         transitions_in  = List.new(),
         transitions_out = List.new(),
-        name            = name,
+        name            = name or tostring( self.states:len() + 1 ),
     }
+    if initial then
+        self:state_set_initial( id )
+    end
+
+    return id
 end
 
 function Automaton:state_remove( id )
@@ -93,14 +98,14 @@ function Automaton:state_remove( id )
 end
 
 function Automaton:state_set_initial( id )
-    local state = self.states:find( id )
+    local state, state_index = self.states:find( id )
     if not state then return end
 
     for ch_sta, sta in self.states:ipairs() do
         sta.initial = false
     end
     state.initial = true
-    self.initial  = id
+    self.initial  = state_index
 
     return true
 end
@@ -114,6 +119,22 @@ function Automaton:state_set_marked( id )
     return true
 end
 
+function Automaton:state_unset_marked( id )
+    local state = self.states:find( id )
+    if not state then return end
+
+    state.marked = false
+
+    return true
+end
+
+function Automaton:state_get_marked( id )
+    local state = self.states:find( id )
+    if not state then return end
+
+    return state.marked
+end
+
 function Automaton:state_set_name( id, name )
     local state = self.states:find( id )
     if not state then return end
@@ -122,6 +143,40 @@ function Automaton:state_set_name( id, name )
 
     return true
 end
+
+function Automaton:state_set_position( id, x, y )
+    local state = self.states:find( id )
+    if not state then return end
+
+    state.x = x
+    state.y = y
+
+    return true
+end
+
+function Automaton:state_get_position( id )
+    local state = self.states:find( id )
+    if not state then return end
+
+    return state.x, state.y
+end
+
+function Automaton:state_set_radios( id, r )
+    local state = self.states:find( id )
+    if not state then return end
+
+    state.r = r
+
+    return true
+end
+
+function Automaton:state_get_radios( id, r )
+    local state = self.states:find( id )
+    if not state then return end
+
+    return state.r
+end
+
 
 --Events
 function Automaton:event_add(name, observable, controllable)
@@ -195,11 +250,12 @@ end
 
 --Transitions
 function Automaton:transition_add( source_id, target_id, event_id )
-    event  = self.events:find( event_id )
-    source = self.states:find( source_id )
-    target = self.states:find( target_id )
-    if not event or not source or not target then return end
-
+    local event  = self.events:find( event_id )
+    local source = self.states:find( source_id )
+    local target = self.states:find( target_id )
+    if not event or not source or not target then return end --some invalid state/event
+    if source.event_target[event] == target  then return end --you can NOT add a transition twice (BUG:Confirir)
+    print( source.event_target[event], target )
     --Index by the table because the id can change, eg if remove a state, or event
     source.event_target[event]         = target
     target.event_source[event]         = target.event_source[event] or {}
@@ -232,7 +288,8 @@ end
 --                          operations                               --
 ------------------------------------------------------------------------
 
-function Automaton:IDES_import( file_name )
+function Automaton:IDES_import( file_name, get_layout )
+    get_layout      = true
     local t         = { s = 1, e = 2, t = 3, }
     local sm        = 0
     local last_tag  = ''
@@ -248,7 +305,7 @@ function Automaton:IDES_import( file_name )
 
         EndElement = function (parser, name)
 
-            if name == 'data' then run = false end
+            if name == 'data' or name == 'meta' then run = false end
 
         end,
 
@@ -257,42 +314,44 @@ function Automaton:IDES_import( file_name )
             --State
             last_tag = name
 
-            if name == 'data' then run = true end
+            if name == 'data' then run = 'data' end
+            if name == 'meta' and tags['tag'] == 'layout' then run = 'layout' end
 
-            if not run then return end
+            --~ if not run then return end
 
-            if name == 'state' then
+            ---*** DATA ***---
+            if run == 'data' and name == 'state' then
                 sm                      = t.s
-                last_id                 = self:state_add( tags['id'], '' )
+                last_id                 = self:state_add( tags['id'], false, false )
                 map_state[ tags['id'] ] = last_id
             end
 
-            if name == 'initial' and sm == t.s then
+            if run == 'data' and name == 'initial' and sm == t.s then
                 self:state_set_initial( last_id )
             end
 
-            if name == 'marked'  and sm == t.s then
+            if run == 'data' and name == 'marked'  and sm == t.s then
                 self:state_set_marked( last_id )
             end
 
             --Event
-            if name == 'event' then
+            if run == 'data' and name == 'event' then
                 sm                      = t.e
                 last_ev                 = self:event_add()
                 map_event[ tags['id'] ] = last_ev
             end
 
-            if name == 'observable'   and sm == t.e then
+            if run == 'data' and name == 'observable'   and sm == t.e then
                 self:event_set_observable( last_ev )
             end
 
-            if name == 'controllable' and sm == t.e then
+            if run == 'data' and name == 'controllable' and sm == t.e then
                 self:event_set_controllable( last_ev )
             end
 
             --Transition
 
-            if name == 'transition' then
+            if run == 'data' and name == 'transition' then
                 local source = map_state[ tags['source'] ]
                 local target = map_state[ tags['target'] ]
                 local event  = map_event[ tags['event'] ]
@@ -300,17 +359,35 @@ function Automaton:IDES_import( file_name )
                 self:transition_add( source, target, event )
             end
 
+            ---*** LAYOUT ***---
+            if run == 'layout' and get_layout and name == 'state' then
+                last_id = map_state[ tags['id'] ]
+                sm      = t.s
+            end
+
+            if run == 'layout' and get_layout and name == 'transition' then
+                sm      = t.t
+            end
+
+            if run == 'layout' and get_layout and name == 'event' then
+                sm      = t.e
+            end
+
+            if run == 'layout' and get_layout and name == 'circle' and sm == t.s then
+                local x,y = select( 3, tags['x']:find('(%d+)') ),  select( 3, tags['y']:find('(%d+)') )
+                self:state_set_position( last_id, x, y)
+            end
         end,
 
         CharacterData = function (parser, text)
 
             --State:
-            if last_tag == 'name' and sm == t.s and #select( 3, text:find( "([%a%d%p]*)" ) ) > 0 then
+            if run == 'data' and last_tag == 'name' and sm == t.s and #select( 3, text:find( "([%a%d%p]*)" ) ) > 0 then
                 self:state_set_name( last_id, text )
             end
 
             --Event:
-            if last_tag == 'name' and sm == t.e and #select( 3, text:find( "([%a%d%p]*)" ) ) > 0 then
+            if run == 'data' and  last_tag == 'name' and sm == t.e and #select( 3, text:find( "([%a%d%p]*)" ) ) > 0 then
                 self:event_set_name( last_ev, text )
             end
 
@@ -375,13 +452,28 @@ function Automaton:clone()
 
 end
 
-function Automaton:accessible( remove_states )
+local function accessible_search( s )
+    if s.no_accessible then
+        s.no_accessible = nil
+        for k_t_out, t_out in s.transitions_out:ipairs() do
+            accessible_search( t_out.target )
+        end
+    end
+end
 
+function Automaton:accessible( remove_states )
+    self.accessible_calc = true
+    for k_s, s in self.states:ipairs() do
+        s.no_accessible = true
+    end
+    local s = self.states:get( self.initial )
+
+    accessible_search( s )
 end
 
 local function coaccessible_search( s )
-    if not s.no_coaccessible then
-        s.no_coaccessible = true
+    if s.no_coaccessible then
+        s.no_coaccessible = nil
         for k_t_in, t_in in s.transitions_in:ipairs() do
             coaccessible_search( t_in.source )
         end
@@ -389,17 +481,97 @@ local function coaccessible_search( s )
 end
 
 function Automaton:coaccessible( remove_states )
-    --uncleck all states
-    local total = self.states:len()
+    --make all states as no_coaccessible
+    self.coaccessible_calc = true
     for k_s, s in self.states:ipairs() do
-        s.no_coaccessible = nil
+        s.no_coaccessible = true
     end
+
     for k_s, s in self.states:ipairs() do
-        if not s.no_coaccessible and s.marked then
+        if s.no_coaccessible and s.marked then
             coaccessible_search( s )
-            print(k_s, total)
         end
     end
+end
+
+function Automaton:join_no_coaccessible_states()
+    if not self.coaccessible_calc then
+        self:coaccessible( false )
+    end
+
+    -- the new no_coaccessible state
+    local Snca                 = self:state_add( 'Snca', false, false )
+    local Snca_state           = self.states:get( Snca )
+    Snca_state.no_coaccessible = true
+
+    --repeat all transition to/from a no_coaccessible
+    for k, state in self.states:ipairs() do
+        if k < Snca and state.no_coaccessible then
+            --from
+            for k_t, t in state.transitions_out:ipairs() do
+                if t.target.no_coaccessible then
+                    self:transition_add( Snca, Snca, t.event )
+                else
+                    --yeah, I know it's never be make, but ...
+                    self:transition_add( Snca, t.target, t.event )
+                end
+            end
+            --to
+            for k_t, t in state.transitions_in:ipairs() do
+                if t.source.no_coaccessible then
+                    self:transition_add( Snca, Snca, t.event )
+                else
+                    self:transition_add( t.source, Snca, t.event )
+                end
+            end
+
+            if state.initial then
+                self:state_set_initial( Snca_state )
+            end
+        end
+    end
+
+    for k, state in self.states:ipairs() do
+        if k < Snca and state.no_coaccessible then
+            self:state_remove( k )
+        end
+    end
+end
+
+function Automaton:syncronize( p2, ... )
+    --~ local p1     = self
+    --~ local new    = Automaton.new()
+    --~ local map_t  = {}
+    --~ local map_s1 = {}
+    --~ local map_s2 = {}
+    --~ local map_e1 = {}
+    --~ local map_e2 = {}
+    --~ for k_event, event in p1.events:ipairs() do
+        --~ map_e1[event.name]  = event
+    --~ end
+    --~ for k_event, event in p2.events:ipairs() do
+        --~ map_e2[event.name] = event
+    --~ end
+    --~ for k_s, s in p1.states:ipairs() do
+        --~ map_s1[s] = k_s
+    --~ end
+    --~ for k_s, s in p2.states:ipairs() do
+        --~ map_s2[s] = k_s
+    --~ end
+--~
+    --~ for k_s1, s1 in p1.states:ipairs() do
+        --~ for k_s2, s2 in p1.states:ipairs() do
+            --~ local e1 = {}
+            --~ local e2 = {}
+            --~ for k_t, t in s1.transitions_out:ipairs() do
+                --~ e1[t.event.name] = map_s1[t.target]
+            --~ end
+            --~ for k_t, t in s2.transitions_out:ipairs() do
+                --~ e2[t.event.name] = map_s2[t.target]
+            --~ end
+        --~ end
+    --~ end
+
 end
 
 --test

@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<model version="2.1" type="FSA" id="supcon(Ga,K1)">
+<data>
+	<state id="0">
+		<properties>
+			<initial />
+			<marked />
+		</properties>
+		<name>((1,1),(1,(1,1)))</name>
+	</state>
+	<state id="1">
+		<properties/>
+		<name>((2,1),(1,(2,1)))</name>
+	</state>
+	<state id="2">
+		<properties/>
+		<name>((1,2),(2,(1,2)))</name>
+	</state>
+	<state id="3">
+		<properties/>
+		<name>((2,2),(2,(2,2)))</name>
+	</state>
+	<event id="1">
+		<properties>
+			<observable />
+		</properties>
+		<name>s_c1</name>
+	</event>
+	<event id="2">
+		<properties>
+			<observable />
+		</properties>
+		<name>s_c2</name>
+	</event>
+	<event id="3">
+		<properties>
+			<controllable />
+			<observable />
+		</properties>
+		<name>e1_des</name>
+	</event>
+	<event id="4">
+		<properties>
+			<observable />
+		</properties>
+		<name>s_des</name>
+	</event>
+	<event id="5">
+		<properties>
+			<observable />
+		</properties>
+		<name>s_c3</name>
+	</event>
+	<event id="6">
+		<properties>
+			<controllable />
+			<observable />
+		</properties>
+		<name>e1_lig</name>
+	</event>
+	<transition id="1" source="0" target="1" event="6">
+	</transition>
+	<transition id="2" source="0" target="2" event="1">
+	</transition>
+	<transition id="3" source="0" target="2" event="2">
+	</transition>
+	<transition id="4" source="0" target="2" event="5">
+	</transition>
+	<transition id="5" source="1" target="3" event="1">
+	</transition>
+	<transition id="6" source="1" target="3" event="2">
+	</transition>
+	<transition id="7" source="1" target="3" event="5">
+	</transition>
+	<transition id="8" source="2" target="0" event="4">
+	</transition>
+	<transition id="9" source="3" target="2" event="3">
+	</transition>
+	<transition id="10" source="3" target="1" event="4">
+	</transition>
+</data>
+<meta tag="layout" version="2.1">
+	<font size="12.0"/>
+	<layout uniformnodes="false"/>
+	<state id="0">
+		<circle r="52.0" x="80.0" y="112.0" />
+		<arrow x="70.0" y="0.0" />
+	</state>
+	<state id="1">
+		<circle r="52.0" x="230.0" y="62.0" />
+		<arrow x="1.0" y="0.0" />
+	</state>
+	<state id="2">
+		<circle r="52.0" x="230.0" y="162.0" />
+		<arrow x="1.0" y="0.0" />
+	</state>
+	<state id="3">
+		<circle r="52.0" x="380.0" y="112.0" />
+		<arrow x="1.0" y="0.0" />
+	</state>
+	<transition id="1">
+		<bezier x1="80.0" y1="112.0" x2="230.0" y2="62.0" ctrlx1="130.0" ctrly1="95.33333587646484" ctrlx2="180.0" ctrly2="78.66666412353516" />
+		<label x="5.0" y="5.0" />
+	</transition>
+	<transition id="2" group="1">
+		<bezier x1="80.0" y1="112.0" x2="230.0" y2="162.0" ctrlx1="131.6345977783203" ctrly1="101.43376159667969" ctrlx2="195.03207397460938" ctrly2="122.56623840332031" />
+		<label x="5.0" y="5.0" />
+	</transition>
+	<transition id="3" group="1">
+		<bezier x1="80.0" y1="112.0" x2="230.0" y2="162.0" ctrlx1="131.6345977783203" ctrly1="101.43376159667969" ctrlx2="195.03207397460938" ctrly2="122.56623840332031" />
+		<label x="5.0" y="5.0" />
+	</transition>
+	<transition id="4" group="1">
+		<bezier x1="80.0" y1="112.0" x2="230.0" y2="162.0" ctrlx1="131.6345977783203" ctrly1="101.43376159667969" ctrlx2="195.03207397460938" ctrly2="122.56623840332031" />
+		<label x="5.0" y="5.0" />
+	</transition>
+	<transition id="5" group="2">
+		<bezier x1="230.0" y1="62.0" x2="380.0" y2="112.0" ctrlx1="281.6346130371094" ctrly1="51.43375778198242" ctrlx2="345.0320739746094" ctrly2="72.56623840332031" />
+		<label x="5.0" y="5.0" />
+	</transition>
+	<transition id="6" group="2">
+		<bezier x1="230.0" y1="62.0" x2="380.0" y2="112.0" ctrlx1="281.6346130371094" ctrly1="51.43375778198242" ctrlx2="345.0320739746094" ctrly2="72.56623840332031" />
+		<label x="5.0" y="5.0" />
+	</transition>
+	<transition id="7" group="2">
+		<bezier x1="230.0" y1="62.0" x2="380.0" y2="112.0" ctrlx1="281.6346130371094" ctrly1="51.43375778198242" ctrlx2="345.0320739746094" ctrly2="72.56623840332031" />
+		<label x="5.0" y="5.0" />
+	</transition>
+	<transition id="8">
+		<bezier x1="230.0" y1="162.0" x2="80.0" y2="112.0" ctrlx1="178.3654022216797" ctrly1="172.5662384033203" ctrlx2="114.96793365478516" ctrly2="151.4337615966797" />
+		<label x="5.0" y="5.0" />
+	</transition>
+	<transition id="9">
+		<bezier x1="380.0" y1="112.0" x2="230.0" y2="162.0" ctrlx1="330.0" ctrly1="128.6666717529297" ctrlx2="280.0" ctrly2="145.3333282470703" />
+		<label x="5.0" y="5.0" />
+	</transition>
+	<transition id="10">
+		<bezier x1="380.0" y1="112.0" x2="230.0" y2="62.0" ctrlx1="328.3653869628906" ctrly1="122.56623840332031" ctrlx2="264.9679260253906" ctrly2="101.43376159667969" />
+		<label x="5.0" y="5.0" />
+	</transition>
+</meta>
+<meta tag="annotation" version="3">supcon(Ga,K1): Supervisor</meta>
+</model>

@@ -57,17 +57,20 @@ end
 --Utils
 require('class.object')
 
+require('class.info_dialog')
 require('class.list')
 require('class.treeview')
 require('class.gl_render')
 require('class.selector')
 
 require('class.automaton')
-require('class.code_gen')
+require('class.code_gen.init')
 require('class.gui')
 require('class.simulator')
 require('class.graphviz_simulator')
 require('class.plant_simulator')
+require('class.automaton_render')
+require('class.automaton_editor')
 
 Controller    = {}
 Controller_MT = { __index = Controller }
@@ -79,7 +82,7 @@ function Controller.new()
     setmetatable( self, Controller_MT )
 
     self.gui              = Gui.new()
-    self.sed              = List.new()
+    self.elements         = List.new()
     self.active_automaton = nil
     self.simulators       = {}
 
@@ -96,7 +99,7 @@ function Controller:build()
 
     -- ** Menu Itens ** --
     --self.gui:append_menu('automatonlist', "_Automatons")
-    self.gui:append_menu('operations', "_Operations")
+    self.gui:append_menu('automata_operations', "_Automata")
     self.gui:append_menu('simulate', "_Simulate")
     self.gui:append_menu('code', "_Code")
 
@@ -110,16 +113,21 @@ function Controller:build()
     --Automatons
     --~ self.gui:add_action('remove_automaton', "_Close Automaton", "Close Activate Automaton", nil, self.close_automaton, self)
 
-    --Operations
+    --Automata Operations
+    self.gui:add_action('automaton_edit', "Edit Automaton", "Edit automaton struct", nil, self.automaton_edit, self)
+    self.gui:add_action('operations_accessible', "_Accessible", "Calcule the accessible automata", nil, self.operations_accessible, self)
     self.gui:add_action('operations_coaccessible', "_Coaccessible", "Calcule the coaccessible automata", nil, self.operations_coaccessible, self)
+    self.gui:add_action('operations_sync', "_Sync", "Syncronize two or more automatons", nil, self.operations_sync, self)
+    self.gui:add_action('operations_join_no_coaccessible', "_Join Coaccessible", "Join Coaccessible States", nil, self.operations_join_no_coaccessible, self)
 
     --Simulate
-    self.gui:add_action('simulategraphviz', "Simulate _Graphviz", "Simulate Automata in a Graphviz render", nil, self.simulate_graphviz, self)
-    self.gui:add_action('simulateplant', "Simulate _Plant", "Simulate the Plant in a OpenGL render", nil, self.simulate_plant, self)
+    self.gui:add_action('simulategraphviz', "Automaton Simulate _Graphviz", "Simulate Automata in a Graphviz render", nil, self.simulate_graphviz, self)
+    self.gui:add_action('simulateplant', "Automaton Simulate _Plant", "Simulate the Plant in a OpenGL render", nil, self.simulate_plant, self)
 
     --Code
-    self.gui:add_action('codegen_pic_c', "PIC C - extreme memory safe (monolitic)", "Generate C code for PIC - Monolitic", nil, self.code_gen_pic_c, self)
-
+    self.gui:add_action('code_gen_pic_c_monolitic', "PIC C (monolitic)", "Generate C code for PIC - Monolitic", nil, self.code_gen_pic_c_monolitic, self)
+    self.gui:add_action('code_gen_pic_c_modular', "PIC C (modular)", "Generate C code for PIC - Modular", nil, self.code_gen_pic_c_modular, self)
+    -- TODO: local modular
 
     -- ** Menu-Action Link ** --
     --File
@@ -128,15 +136,20 @@ function Controller:build()
     --Automaton
     --~ self.gui:prepend_menu_item('automatonlist','remove_automaton')
 
-    --Operations
-    self.gui:prepend_menu_item('operations','operations_coaccessible')
+    --Automaton Operations
+    self.gui:append_menu_item('automata_operations', 'automaton_edit')
+    self.gui:append_menu_item('automata_operations','operations_accessible')
+    self.gui:append_menu_item('automata_operations','operations_coaccessible')
+    self.gui:append_menu_item('automata_operations','operations_join_no_coaccessible')
+    self.gui:append_menu_item('automata_operations','operations_sync')
 
     --Simulate
     self.gui:append_menu_item('simulate', 'simulategraphviz')
     self.gui:append_menu_item('simulate', 'simulateplant')
 
     --Code
-    self.gui:prepend_menu_item('code','codegen_pic_c')
+    self.gui:append_menu_item('code','code_gen_pic_c_monolitic')
+    self.gui:append_menu_item('code','code_gen_pic_c_modular')
 end
 
 function Controller:exec()
@@ -144,7 +157,7 @@ function Controller:exec()
 end
 
 function Controller:automaton_add( new_automaton )
-    self.sed:append( new_automaton )
+    self.elements:append( new_automaton )
 --[[
     new_automaton:info_set( 'position', position )
     local menu_item = self.gui:append_menu_item(
@@ -165,7 +178,7 @@ end
 
 --[[
 function Controller:automaton_remove( automaton_pos )
-    local r_automaton = self.sed:remove( automaton_pos )
+    local r_automaton = self.elements:remove( automaton_pos )
     if self.active_automaton == automaton_pos then
         self.active_automaton = nil
     end
@@ -190,17 +203,18 @@ function Controller.import_ides( data )
     filter:add_pattern("*.xmd")
     filter:set_name("IDES3 automaton")
     dialog:add_filter(filter)
-    dialog:set("select-multiple", false)
+    dialog:set("select-multiple", true)
     local response = dialog:run()
     dialog:hide()
-    local names = dialog:get_filenames()
-    if response == gtk.RESPONSE_OK and names and names[1] then
-        local new_automaton = Automaton.new()
-        new_automaton:IDES_import( names[1] )
-        new_automaton:info_set('file_name', names[1])
-        new_automaton:info_set('short_file_name', select( 3, names[1]:find( '.-([^/^\\]*)$' ) ) )
-        data.param:automaton_add( new_automaton )
-
+    local filenames = dialog:get_filenames()
+    if response == gtk.RESPONSE_OK and filenames then
+        for k_filename, filename in ipairs( filenames ) do
+            local new_automaton = Automaton.new()
+            new_automaton:IDES_import( filename )
+            new_automaton:info_set('file_name', filename)
+            new_automaton:info_set('short_file_name', select( 3, filename:find( '.-([^/^\\]*)$' ) ) )
+            data.param:automaton_add( new_automaton )
+        end
     end
 end
 
@@ -219,7 +233,7 @@ function Controller.simulate_graphviz( data )
         end,
     })
     :add_combobox{
-        list = data.param.sed,
+        list = data.param.elements,
         text_fn  = function( a )
             return a:info_get( 'short_file_name' )
         end,
@@ -252,24 +266,165 @@ function Controller.simulate_plant( data )
     :run()
 end
 
-function Controller.code_gen_pic_c( data )
-    if data.param.active_automaton then
-        local automaton = data.param.sed:get( data.param.active_automaton )
-        if automaton then
-            local dialog = gtk.FileChooserDialog.new(
-                "Create the file", window,gtk.FILE_CHOOSER_ACTION_SAVE,
-                "gtk-cancel", gtk.RESPONSE_CANCEL,
-                "gtk-ok", gtk.RESPONSE_OK
-            )
-            local response = dialog:run()
-            dialog:hide()
-            local names = dialog:get_filenames()
-            if response == gtk.RESPONSE_OK and names and names[1] then
-                local gen = CodeGen.new ( automaton )
-                gen:pic_c( names[1] )
+function Controller.automaton_edit( data )
+    Selector.new({
+        title = 'Select automaton to edit',
+        success_fn = function( results, numresult )
+            local automaton = results[1]
+            if automaton then
+                AutomatonEditor.new( data.gui, automaton )
             end
-        end
-    end
+        end,
+    })
+    :add_combobox{
+        list = data.param.elements,
+        text_fn  = function( a )
+            return a:info_get( 'short_file_name' )
+        end,
+        text = 'Automaton:'
+    }
+    :run()
+end
+
+function Controller.code_gen_pic_c_modular( data )
+Selector.new({
+        title = 'nadzoru',
+        success_fn = function( results, numresult )
+            local automatons  = results[1]
+            local random_type = results[2] and results[2][1] or 1
+            local choice      = results[3] and results[3][1] or 1
+            local input_fn    = results[4] and results[4][1] or 1
+            local file        = results[5] or './nofilename'
+            if automatons and random_type then
+                local cg = CodeGen.new{
+                    automatons = List.new_from_table( automatons ) ,
+                    random_fn  = random_type,
+                    choice_fn  = choice,
+                    input_fn   = input_fn,
+                    file_name  = file,
+                }
+                if  cg then
+                    cg:execute()
+                end
+            end
+        end,
+    })
+    :add_multipler{
+        list = data.param.elements,
+        text_fn  = function( a )
+            return a:info_get( 'short_file_name' )
+        end,
+        text = 'Automaton:'
+    }
+    :add_combobox{
+        list = List.new_from_table{
+            { CodeGen.RANDOM_PSEUDOFIX , "Pseudo Random Seed Fixed"    },
+            { CodeGen.RANDOM_PSEUDOAD  , "Pseudo Random Seed AD input" },
+            { CodeGen.RANDOM_AD        , "AD input"                    },
+        },
+        text_fn  = function( a )
+            return a[2]
+        end,
+        text = 'Random Type:',
+    }
+    :add_combobox{
+        list = List.new_from_table{
+            { CodeGen.CHOICE_RANDOM       , "Random"                       },
+            --{ CodeGen.CHOICE_GLOBAL       , "Sequential Global Event List" },
+            --{ CodeGen.CHOICE_GLOBALRANDOM , "Random Global Event List"     },
+            --{ CodeGen.CHOICE_LOCAL        , "Sequential Local Event List"  },
+            --{ CodeGen.CHOICE_LOCALRANDOM  , "Random Local Event List"      },
+        },
+        text_fn  = function( a )
+            return a[2]
+        end,
+        text = 'Choice:',
+    }
+    :add_combobox{
+        list = List.new_from_table{
+            { CodeGen.INPUT_TIMER       , "Timer Interruption"                },
+            { CodeGen.INPUT_MULTIPLEXED , "Multiplexed External Interruption" },
+            --{ CodeGen.INPUT_EXTERNAL    , "External Interruption"             },
+        },
+        text_fn  = function( a )
+            return a[2]
+        end,
+        text = 'Input (Delay Sensibility):',
+    }
+    :add_file{
+        text = 'file',
+    }
+    :run()
+end
+
+function Controller.code_gen_pic_c_monolitic( data )
+Selector.new({
+        title = 'nadzoru',
+         success_fn = function( results, numresult )
+            local automaton   = results[1]
+            local random_type = results[2] and results[2][1] or 1
+            local choice      = results[3] and results[3][1] or 1
+            local ds          = results[4] and results[4][1] or 1
+            local file        = results[5] or './nofilename'
+            if automaton and random_type then
+                CodeGen.new{
+                    automatons = List.new_from_table{ automaton } ,
+                    random_fn  = random_type,
+                    choice_fn  = choice,
+                    delay_s_fn = ds,
+                    file_name  = file,
+                }
+                :execute()
+            end
+        end,
+    })
+    :add_combobox{
+        list = data.param.elements,
+        text_fn  = function( a )
+            return a:info_get( 'short_file_name' )
+        end,
+        text = 'Automaton:'
+    }
+    :add_combobox{
+        list = List.new_from_table{
+            { CodeGen.RANDOM_PSEUDOFIX , "Pseudo Random Seed Fixed"    },
+            { CodeGen.RANDOM_PSEUDOAD  , "Pseudo Random Seed AD input" },
+            { CodeGen.RANDOM_AD        , "AD input"                    },
+        },
+        text_fn  = function( a )
+            return a[2]
+        end,
+        text = 'Random Type:',
+    }
+    :add_combobox{
+        list = List.new_from_table{
+            { CodeGen.CHOICE_RANDOM       , "Random"                       },
+            { CodeGen.CHOICE_GLOBAL       , "Sequential Global Event List" },
+            { CodeGen.CHOICE_GLOBALRANDOM , "Random Global Event List"     },
+            { CodeGen.CHOICE_LOCAL        , "Sequential Local Event List"  },
+            { CodeGen.CHOICE_LOCALRANDOM  , "Random Local Event List"      },
+        },
+        text_fn  = function( a )
+            return a[2]
+        end,
+        text = 'Choice:',
+    }
+    :add_combobox{
+        list = List.new_from_table{
+            { CodeGen.DS_NONE        , "None"                              },
+            { CodeGen.DS_TIMER       , "Timer Interruption"                },
+            { CodeGen.DS_EXTERNAL    , "External Interruption"             },
+            { CodeGen.DS_MULTIPLEXED , "Multiplexed External Interruption" },
+        },
+        text_fn  = function( a )
+            return a[2]
+        end,
+        text = 'Delay Sensibility:',
+    }
+    :add_file{
+        text = 'file',
+    }
+    :run()
 end
 
 --~ function Controller.close_automaton( data )
@@ -279,22 +434,93 @@ end
 --~ end
 
 -- ** Operations ** --
+function Controller.operations_accessible( data )
+    Selector.new({
+        title = 'nadzoru',
+        success_fn = function( results, numresult )
+            local automaton = results[1]
+            if automaton then
+                local new_automaton = automaton:clone()
+                new_automaton:accessible()
+                new_automaton:info_set('short_file_name', 'accessible(' .. automaton:info_get('short_file_name') .. ')')
+                data.param.elements:append( new_automaton )
+            end
+        end,
+    })
+    :add_combobox{
+        list = data.param.elements,
+        text_fn  = function( a )
+            return a:info_get( 'short_file_name' )
+        end,
+        text = 'Automaton:'
+    }
+    :add_checkbox{
+        text = 'remove states',
+    }
+    :run()
+end
+
 function Controller.operations_coaccessible( data )
     Selector.new({
         title = 'nadzoru',
         success_fn = function( results, numresult )
             local automaton = results[1]
             if automaton then
-                print(automaton:info_get('short_file_name'))
                 local new_automaton = automaton:clone()
                 new_automaton:coaccessible()
                 new_automaton:info_set('short_file_name', 'coaccessible(' .. automaton:info_get('short_file_name') .. ')')
-                data.param.sed:append( new_automaton )
+                data.param.elements:append( new_automaton )
             end
         end,
     })
     :add_combobox{
-        list = data.param.sed,
+        list = data.param.elements,
+        text_fn  = function( a )
+            return a:info_get( 'short_file_name' )
+        end,
+        text = 'Automaton:'
+    }
+    :add_checkbox{
+        text = 'remove states',
+    }
+    :run()
+end
+
+function Controller.operations_join_no_coaccessible( data )
+     Selector.new({
+        title = 'nadzoru',
+        success_fn = function( results, numresult )
+            local automaton = results[1]
+            if automaton then
+                local new_automaton = automaton:clone()
+                new_automaton:join_no_coaccessible_states()
+                new_automaton:info_set('short_file_name', 'join_no_coaccessible(' .. automaton:info_get('short_file_name') .. ')')
+                data.param.elements:append( new_automaton )
+            end
+        end,
+    })
+    :add_combobox{
+        list = data.param.elements,
+        text_fn  = function( a )
+            return a:info_get( 'short_file_name' )
+        end,
+        text = 'Automaton:'
+    }
+    :run()
+end
+
+function Controller.operations_sync( data )
+    Selector.new({
+        title = 'nadzoru',
+        success_fn = function( results, numresult )
+            local automatons = results[1]
+            for k, v in ipairs( automatons ) do
+
+            end
+        end,
+    })
+    :add_multipler{
+        list = data.param.elements,
         text_fn  = function( a )
             return a:info_get( 'short_file_name' )
         end,
