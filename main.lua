@@ -109,6 +109,7 @@ function Controller:build()
 
     --File
     self.gui:add_action('import_ides', "_Import IDES", "Import a IDES (.xmd) automaton file", nil, self.import_ides, self)
+    self.gui:add_action('create_new_automaton', "_New Automaton", "Create a New Automaton", nil, self.create_new_automaton, self)
 
     --Automatons
     --~ self.gui:add_action('remove_automaton', "_Close Automaton", "Close Activate Automaton", nil, self.close_automaton, self)
@@ -132,6 +133,7 @@ function Controller:build()
     -- ** Menu-Action Link ** --
     --File
     self.gui:prepend_menu_item('file','import_ides')
+    self.gui:prepend_menu_item('file','create_new_automaton')
 
     --Automaton
     --~ self.gui:prepend_menu_item('automatonlist','remove_automaton')
@@ -192,6 +194,12 @@ end
 ------------------------------------------------------------------------
 --                           CALLBACKS                                --
 ------------------------------------------------------------------------
+
+function Controller.create_new_automaton( data )
+    local new_automaton = Automaton.new()
+    new_automaton:info_set('short_file_name', '*new' )
+    data.param:automaton_add( new_automaton )
+end
 
 function Controller.import_ides( data )
     local dialog = gtk.FileChooserDialog.new(

@@ -47,7 +47,7 @@ function Simulator:automaton_load( automaton )
 
     --States
     for state_index, state in automaton.states:ipairs() do
-        self.state_map[state]= state_index
+        self.state_map[state] = state_index
     end
 end
 
@@ -71,30 +71,27 @@ function Simulator:get_current_state_events_info()
     local events            = {}
     for event_index, event in self.automaton.events:ipairs() do
         if node.event_target[ event ] then
-            events[#events +1] = {
-                event        = event,
-                event_index  = event_index,
-                target_state = node.event_target[ event ],
-                source_state = node,
-            }
+            for target, _ in pairs( node.event_target[ event ] ) do
+                events[#events +1] = {
+                    event        = event,
+                    event_index  = event_index,
+                    target_state = target,
+                    target_index = self.state_map[target],
+                    source_state = node,
+                    source_index = self.state_map[node],
+                }
+            end
         end
     end
 
     return events
 end
 
-function Simulator:execute_event( event_index )
-    event_index = tonumber( event_index )
-    if not event_index then return end
+function Simulator:change_state( state_index )
+    state_index = tonumber( state_index )
+    if not state_index then return end
 
-    local state, node   = self:get_current_state()
-    local event         = self.automaton.events:get( event_index )
-    if event then
-        local new_state = node.event_target[ event ]
-        self.state      = self.state_map[ new_state ]
-        return true
-    end
-    return false
+    self.state = state_index
 end
 
 

@@ -43,7 +43,7 @@ function Treeview:bind_ondoubleclick( callback, param )
     return self
 end
 
-function Treeview:add_column_text( caption, width )
+function Treeview:add_column_text( caption, width, callback, param )
     self.render[#self.render +1] = gtk.CellRendererText.new()
     self.columns[#self.columns +1] = gtk.TreeViewColumn.new_with_attributes(
         caption,
@@ -57,10 +57,15 @@ function Treeview:add_column_text( caption, width )
     self.view:append_column( self.columns[#self.columns] )
     self.model_list[#self.model_list +1] = 'gchararray'
 
+    if type(callback) == 'function' then
+        self.render[#self.render]:set('editable', true)
+        self.render[#self.render]:connect('edited', callback, param)
+    end
+
     return self
 end
 
-function Treeview:add_column_toggle( caption, callback, param )
+function Treeview:add_column_toggle( caption, width, callback, param )
     self.render[#self.render +1] = gtk.CellRendererToggle.new()
     self.columns[#self.columns +1] = gtk.TreeViewColumn.new_with_attributes(
         caption,
@@ -68,6 +73,9 @@ function Treeview:add_column_toggle( caption, callback, param )
         'active',
         #self.columns
     )
+    if tonumber( width ) then
+        self.render[#self.render]:set('width',width)
+    end
     self.view:append_column( self.columns[#self.columns] )
     self.model_list[#self.model_list +1] = 'gboolean'
     if type(callback) == 'function' then

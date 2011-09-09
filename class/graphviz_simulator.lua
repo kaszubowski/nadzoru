@@ -71,7 +71,8 @@ function GraphvizSimulator.new( gui, automaton )
             self.drawing_area  = gtk.DrawingArea.new( )
         self.vbox_leftmenu = gtk.VBox.new( false, 0 )
             self.treeview      = Treeview.new()
-                :add_column_text("Events",150)
+                :add_column_text("Events",100)
+                :add_column_text("State",60)
                 :bind_ondoubleclick(GraphvizSimulator.state_change, self)
             self.hbox_jumpstate = gtk.HBox.new( false, 0 )
                 self.sb_statejump = gtk.SpinButton.new_with_range(1, automaton.states:len(), 1)
@@ -132,10 +133,9 @@ function GraphvizSimulator.statejump_cb( self )
 end
 
 function GraphvizSimulator.state_change(self, ud_treepath, ud_treeviewcolumn)
-    local event_name, pos  = self.treeview:get_selected( 1 )
-    if not event_name then return true end
-    local ev_num = self.event_name_map[ event_name ]
-    self:execute_event( ev_num )
+    local state_id, pos2   = self.treeview:get_selected( 2 )
+    if not state_id then return true end
+    self:change_state( state_id )
     self:update_treeview()
     self:draw()
     return true
@@ -186,7 +186,7 @@ function GraphvizSimulator:update_treeview()
     self.treeview:clear_data()
 
     for ch_ev, ev in ipairs( events ) do
-        self.treeview:add_row{ ev.event.name }
+        self.treeview:add_row{ ev.event.name, ev.target_index  }
     end
     self.treeview:update()
 end
@@ -280,8 +280,10 @@ function GraphvizSimulator:generate_graphviz( deep, backwaredeep )
         for i = list_p, list_tam do
             local current = self.automaton.states:get( list[i] )
 
-            for event, target in pairs( current.event_target ) do
-                add_node_transition( current, event, target, false)
+            for event, target_list in pairs( current.event_target ) do
+                for target, _ in pairs( target_list ) do
+                    add_node_transition( current, event, target, false)
+                end
             end
             first = false
             if backwaredeep then

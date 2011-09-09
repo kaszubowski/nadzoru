@@ -61,7 +61,6 @@ end
 --States
 function Automaton:state_add( name, marked, initial )
     local id = self.states:append{
-        --~ id           = id,
         initial         = initial or false,
         marked          = marked  or false,
         event_target    = {},
@@ -211,6 +210,14 @@ function Automaton:event_set_observable( id )
     return true
 end
 
+function Automaton:event_get_observable( id )
+    local event = self.events:find( id )
+    if not event then return end
+
+    return event.observable
+
+end
+
 function Automaton:event_unset_observable( id )
     local event = self.events:find( id )
     if not event then return end
@@ -238,6 +245,14 @@ function Automaton:event_unset_controllable( id )
     return true
 end
 
+function Automaton:event_get_controllable( id )
+    local event = self.events:find( id )
+    if not event then return end
+
+    return event.controllable
+
+end
+
 function Automaton:event_set_name( id, name )
     local event = self.events:find( id )
     if not event then return end
@@ -253,12 +268,15 @@ function Automaton:transition_add( source_id, target_id, event_id )
     local event  = self.events:find( event_id )
     local source = self.states:find( source_id )
     local target = self.states:find( target_id )
+
+    source.event_target[event] = source.event_target[event] or {}
+    target.event_source[event] = target.event_source[event] or {}
+
     if not event or not source or not target then return end --some invalid state/event
-    if source.event_target[event] == target  then return end --you can NOT add a transition twice (BUG:Confirir)
-    print( source.event_target[event], target )
+    if source.event_target[event][target]  then return end --you can NOT add a same transition twice
     --Index by the table because the id can change, eg if remove a state, or event
-    source.event_target[event]         = target
-    target.event_source[event]         = target.event_source[event] or {}
+
+    source.event_target[event][target] = true
     target.event_source[event][source] = true
 
     local transition = {
