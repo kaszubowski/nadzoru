@@ -39,26 +39,15 @@ local function safeload( libs, id, required, msg )
     end
 end
 
+safeload('letk', 'letk', true, [[You need install 'letk' to run this software]])
 safeload({'lgob.gdk','lgob.gtk','lgob.cairo'}, 'gtk', true, [[You need install 'lgob' to run this software, you can found 'lgob' at http://oproj.tuxfamily.org]])
 safeload({'lgob.gtkglext', 'luagl' }, 'opengl', false, [[OpenGL features are disable, a 'lgob' version with 'gtkglext' suport and 'luagl' are required to enable this features]])
 safeload('lxp', 'lxp', false, [[no library 'lxp' to manipulate xml format]])
-
-function table.complete( dst, src )
-    for k, v in pairs( src ) do
-        if dst[ k ] == nil then
-            dst[ k ] = v
-        end
-    end
-    return dst
-end
-
-
 
 --Utils
 require('class.object')
 
 require('class.info_dialog')
-require('class.list')
 require('class.treeview')
 require('class.gl_render')
 require('class.selector')
@@ -82,7 +71,7 @@ function Controller.new()
     setmetatable( self, Controller_MT )
 
     self.gui              = Gui.new()
-    self.elements         = List.new()
+    self.elements         = letk.List.new()
     self.active_automaton = nil
     self.simulators       = {}
 
@@ -251,7 +240,7 @@ function Controller.simulate_graphviz( data )
 end
 
 function Controller.simulate_plant( data )
-    local simulators = List.new()
+    local simulators = letk.List.new()
     for c,v in pairs( data.param.simulators ) do
         simulators:add( c )
     end
@@ -305,7 +294,7 @@ Selector.new({
             local file        = results[5] or './nofilename'
             if automatons and random_type then
                 local cg = CodeGen.new{
-                    automatons = List.new_from_table( automatons ) ,
+                    automatons = letk.List.new_from_table( automatons ) ,
                     random_fn  = random_type,
                     choice_fn  = choice,
                     input_fn   = input_fn,
@@ -325,7 +314,7 @@ Selector.new({
         text = 'Automaton:'
     }
     :add_combobox{
-        list = List.new_from_table{
+        list = letk.List.new_from_table{
             { CodeGen.RANDOM_PSEUDOFIX , "Pseudo Random Seed Fixed"    },
             { CodeGen.RANDOM_PSEUDOAD  , "Pseudo Random Seed AD input" },
             { CodeGen.RANDOM_AD        , "AD input"                    },
@@ -336,7 +325,7 @@ Selector.new({
         text = 'Random Type:',
     }
     :add_combobox{
-        list = List.new_from_table{
+        list = letk.List.new_from_table{
             { CodeGen.CHOICE_RANDOM       , "Random"                       },
             --{ CodeGen.CHOICE_GLOBAL       , "Sequential Global Event List" },
             --{ CodeGen.CHOICE_GLOBALRANDOM , "Random Global Event List"     },
@@ -349,7 +338,7 @@ Selector.new({
         text = 'Choice:',
     }
     :add_combobox{
-        list = List.new_from_table{
+        list = letk.List.new_from_table{
             { CodeGen.INPUT_TIMER       , "Timer Interruption"                },
             { CodeGen.INPUT_MULTIPLEXED , "Multiplexed External Interruption" },
             --{ CodeGen.INPUT_EXTERNAL    , "External Interruption"             },
@@ -376,7 +365,7 @@ Selector.new({
             local file        = results[5] or './nofilename'
             if automaton and random_type then
                 CodeGen.new{
-                    automatons = List.new_from_table{ automaton } ,
+                    automatons = letk.List.new_from_table{ automaton } ,
                     random_fn  = random_type,
                     choice_fn  = choice,
                     delay_s_fn = ds,
@@ -394,7 +383,7 @@ Selector.new({
         text = 'Automaton:'
     }
     :add_combobox{
-        list = List.new_from_table{
+        list = letk.List.new_from_table{
             { CodeGen.RANDOM_PSEUDOFIX , "Pseudo Random Seed Fixed"    },
             { CodeGen.RANDOM_PSEUDOAD  , "Pseudo Random Seed AD input" },
             { CodeGen.RANDOM_AD        , "AD input"                    },
@@ -405,7 +394,7 @@ Selector.new({
         text = 'Random Type:',
     }
     :add_combobox{
-        list = List.new_from_table{
+        list = letk.List.new_from_table{
             { CodeGen.CHOICE_RANDOM       , "Random"                       },
             { CodeGen.CHOICE_GLOBAL       , "Sequential Global Event List" },
             { CodeGen.CHOICE_GLOBALRANDOM , "Random Global Event List"     },
@@ -418,7 +407,7 @@ Selector.new({
         text = 'Choice:',
     }
     :add_combobox{
-        list = List.new_from_table{
+        list = letk.List.new_from_table{
             { CodeGen.DS_NONE        , "None"                              },
             { CodeGen.DS_TIMER       , "Timer Interruption"                },
             { CodeGen.DS_EXTERNAL    , "External Interruption"             },
