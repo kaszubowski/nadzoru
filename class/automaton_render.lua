@@ -1,9 +1,3 @@
---[[
-    TODO:
-        renderizar self-loop
-        cor seecionado
---]]
-
 AutomatonRender    = {}
 AutomatonRender_MT = { __index = AutomatonRender }
 
@@ -41,11 +35,11 @@ local function dot(cr, x, y, c)
 end
 
 local function torad( a )
-    return math.pi * (a/180)
+    return math.pi * ((a%360)/180)
 end
 
 local function todeg( r )
-    return 180*r/math.pi
+    return 180*(r%(2*math.pi))/math.pi
 end
 
 local function arrow(cr, xe, ye, xr, yr, r, c)
@@ -65,6 +59,127 @@ local function arrow(cr, xe, ye, xr, yr, r, c)
     cr:fill()
 end
 
+local function arc_calc( xs, ys, rs, xt, yt, rt, factor )
+    local result
+    factor       = factor or 2
+
+    if not xt or not yt or not rt or not factor then
+        result = {
+            xe = xs - math.cos(5*math.pi/6)*rs,
+            ye = ys - math.sin(5*math.pi/6)*rs,
+            xc = xs,
+            yc = ys - rs,
+            as = 5*math.pi/6,
+            ae = math.pi/6,
+            ar = rs,
+        }
+    else
+        local xp,yp     = (xs - xt)/2 + xt, (ys - yt)/2 + yt --P
+        local xv1, yv1  = xp-xs, yp-ys                       -- V1
+        local xv2, yv2  = -yv1 * factor, xv1 * factor      -- V2
+        local xc, yc    = xv2 + xp, yv2 + yp
+        local r         = math.sqrt(  (xs-xc)^2 + (ys-yc)^2  )
+        local h         = r - math.sqrt( (xp-xc)^2 + (yp-yc)^2 )
+        local s         = math.sqrt( (xp-xs)^2 + (yp-ys)^2 )
+        local xv3, yv3  = yv1/s, -xv1/s                      --V3 (-V2 no factor)
+
+        local as_, qs   = math.acos((xs - xc)/r),(ys - yc)/r
+        local as        = qs >= 0 and as_ or (2*math.pi) - as_
+        local at_, qt   = math.acos((xt - xc)/r),(yt - yc)/r
+        local at        = qt >= 0 and at_ or (2*math.pi) - at_
+
+        --formula da corda c = 2*r*sin(ang/2)
+        local ass, ast = math.asin( rs/(2*r) )*2, math.asin( rt/(2*r) )*2
+
+        if (as <= at and (at-as)<=math.pi) then
+            if (as+ass) < (at-ast) then
+                result = {
+                    xe = xc + math.cos(at-ast)*r,
+                    ye = yc + math.sin(at-ast)*r,
+                    xc = xc,
+                    yc = yc,
+                    as = as+ass,
+                    ae = at-ast,
+                    ar = r,
+                    xp = xp,
+                    yp = yp,
+                    xv3 = xv3,
+                    yv3 = yv3,
+                    h   = h,
+                }
+            end
+        elseif (as > at and (as-at)<=math.pi) then
+            if (as-ass) > (at+ast) then
+                result = {
+                    xe = xc + math.cos(at+ast)*r,
+                    ye = yc + math.sin(at-ast)*r,
+                    xc = xc,
+                    yc = yc,
+                    as = at+ast,
+                    ae = as-ass,
+                    ar = r,
+                    xp = xp,
+                    yp = yp,
+                    xv3 = xv3,
+                    yv3 = yv3,
+                    h   = h,
+                }
+            end
+        elseif as <= at then
+            if (as-ass) < (at+ast) then
+                result = {
+                    xe = xc + math.cos(at+ast)*r,
+                    ye = yc + math.sin(at-ast)*r,
+                    xc = xc,
+                    yc = yc,
+                    as = at+ast,
+                    ae = as-ass,
+                    ar = r,
+                    xp = xp,
+                    yp = yp,
+                    xv3 = xv3,
+                    yv3 = yv3,
+                    h   = h,
+                }
+            end
+        elseif as > at then
+            if (as+ass) > (at-ast) then
+                result = {
+                    xe = xc + math.cos(at-ast)*r,
+                    ye = yc + math.sin(at-ast)*r,
+                    xc = xc,
+                    yc = yc,
+                    as = as+ass,
+                    ae = at-ast ,
+                    ar = r,
+                    xp = xp,
+                    yp = yp,
+                    xv3 = xv3,
+                    yv3 = yv3,
+                    h   = h,
+                }
+            end
+        end
+    end
+    return result
+end
+
+local function write_text(cr,x,y,text,font,color)
+    color = color or { 0,0,0 }
+    cr:select_font_face("sans", cairo.FONT_SLANT_OBLIQUE)
+    cr:set_font_size(font)
+    local txt_ext = cairo.TextExtents.create( )
+    cr:text_extents( text or "", txt_ext )
+    local x_bearing, y_bearing, txt_width, txt_height, x_advance, y_advance = txt_ext:get()
+    txt_ext:destroy()
+    cr:move_to( x -(txt_width/2), y + (txt_height/2) )
+    --~ cr:rotate()
+    cr:set_source_rgb(color[1], color[2], color[3])
+    cr:show_text( text or "" )
+    cr:stroke()
+    return (txt_width/2), (txt_height/2), x -(txt_width/2), y + (txt_height/2)
+end
+
 function AutomatonRender:draw( color_states, color_transitions)
     self.color_states      = color_states or self.color_states
     self.color_transitions = color_transitions or self.color_transitions
@@ -72,10 +187,9 @@ function AutomatonRender:draw( color_states, color_transitions)
 end
 
 function AutomatonRender:drawing_area_expose()
-    local cr   = gdk.cairo_create( self.drawing_area:get_window() )
-    local size = {x=0,y=0}
-
-    local states_position = {}
+    local cr                 = gdk.cairo_create( self.drawing_area:get_window() )
+    local size               = {x=0,y=0}
+    local states_position    = {}
     local create_X, create_Y = 128, 128
 
     for id, state in self.automaton.states:ipairs() do
@@ -91,17 +205,8 @@ function AutomatonRender:drawing_area_expose()
         end
 
         --write name and set r based in name len
-        cr:select_font_face("sans", cairo.FONT_SLANT_OBLIQUE)
-        cr:set_font_size(20)
-        local txt_ext = cairo.TextExtents.create( )
-        cr:text_extents( state.name or "", txt_ext )
-        local x_bearing, y_bearing, txt_width, txt_height, x_advance, y_advance = txt_ext:get()
-        txt_ext:destroy()
-        local r   = (txt_width/2) + 15
-        state.r   = r
-        cr:move_to( x-(txt_width/2), y+(txt_height/2) )
-        cr:show_text(state.name or tostring(id))
-        cr:stroke()
+        local r = write_text(cr,x,y,state.name or tostring(id),20) + 15
+        state.r = r
 
         states_position[#states_position +1] = {x=x,y=y,r=r}
         size.x = math.max(x+r,size.x)
@@ -109,6 +214,12 @@ function AutomatonRender:drawing_area_expose()
         states_position[state]               = #states_position --state is a <table>
 
         cr:set_line_width(2)
+        if self.color_states and self.color_states[id] then
+            local color = self.color_states[id]
+            cr:set_source_rgb(color[1], color[2], color[3])
+        else
+            cr:set_source_rgb(0, 0, 0)
+        end
         cr:arc( x, y, r, 0, 2 * math.pi )
         cr:stroke()
 
@@ -129,7 +240,6 @@ function AutomatonRender:drawing_area_expose()
             cr:fill()
         end
     end
-
     local transitions_out  = {}
     local transitions_self = {}
 
@@ -144,116 +254,134 @@ function AutomatonRender:drawing_area_expose()
             transitions_out[index] = transitions_out[index] or {xs=xs, ys=ys, rs=rs, xt=xt, yt=yt, rt=rt, factor = 2 }
             table.insert( transitions_out[index], trans.event.name )
         else
-            transitions_self[source_id] = transitions_self[source_id] or {
+            local index                = source_id .. '_' .. target_id
+            transitions_self[index] = transitions_self[index] or {
                 x = states_position[source_id].x,
                 y = states_position[source_id].y,
                 r = states_position[source_id].r
             }
-            table.insert( transitions_self[source_id], trans.event.name )
+            table.insert( transitions_self[index], trans.event.name )
         end
     end
 
-
     for c,v in pairs( transitions_out ) do
-        local xp,yp     = (v.xs - v.xt)/2 + v.xt, (v.ys - v.yt)/2 + v.yt --P
-        local xv1, yv1  = xp-v.xs, yp-v.ys -- V1
-        local xv2, yv2  = -yv1*v.factor, xv1*v.factor --V2
-        local xc, yc    = xv2+xp, yv2+yp
-        local r         = math.sqrt(  (v.xs-xc)^2 + (v.ys-yc)^2  )
-        local h         = r - math.sqrt( (xp-xc)^2 + (yp-yc)^2 )
-        local s         = math.sqrt( (xp-v.xs)^2 + (yp-v.ys)^2 )
-        local xv3, yv3  = yv1/s, -xv1/s --V3 (-V2 no factor)
-
-        local as_, qs   = math.acos((v.xs - xc)/r),(v.ys - yc)/r
-        local as        = qs >= 0 and as_ or (2*math.pi) - as_
-        local at_, qt   = math.acos((v.xt - xc)/r),(v.yt - yc)/r
-        local at        = qt >= 0 and at_ or (2*math.pi) - at_
-
-        --formula da corda c = 2*r*sin(ang/2)
-        local ass, ast = math.asin( v.rs/(2*r) )*2, math.asin( v.rt/(2*r) )*2
-
-        if (as <= at and (at-as)<=math.pi) then
-            if (as+ass) < (at-ast) then
-                local xe, ye = xc + math.cos(at-ast)*r, yc + math.sin(at-ast)*r
-                arrow(cr, xe, ye, v.xt, v.yt, v.rt, {0.15, 0.15, 0.15})
-                cr:set_source_rgb(0.15, 0.15, 0.15)
-                cr:arc( xc, yc, r, as+ass, at-ast )
+        local result = arc_calc( v.xs, v.ys, v.rs, v.xt, v.yt, v.rt, v.factor )
+        if result then
+            if self.color_transitions and self.color_transitions[c] then
+                local color = self.color_transitions[c]
+                cr:set_source_rgb(color[1], color[2], color[3])
+                cr:arc( result.xc, result.yc, result.ar, result.as, result.ae )
                 cr:stroke()
-            end
-        elseif (as > at and (as-at)<=math.pi) then
-            if (as-ass) > (at+ast) then
-                local xe, ye = xc + math.cos(at+ast)*r, yc + math.sin(at-ast)*r
-                arrow(cr, xe, ye, v.xt, v.yt, v.rt, {0.15, 0.15, 0.15})
-                cr:set_source_rgb(0.15, 0.15, 0.15)
-                cr:arc( xc, yc, r, at+ast, as-ass )
+                arrow(cr, result.xe, result.ye, v.xt, v.yt, v.rt, {color[1], color[2], color[3]})
+            else
+                cr:set_source_rgb(0, 0, 0)
+                cr:arc( result.xc, result.yc, result.ar, result.as, result.ae )
                 cr:stroke()
+                arrow(cr, result.xe, result.ye, v.xt, v.yt, v.rt, {0, 0, 0})
             end
-        elseif as <= at then
-            if (as-ass) < (at+ast) then
-                local xe, ye = xc + math.cos(at+ast)*r, yc + math.sin(at-ast)*r
-                arrow(cr, xe, ye, v.xt, v.yt, v.rt, {0.15, 0.15, 0.15})
-                cr:set_source_rgb(0.15, 0.15, 0.15)
-                cr:arc( xc, yc, r, at+ast, as-ass )
-                cr:stroke()
-            end
-        elseif as > at then
-            if (as+ass) > (at-ast) then
-                local xe, ye = xc + math.cos(at-ast)*r, yc + math.sin(at-ast)*r
-                arrow(cr, xe, ye, v.xt, v.yt, v.rt, {0.15, 0.15, 0.15})
-                cr:set_source_rgb(0.15, 0.15, 0.15)
-                cr:arc( xc, yc, r, as+ass, at-ast )
-                cr:stroke()
-            end
+            --write even's name
+            write_text(cr, result.xp + result.xv3*(result.h+10), result.yp + result.yv3*(result.h+10), table.concat(v,","), 14)
         end
-
-        --write even's name
-        cr:select_font_face("sans", cairo.FONT_SLANT_OBLIQUE)
-        cr:set_font_size(14)
-        local txt_ext = cairo.TextExtents.create( )
-        cr:text_extents( table.concat(v,",") or "", txt_ext )
-        local x_bearing, y_bearing, txt_width, txt_height, x_advance, y_advance = txt_ext:get()
-        txt_ext:destroy()
-        local ttx, tty = xp + xv3*(h+10) -(txt_width/2), yp + yv3*(h+10) + (txt_height/2)
-        cr:move_to( ttx, tty )
-        --~ cr:rotate()
-        cr:show_text( table.concat(v,",") or "" )
-        cr:stroke()
     end
 
     for c,v in pairs(transitions_self) do
-        cr:set_source_rgb(0.15, 0.15, 0.15)
-        cr:arc( v.x, v.y - v.r, v.r, 10*math.pi/12, math.pi/6 )
-        cr:stroke()
-        local xle, yle = v.x - math.cos(10*math.pi/12)*v.r, v.y - math.sin(10*math.pi/12)*v.r
-        arrow(cr, xle, yle, xle, yle+v.r, v.r, {0.15, 0.15, 0.15})
+        local result = arc_calc( v.x, v.y, v.r, nil, nil, nil, nil )
 
-        cr:select_font_face("sans", cairo.FONT_SLANT_OBLIQUE)
-        cr:set_font_size(14)
-        local txt_ext = cairo.TextExtents.create( )
-        cr:text_extents( table.concat(v,",") or "", txt_ext )
-        local x_bearing, y_bearing, txt_width, txt_height, x_advance, y_advance = txt_ext:get()
-        txt_ext:destroy()
-        local ttx, tty = v.x -(txt_width/2), v.y - 2*v.r -(txt_height/2)
-        cr:move_to( ttx, tty )
-        cr:show_text( table.concat(v,",") or "" )
-        cr:stroke()
+        if result then
+            if self.color_transitions and self.color_transitions[c] then
+                local color = self.color_transitions[c]
+                cr:set_source_rgb(color[1], color[2], color[3])
+                cr:arc( result.xc, result.yc, result.ar, result.as, result.ae )
+                cr:stroke()
+                arrow(cr, result.xe, result.ye, result.xe, result.ye + v.r, v.r, {color[1], color[2], color[3]})
+            else
+                cr:set_source_rgb(0, 0, 0)
+                cr:arc( result.xc, result.yc, result.ar, result.as, result.ae )
+                cr:stroke()
+                arrow(cr, result.xe, result.ye, result.xe, result.ye + v.r, v.r, {0, 0, 0})
+            end
+
+            --write even's name
+            write_text(cr, v.x, v.y - 2*v.r - 8, table.concat(v,","), 14)
+        end
     end
 
-    self.drawing_area:set_size_request( size.x+100, size.y+100 )
+    self.drawing_area:set_size_request( size.x+128, size.y+128 )
     cr:destroy()
 end
 
-function AutomatonRender:convert_point(x,y)
-
+local function two_point_angle(x1,y1,x2,y2)
+    local hip    = math.sqrt( (x1-x2)^2 + (y1-y2)^2 )
+    local xn, yn = (x2 - x1)/hip, (y2 - y1)/hip
+    local _x = math.acos( xn )
+    if yn >= 0 then
+        return _x, hip
+    else
+        return 2*math.pi - _x, hip
+    end
 end
 
 function AutomatonRender:select_element(x,y)
+    local state_index = {}
     for id, state in self.automaton.states:ipairs() do
+        state_index[ state ] = id
         local r = state.r or 20
         if ( (x-state.x)^2 + (y-state.y)^2 ) <= (r^2) then
             return { object = state, id = id, type = 'state' }
         end
     end
+
+    local tran_select = {}
+
+    for id, transitions in self.automaton.transitions:ipairs() do
+        local s, t, e = transitions.source, transitions.target, transitions.event
+        if not tran_select.type then
+            local r
+            if s ~= t then
+                r = arc_calc( s.x, s.y, s.r or 10, t.x, t.y, t.r or 10, 2 )
+            else
+                r = arc_calc( s.x, s.y, s.r or 10 )
+            end
+            if r then
+                local a, hip = two_point_angle( r.xc, r.yc, x, y)
+                if r.ae < r.as then
+                     if ( (a >= r.as and a <= 2*math.pi) or a <= r.ae ) and hip <= r.ar + 3 and hip >= r.ar - 3 then
+                        tran_select.type   = 'transition'
+                        tran_select.source = state_index[s]
+                        tran_select.target = state_index[t]
+                        tran_select.index  = state_index[s] .. '_' .. state_index[t]
+                        tran_select[#tran_select +1] = {
+                            object = transitions,
+                            id     = id
+                        }
+                    end
+
+                else
+                    if a >= r.as and a <= r.ae and hip <= r.ar + 3 and hip >= r.ar - 3 then
+                        tran_select.type   = 'transition'
+                        tran_select.source = state_index[s]
+                        tran_select.target = state_index[t]
+                        tran_select.index  = state_index[s] .. '_' .. state_index[t]
+                        tran_select[#tran_select +1] = {
+                            object = transitions,
+                            id     = id
+                        }
+                    end
+                end
+            end
+        else
+            if s ==  tran_select.source and t == tran_select.target then
+                tran_select[#tran_select +1] = {
+                        object = transitions,
+                        id     = id
+                    }
+            end
+        end
+    end
+    if tran_select.type then
+        return tran_select
+    end
+
 
     return false
 end

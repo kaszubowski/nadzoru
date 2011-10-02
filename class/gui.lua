@@ -16,10 +16,10 @@
 
     Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
 --]]
-Gui          = {}
-Gui_MT = { __index = Gui }
+Gui         = {}
+Gui.__index = Gui
 
-setmetatable( Gui, Object_MT )
+setmetatable( Gui, Object )
 
 ---
 -- Constructor
@@ -27,10 +27,10 @@ setmetatable( Gui, Object_MT )
 -- @return A new Gui instance
 function Gui.new()
     local self     = Object.new()
-    setmetatable( self, Gui_MT )
+    setmetatable( self, Gui )
 
     self.note         = gtk.Notebook.new()
-    self.tab          = List.new()
+    self.tab          = letk.List.new()
 
     self.window       = gtk.Window.new(gtk.WINDOW_TOPLEVEL)
     self.vbox         = gtk.VBox.new(false, 0)
@@ -67,7 +67,7 @@ function Gui.new()
     self.window:add(self.vbox)
 
     --** window defines **--
-    self.window:set("title", "nadzoru - simulator", "width-request", 800,
+    self.window:set("title", "nadzoru", "width-request", 800,
         "height-request", 600, "window-position", gtk.WIN_POS_CENTER,
         "icon-name", "gtk-about")
 

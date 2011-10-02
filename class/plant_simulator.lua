@@ -1,11 +1,11 @@
-PlantSimulator    = {}
-PlantSimulator_MT = { __index = PlantSimulator }
+PlantSimulator         = {}
+PlantSimulator.__index = PlantSimulator
 
-setmetatable( PlantSimulator, Object_MT )
+setmetatable( PlantSimulator, Object )
 
 function PlantSimulator.new( gui, simulator )
     local self = Object.new()
-    setmetatable( self, PlantSimulator_MT )
+    setmetatable( self, PlantSimulator )
 
     self.simulator = simulator
     self.automaton = self.simulator.automaton

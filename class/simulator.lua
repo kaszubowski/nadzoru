@@ -17,14 +17,14 @@
     Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
 --]]
 
-Simulator = {}
-Simulator_MT = { __index = Simulator }
+Simulator         = {}
+Simulator.__index = Simulator
 
-setmetatable( Simulator, Object_MT )
+setmetatable( Simulator, Object )
 
 function Simulator.new( gui, automaton )
     local self = Object.new()
-    setmetatable( self, Simulator_MT )
+    setmetatable( self, Simulator )
     self.gui            = gui
 
     self:automaton_load( automaton )

@@ -97,6 +97,22 @@ function AutomatonEditor.new( gui, automaton )
 
     self:update_treeview_events()
 
+    -- *** State Edit Window *** --
+    self.state_window = {}
+    self.state_window.window = gtk.Window.new(gtk.WINDOW_TOPLEVEL)
+    self.state_window.vbox   = gtk.VBox.new(false, 0)
+    self.state_window.hbox_1 = gtk.HBox.new(false, 0)
+        self.state_window.lbl_nm = gtk.Label.new("Name")
+        self.state_window.lbl_nm:set("xalign", 1)
+        self.state_window.ent_nm = gtk.Entry.new()
+    self.state_window.hbox_2 = gtk.HBox.new(false, 0)
+   
+    
+    self.state_window.window:set("title", "nadzoru - edit state", "width-request", 300,
+        "height-request", 200, "window-position", gtk.WIN_POS_CENTER,
+        "icon-name", "gtk-about")
+
+
     return self
 end
 
@@ -114,12 +130,13 @@ function AutomatonEditor:toolbar_set_unset_operation( mode )
 
     if active then
         self.operation = mode
-
         for _, b in ipairs( btn ) do
             if b ~= mode then
                 self['btn_act_' .. b]:set('active',false)
             end
         end
+        self.last_element = nil
+        self.render:draw({},{})
     else
         if self.operation == mode then
             self.operation = nil
@@ -172,22 +189,29 @@ function AutomatonEditor:drawing_area_press( event )
 
     --Botão para estado marcado, botão para estado inicial
 
-    if self.operation == 'state' then
+    if self.operation == 'edit' then
+        if element and element.type == 'state' then
+            self.render:draw({[element.id] = {0.85,0,0}},{})
+        elseif element and element.type == 'transition' then
+            self.render:draw({},{[element.index] = {0.85,0,0}})
+        end
+    elseif self.operation == 'state' then
         local id = self.automaton:state_add()
         self.automaton:state_set_position( id, x, y )
-        self.render:draw()
+        self.render:draw({},{})
     elseif self.operation == 'move' then
         if self.last_element and self.last_element.type == 'state' then
             self.automaton:state_set_position( self.last_element.id, x, y )
             self.last_element = nil
-            self.render:draw()
+            self.render:draw({},{})
         elseif element and element.type == 'state' then
             self.last_element = element
+            self.render:draw({ [element.id] = {0.85,0,0} }, {})
         end
     elseif self.operation == 'initial' then
         if element and element.type == 'state' then
             self.automaton:state_set_initial( element.id )
-            self.render:draw()
+            self.render:draw({},{})
         end
     elseif self.operation == 'marked' then
         if element and element.type == 'state' then
@@ -196,12 +220,15 @@ function AutomatonEditor:drawing_area_press( event )
             else
                 self.automaton:state_set_marked( element.id )
             end
-            self.render:draw()
+            self.render:draw({},{})
         end
     elseif self.operation == 'delete' then
         if element and element.type == 'state' then
             self.automaton:state_remove( element.id )
-            self.render:draw()
+            self.render:draw({},{})
+        elseif element and element.type == 'transition' then
+            self.automaton:transition_remove( element.id )
+            self.render:draw({},{})
         end
     elseif self.operation == 'transition' then
         if self.last_element and self.last_element.type == 'state' and element and element.type == 'state' then
@@ -210,9 +237,10 @@ function AutomatonEditor:drawing_area_press( event )
                 self.automaton:transition_add( self.last_element.id, element.id, event_id )
             end
             self.last_element = nil
-            self.render:draw()
+            self.render:draw({},{})
         elseif element and element.type == 'state' then
             self.last_element = element
+            self.render:draw({[element.id] = {0.85,0,0} },{})
         end
     end
 end

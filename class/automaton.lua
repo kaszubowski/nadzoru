@@ -23,9 +23,9 @@ setmetatable( Automaton, Object_MT )
 
 function Automaton.new()
     local self       = Object.new()
-    self.states      = List.new()
-    self.events      = List.new()
-    self.transitions = List.new()
+    self.states      = letk.List.new()
+    self.events      = letk.List.new()
+    self.transitions = letk.List.new()
     self.info        = {}
     self.initial     = nil
 
@@ -65,8 +65,8 @@ function Automaton:state_add( name, marked, initial )
         marked          = marked  or false,
         event_target    = {},
         event_source    = {},
-        transitions_in  = List.new(),
-        transitions_out = List.new(),
+        transitions_in  = letk.List.new(),
+        transitions_out = letk.List.new(),
         name            = name or tostring( self.states:len() + 1 ),
     }
     if initial then
@@ -183,7 +183,7 @@ function Automaton:event_add(name, observable, controllable)
         observable   = observable or false,
         controllable = controllable or false,
         name         = name,
-        transitions  = List.new(),
+        transitions  = letk.List.new(),
     }
 end
 
@@ -591,24 +591,4 @@ function Automaton:syncronize( p2, ... )
     --~ end
 
 end
-
---test
---~ require('object')
---~ require('list')
---~ require('lxp')
---~ local test = Automaton.new()
---~ test:IDES_import('../examples/G3.xmd')
---~ print(test:state_len())
---~ print(test:event_len())
---~ print(test:transition_len())
---~ for c,v in test.transitions:ipairs() do
-    --~ print(c, v.event.name )
---~ end
---~ test:state_remove(2)
---~ print(test:state_len())
---~ print(test:event_len())
---~ print(test:transition_len())
---~ for c,v in test.transitions:ipairs() do
-    --~ print(c, v.event.name )
---~ end
 

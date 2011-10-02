@@ -24,7 +24,7 @@ function CodeGen.new( options )
     setmetatable( self, CodeGen_MT )
 
     options = table.complete( options, {
-        automatons = List.new(),
+        automatons = letk.List.new(),
         random_fn  = CodeGen.RANDOM_PSEUDOFIX,
         choice_fn  = CodeGen.CHOICE_RANDOM,
         input_fn   = CodeGen.INPUT_TIMER,

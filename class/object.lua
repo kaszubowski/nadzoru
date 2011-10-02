@@ -1,9 +1,9 @@
-Object    = {}
-Object_MT = { __index = Object }
+Object         = {}
+Object.__index = Object
 
 function Object.new( )
     local self = {}
-    setmetatable( self, Object_MT )
+    setmetatable( self, Object )
 
     self.triggers = {}
 

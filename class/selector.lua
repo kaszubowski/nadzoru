@@ -1,13 +1,13 @@
 --[[
     TODO:
-    --text input: for automaton name
-    --use multiple_selector in a language field (button
+    --text input: e.g. for automaton name
+    --use multiple_selector in a language field (button)
 --]]
 
-Selector    = {}
-Selector_MT = { __index = Selector }
+Selector         = {}
+Selector.__index = Selector
 
-setmetatable( Selector, Object_MT )
+setmetatable( Selector, Object )
 
 function Selector.new( options )
     options = table.complete( options or {}, {
@@ -18,7 +18,7 @@ function Selector.new( options )
     self.options     = options
     self.result      = {}
     self.num_columns = 0
-    setmetatable( self, Selector_MT )
+    setmetatable( self, Selector )
 
     self.window                   = gtk.Window.new( gtk.TOP_LEVEL )
         self.vbox_main            = gtk.VBox.new(false, 0)
@@ -55,7 +55,7 @@ end
 
 function Selector:multipler_selector( options )
     options = table.complete( options or {}, {
-        list        = List.new(),
+        list        = letk.List.new(),
         text_fn     = nil,
         text_input  = 'input',
         text_output = 'output',
@@ -103,8 +103,8 @@ function Selector:multipler_selector( options )
     window:connect("delete-event", window.destroy, window)
     --btn_cancel:connect("clicked", function())
 
-    local list_input  = List.new()
-    local list_output = List.new()
+    local list_input  = letk.List.new()
+    local list_output = letk.List.new()
 
     for k, v in options.list:ipairs() do
         list_input:append( v )
@@ -160,7 +160,7 @@ end
 
 function Selector:add_combobox( options )
     options = table.complete( options or {}, {
-        list        = List.new(),
+        list        = letk.List.new(),
         text_fn     = nil,
         text        = 'input',
     })
@@ -188,7 +188,7 @@ end
 
 function Selector:add_multipler( options )
     options = table.complete( options or {}, {
-        list        = List.new(),
+        list        = letk.List.new(),
         text_fn     = nil,
         text        = 'input',
     })
