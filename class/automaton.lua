@@ -16,43 +16,35 @@
 
     Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
 --]]
-Automaton = {}
-Automaton_MT = { __index = Automaton }
-
-setmetatable( Automaton, Object_MT )
-
-function Automaton.new()
-    local self       = Object.new()
+Automaton = letk.Class( function( self )
+    Object.new( self )
     self.states      = letk.List.new()
     self.events      = letk.List.new()
     self.transitions = letk.List.new()
-    self.info        = {}
+    --~ self.info        = {}
     self.initial     = nil
-
-    return setmetatable( self , Automaton_MT )
-
-end
+end, Object )
 
 ------------------------------------------------------------------------
 --                        automaton informations                      --
 ------------------------------------------------------------------------
-function Automaton:info_set( key, value )
-    if key ~= nil then
-        self.info[key] = value
-    end
-end
-
-function Automaton:info_unset( key )
-    if key ~= nil then
-        self.info[key] = nil
-    end
-end
-
-function Automaton:info_get( key )
-    if key ~= nil then
-        return self.info[key]
-    end
-end
+--~ function Automaton:info_set( key, value )
+    --~ if key ~= nil then
+        --~ self.info[key] = value
+    --~ end
+--~ end
+--~
+--~ function Automaton:info_unset( key )
+    --~ if key ~= nil then
+        --~ self.info[key] = nil
+    --~ end
+--~ end
+--~
+--~ function Automaton:info_get( key )
+    --~ if key ~= nil then
+        --~ return self.info[key]
+    --~ end
+--~ end
 
 ------------------------------------------------------------------------
 --               automaton manipulation and definition                --
@@ -256,6 +248,13 @@ end
 function Automaton:event_set_name( id, name )
     local event = self.events:find( id )
     if not event then return end
+    name = name:gsub('[^%&%w%_]','')
+    if name:find('%&') then
+        name = '&'
+    end
+    if name:find('EMPTYWORD') then
+        name = '&'
+    end
 
     event.name = name
 
@@ -451,7 +450,20 @@ end
 
 
 
---Operations :)
+-- *** Operations *** --
+function Automaton:check()
+    local problems = {}
+    local ok       = true
+    if self.initial then
+        problems.initial = false
+    else
+        problems.initial = true
+        ok               = false
+    end
+
+    return ok, problems
+end
+
 function Automaton:clone()
     local new_automaton = Automaton.new()
     local state_map = {}
@@ -487,6 +499,19 @@ function Automaton:accessible( remove_states )
     local s = self.states:get( self.initial )
 
     accessible_search( s )
+
+    if remove_states then
+        local states_toremove, i = {}, 0
+        for k_s, s in self.states:ipairs() do
+            if s.no_accessible then
+                states_toremove[i+1] = k_s - i
+                i = i+1
+            end
+        end
+        for j = 1,i do
+            self:state_remove( states_toremove[j] )
+        end
+    end
 end
 
 local function coaccessible_search( s )
@@ -508,6 +533,19 @@ function Automaton:coaccessible( remove_states )
     for k_s, s in self.states:ipairs() do
         if s.no_coaccessible and s.marked then
             coaccessible_search( s )
+        end
+    end
+
+    if remove_states then
+        local states_toremove, i = {}, 0
+        for k_s, s in self.states:ipairs() do
+            if s.no_coaccessible then
+                states_toremove[i+1] = k_s - i
+                i = i+1
+            end
+        end
+        for j = 1,i do
+            self:state_remove( states_toremove[j] )
         end
     end
 end
@@ -556,7 +594,7 @@ function Automaton:join_no_coaccessible_states()
     end
 end
 
-function Automaton:syncronize( p2, ... )
+--~ function Automaton:syncronize( p2, ... )
     --~ local p1     = self
     --~ local new    = Automaton.new()
     --~ local map_t  = {}
@@ -589,6 +627,5 @@ function Automaton:syncronize( p2, ... )
             --~ end
         --~ end
     --~ end
-
-end
+--~ end
 

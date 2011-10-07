@@ -61,15 +61,7 @@ require('class.plant_simulator')
 require('class.automaton_render')
 require('class.automaton_editor')
 
-Controller    = {}
-Controller_MT = { __index = Controller }
-
-setmetatable( Controller, Object_MT )
-
-function Controller.new()
-    local self = Object.new()
-    setmetatable( self, Controller_MT )
-
+Controller = letk.Class( function( self )
     self.gui              = Gui.new()
     self.elements         = letk.List.new()
     self.active_automaton = nil
@@ -77,9 +69,7 @@ function Controller.new()
 
     self.gui:run()
     self:build()
-
-    return self
-end
+end, Object )
 
 function Controller:build()
     -----------------------------------
@@ -149,22 +139,6 @@ end
 
 function Controller:automaton_add( new_automaton )
     self.elements:append( new_automaton )
---[[
-    new_automaton:info_set( 'position', position )
-    local menu_item = self.gui:append_menu_item(
-        'automatonlist',
-        {
-            caption = new_automaton:info_get( 'short_file_name' ) or new_automaton:info_get( 'file_name' ),
-            fn      = function( data )
-                data.param.controller.active_automaton = data.param.position
-            end,
-            param   = { controller = self, position = position },
-            type    = 'radio',
-        }
-    )
-
-    new_automaton:info_set( 'menu_item', menu_item )
---]]
 end
 
 --[[
@@ -186,7 +160,7 @@ end
 
 function Controller.create_new_automaton( data )
     local new_automaton = Automaton.new()
-    new_automaton:info_set('short_file_name', '*new' )
+    new_automaton:set('file_name', '*new' )
     data.param:automaton_add( new_automaton )
 end
 
@@ -208,8 +182,8 @@ function Controller.import_ides( data )
         for k_filename, filename in ipairs( filenames ) do
             local new_automaton = Automaton.new()
             new_automaton:IDES_import( filename )
-            new_automaton:info_set('file_name', filename)
-            new_automaton:info_set('short_file_name', select( 3, filename:find( '.-([^/^\\]*)$' ) ) )
+            new_automaton:set('full_file_name', filename)
+            new_automaton:set('file_name', select( 3, filename:find( '.-([^/^\\]*)$' ) ) )
             data.param:automaton_add( new_automaton )
         end
     end
@@ -232,7 +206,7 @@ function Controller.simulate_graphviz( data )
     :add_combobox{
         list = data.param.elements,
         text_fn  = function( a )
-            return a:info_get( 'short_file_name' )
+            return a:get( 'file_name' )
         end,
         text = 'Automaton:'
     }
@@ -256,7 +230,7 @@ function Controller.simulate_plant( data )
     :add_combobox{
         list = simulators,
         text_fn  = function( a )
-            return a.automaton:info_get( 'short_file_name' )
+            return a.automaton:get( 'file_name' )
         end,
         text = 'Automaton:'
     }
@@ -276,7 +250,7 @@ function Controller.automaton_edit( data )
     :add_combobox{
         list = data.param.elements,
         text_fn  = function( a )
-            return a:info_get( 'short_file_name' )
+            return a:get( 'file_name' )
         end,
         text = 'Automaton:'
     }
@@ -288,17 +262,19 @@ Selector.new({
         title = 'nadzoru',
         success_fn = function( results, numresult )
             local automatons  = results[1]
-            local random_type = results[2] and results[2][1] or 1
-            local choice      = results[3] and results[3][1] or 1
-            local input_fn    = results[4] and results[4][1] or 1
+            local random_type = results[2] and results[2][1]
+            local choice      = results[3] and results[3][1]
+            local input_fn    = results[4] and results[4][1]
             local file        = results[5] or './nofilename'
-            if automatons and random_type then
+            local device      = results[6] and results[6][1]
+            if automatons and random_type and choice and input_fn and device then
                 local cg = CodeGen.new{
                     automatons = letk.List.new_from_table( automatons ) ,
                     random_fn  = random_type,
                     choice_fn  = choice,
                     input_fn   = input_fn,
                     file_name  = file,
+                    device     = device,
                 }
                 if  cg then
                     cg:execute()
@@ -309,7 +285,7 @@ Selector.new({
     :add_multipler{
         list = data.param.elements,
         text_fn  = function( a )
-            return a:info_get( 'short_file_name' )
+            return a:get( 'file_name' )
         end,
         text = 'Automaton:'
     }
@@ -351,6 +327,15 @@ Selector.new({
     :add_file{
         text = 'file',
     }
+    :add_combobox{
+        list = letk.List.new_from_table{
+            { 'pic18f' , "PIC18F"    },
+        },
+        text_fn  = function( a )
+            return a[2]
+        end,
+        text = 'Device:',
+    }
     :run()
 end
 
@@ -378,7 +363,7 @@ Selector.new({
     :add_combobox{
         list = data.param.elements,
         text_fn  = function( a )
-            return a:info_get( 'short_file_name' )
+            return a:get( 'file_name' )
         end,
         text = 'Automaton:'
     }
@@ -438,8 +423,8 @@ function Controller.operations_accessible( data )
             local automaton = results[1]
             if automaton then
                 local new_automaton = automaton:clone()
-                new_automaton:accessible()
-                new_automaton:info_set('short_file_name', 'accessible(' .. automaton:info_get('short_file_name') .. ')')
+                new_automaton:accessible( results[2] )
+                new_automaton:set('file_name', 'accessible(' .. automaton:get('file_name') .. ')')
                 data.param.elements:append( new_automaton )
             end
         end,
@@ -447,7 +432,7 @@ function Controller.operations_accessible( data )
     :add_combobox{
         list = data.param.elements,
         text_fn  = function( a )
-            return a:info_get( 'short_file_name' )
+            return a:get( 'file_name' )
         end,
         text = 'Automaton:'
     }
@@ -464,8 +449,8 @@ function Controller.operations_coaccessible( data )
             local automaton = results[1]
             if automaton then
                 local new_automaton = automaton:clone()
-                new_automaton:coaccessible()
-                new_automaton:info_set('short_file_name', 'coaccessible(' .. automaton:info_get('short_file_name') .. ')')
+                new_automaton:coaccessible( results[2] )
+                new_automaton:set('file_name', 'coaccessible(' .. automaton:get('file_name') .. ')')
                 data.param.elements:append( new_automaton )
             end
         end,
@@ -473,7 +458,7 @@ function Controller.operations_coaccessible( data )
     :add_combobox{
         list = data.param.elements,
         text_fn  = function( a )
-            return a:info_get( 'short_file_name' )
+            return a:get( 'file_name' )
         end,
         text = 'Automaton:'
     }
@@ -491,7 +476,7 @@ function Controller.operations_join_no_coaccessible( data )
             if automaton then
                 local new_automaton = automaton:clone()
                 new_automaton:join_no_coaccessible_states()
-                new_automaton:info_set('short_file_name', 'join_no_coaccessible(' .. automaton:info_get('short_file_name') .. ')')
+                new_automaton:set('file_name', 'join_no_coaccessible(' .. automaton:get('file_name') .. ')')
                 data.param.elements:append( new_automaton )
             end
         end,
@@ -499,7 +484,7 @@ function Controller.operations_join_no_coaccessible( data )
     :add_combobox{
         list = data.param.elements,
         text_fn  = function( a )
-            return a:info_get( 'short_file_name' )
+            return a:get( 'file_name' )
         end,
         text = 'Automaton:'
     }
@@ -519,7 +504,7 @@ function Controller.operations_sync( data )
     :add_multipler{
         list = data.param.elements,
         text_fn  = function( a )
-            return a:info_get( 'short_file_name' )
+            return a:get( 'file_name' )
         end,
         text = 'Automaton:'
     }

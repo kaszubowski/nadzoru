@@ -17,11 +17,6 @@
     Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
 --]]
 
-GraphvizSimulator = {}
-GraphvizSimulator_MT = { __index = GraphvizSimulator }
-
-setmetatable( GraphvizSimulator, Simulator_MT )
-
 --Info
 local info = {
     {'coaccessible', "Coaccessible"},
@@ -60,10 +55,7 @@ function info.coaccessible( self )
     gtk.InfoDialog.showInfo( string.format("No Coaccessible States: (found: %i)\n", count) .. table.concat( text_lines, ", \n" ) )
 end
 
-function GraphvizSimulator.new( gui, automaton )
-    local self = Simulator.new( gui, automaton )
-    setmetatable( self, GraphvizSimulator_MT )
-
+GraphvizSimulator = letk.Class( function( self, gui, automaton )
     self.image         = nil
 
     self.hbox          = gtk.HBox.new( false, 0 )
@@ -108,17 +100,14 @@ function GraphvizSimulator.new( gui, automaton )
             self.hbox_draw_deep:pack_start( self.sb_draw_deep, true, true, 0 )
     self.hbox:pack_start( self.scrolled, true, true, 0 )
 
-    gui:add_tab( self.hbox, 'SG ' .. (automaton:info_get('short_file_name') or '-x-'), self.destroy, self )
+    gui:add_tab( self.hbox, 'SG ' .. (automaton:get('file_name') or '-x-'), self.destroy, self )
 
     --Build
     self:update_treeview()
     self:draw()
     self.drawing_area:connect("expose-event", self.drawing_area_expose, self )
     self.btn_statejump:connect('clicked', self.statejump_cb, self)
-
-
-    return self
-end
+end, Object )
 
 function GraphvizSimulator.info( self )
     local fn_name = info[ self.cbx_info:get_active() + 1 ][1]

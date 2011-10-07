@@ -1,12 +1,4 @@
-PlantSimulator         = {}
-PlantSimulator.__index = PlantSimulator
-
-setmetatable( PlantSimulator, Object )
-
-function PlantSimulator.new( gui, simulator )
-    local self = Object.new()
-    setmetatable( self, PlantSimulator )
-
+PlantSimulator = letk.Class( function( self, gui, simulator )
     self.simulator = simulator
     self.automaton = self.simulator.automaton
     self.gui       = gui
@@ -20,14 +12,12 @@ function PlantSimulator.new( gui, simulator )
         self.hbox:pack_start(self.scrolled, true, true, 0)
             self.scrolled:add_with_viewport(self.drawing_area)
 
-    gui:add_tab( self.vbox, 'PS ' .. (self.automaton:info_get('short_file_name') or '-x-' ) )
+    gui:add_tab( self.vbox, 'PS ' .. (self.automaton:get('file_name') or '-x-' ) )
 
     self.glrender = GLRender.new( self.drawing_area )
     --Jogar para o :run()
     self:set_render_callback()
-
-    return self
-end
+end, Object )
 
 function PlantSimulator:load_plant( filename )
 

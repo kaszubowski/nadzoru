@@ -1,12 +1,4 @@
-AutomatonEditor    = {}
-AutomatonEditor_MT = { __index = AutomatonEditor }
-
-setmetatable( AutomatonEditor, Object_MT )
-
-function AutomatonEditor.new( gui, automaton )
-    local self = {}
-    setmetatable( self, AutomatonEditor_MT )
-
+AutomatonEditor = letk.Class( function( self, gui, automaton )
     self.operation = nil
     self.automaton = automaton
 
@@ -93,7 +85,7 @@ function AutomatonEditor.new( gui, automaton )
     self.btn_act_delete:connect( 'toggled', self.set_act_delete, self )
     self.toolbar:insert( self.btn_act_delete, -1 )
 
-    gui:add_tab( self.vbox, 'edit ' .. (automaton:info_get('short_file_name') or '-x-') )
+    gui:add_tab( self.vbox, 'edit ' .. (automaton:get('file_name') or '-x-') )
 
     self:update_treeview_events()
 
@@ -106,15 +98,12 @@ function AutomatonEditor.new( gui, automaton )
         self.state_window.lbl_nm:set("xalign", 1)
         self.state_window.ent_nm = gtk.Entry.new()
     self.state_window.hbox_2 = gtk.HBox.new(false, 0)
-   
-    
+
+
     self.state_window.window:set("title", "nadzoru - edit state", "width-request", 300,
         "height-request", 200, "window-position", gtk.WIN_POS_CENTER,
         "icon-name", "gtk-about")
-
-
-    return self
-end
+end, Object )
 
 function AutomatonEditor:update_treeview_events()
     self.treeview_events:clear_data()

@@ -3,7 +3,7 @@
 CodeGen    = {}
 CodeGen_MT = { __index = CodeGen }
 
-require'class.code_gen.template_c'
+--~ require'class.code_gen.template_c'
 
 CodeGen.RANDOM_PSEUDOFIX    = 1
 CodeGen.RANDOM_PSEUDOAD     = 2
@@ -18,64 +18,67 @@ CodeGen.INPUT_MULTIPLEXED   = 2
 --CodeGen.INPUT_EXTERNAL      = 3
 CodeGen.SUPTYPE_MONOLITIC   = 1
 CodeGen.SUPTYPE_MODULAR     = 2
+CodeGen.PICC                = 1
+CodeGen.SDCC                = 2
 
-function CodeGen.new( options )
-    self = {}
-    setmetatable( self, CodeGen_MT )
+CodeGen.devices = require 'res.codegen.devices.main'
 
-    options = table.complete( options, {
-        automatons = letk.List.new(),
+function CodeGen.new( self )
+    assert(self.automatons,'ERRO automat(on/a) expeted')
+    assert(self.device,    'ERRO device expeted')
+
+    table.complete( self, {
         random_fn  = CodeGen.RANDOM_PSEUDOFIX,
         choice_fn  = CodeGen.CHOICE_RANDOM,
         input_fn   = CodeGen.INPUT_TIMER,
+        compiler   = CodeGen.PICC,
         file_name  = 'code',
+        ad_port    = 'AN0',
+        use_lcd    = true,
     })
 
-    local num_automatons = options.automatons:len()
+    setmetatable( self, CodeGen_MT )
+
+    local num_automatons = self.automatons:len()
     if num_automatons == 0 then return end
     if num_automatons == 1 then
-        options.type = CodeGen.SUPTYPE_MONOLITIC
+        self.type = CodeGen.SUPTYPE_MONOLITIC
     else
-        options.type = CodeGen.SUPTYPE_MODULAR
+        self.type = CodeGen.SUPTYPE_MODULAR
     end
-
-    self.options = options
 
     return self
 end
 
 function CodeGen:execute()
-    local context = {
-        automatons  = self.options.automatons,
-        events_map  = {},
-        events      = {},
-        sup_events  = {},
-        random_fn   = self.options.random_fn,
-        choice_fn   = self.options.choice_fn,
-        input_fn    = self.options.input_fn,
-        interruption   = 'INT_EXT',
-        timer_interval = 65416,
-    }
+        self.events_map     = {}
+        self.events         = {}
+        self.sup_events     = {}
+        self.interruption   = 'INT_EXT'
+        self.timer_interval = 65416
 
-    for k_automaton, automaton in context.automatons:ipairs() do
+    for k_automaton, automaton in self.automatons:ipairs() do
         for k_event, event in automaton.events:ipairs() do
-            if not context.events_map[ event.name ] then
-                context.events[ #context.events + 1 ] = event
-                context.events_map[ event.name ]      = #context.events
+            if not self.events_map[ event.name ] then
+                self.events[ #self.events + 1 ] = event
+                self.events_map[ event.name ]   = #self.events
             end
         end
     end
 
-    for k_automaton, automaton in context.automatons:ipairs() do
-        context.sup_events[#context.sup_events + 1] = {}
+    for k_automaton, automaton in self.automatons:ipairs() do
+        self.sup_events[#self.sup_events + 1] = {}
         for k_event, event in automaton.events:ipairs() do
-            context.sup_events[#context.sup_events][ context.events_map[ event.name ] ] = true
+            self.sup_events[#self.sup_events][ self.events_map[ event.name ] ] = true
         end
     end
 
-    local code = Template.get( 'main', context )
+    local Context = letk.Context.new()
+    Context:push( self )
+    local Template = letk.Template.new( './res/codegen/' .. CodeGen.devices[ self.device ].file )
+    local code = Template( Context )
 
-    local file = io.open( self.options.file_name .. '.c', "w")
+    local file = io.open( self.file_name .. '.c', "w")
     file:write( code )
     file:close()
 

@@ -1,14 +1,6 @@
-Object         = {}
-Object.__index = Object
-
-function Object.new( )
-    local self = {}
-    setmetatable( self, Object )
-
+Object  = letk.Class( function( self )
     self.triggers = {}
-
-    return self
-end
+end )
 
 function Object:trigger(event)
     if self.triggers[event] then
@@ -21,4 +13,13 @@ end
 function Object:bind( event, fn, param )
     self.triggers[event] = self.triggers[event] or {}
     self.triggers[event][ #self.triggers[event] + 1 ] = { fn = fn, param = param }
+end
+
+function Object:set( k, v )
+    self.properties = self.properties or {}
+    self.properties[ k ] = v
+end
+
+function Object:get( k )
+    return self.properties and self.properties[ k ]
 end

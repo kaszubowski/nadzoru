@@ -1,11 +1,4 @@
-GLRender = {}
-GLRender_MT = { __index = GLRender }
-
-setmetatable( GLRender, Object_MT )
-
-function GLRender.new( draw )
-    local self     = Object.new()
-    setmetatable( self, GLRender_MT )
+GLRender = letk.Class( function( self, draw )
     self.draw = draw
 
     self.glconfig = gtkglext.Config.new_by_mode(
@@ -18,9 +11,7 @@ function GLRender.new( draw )
     --CallBacks
      self.draw:connect("configure-event", self.configure, self )
      self.draw:connect("expose-event", self.expose, self )
-
-    return self
-end
+end, Object )
 
 function GLRender:set_render_callback( fn )
     self.render_callback = fn

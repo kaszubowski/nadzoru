@@ -16,19 +16,7 @@
 
     Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
 --]]
-Gui         = {}
-Gui.__index = Gui
-
-setmetatable( Gui, Object )
-
----
--- Constructor
---
--- @return A new Gui instance
-function Gui.new()
-    local self     = Object.new()
-    setmetatable( self, Gui )
-
+Gui = letk.Class( function( self )
     self.note         = gtk.Notebook.new()
     self.tab          = letk.List.new()
 
@@ -72,9 +60,7 @@ function Gui.new()
         "icon-name", "gtk-about")
 
     self.window:connect("delete-event", gtk.main_quit)
-
-    return self
-end
+end, Object )
 
 function Gui:run()
     self.window:show_all()

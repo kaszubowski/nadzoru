@@ -1,12 +1,4 @@
-AutomatonRender    = {}
-AutomatonRender_MT = { __index = AutomatonRender }
-
-setmetatable( AutomatonRender, Object_MT )
-
-
-function AutomatonRender.new( automaton )
-    local self = {}
-    setmetatable( self, AutomatonRender_MT)
+AutomatonRender = letk.Class( function( self, automaton )
 
     self.automaton = automaton
     self.color_states      = {}
@@ -20,7 +12,7 @@ function AutomatonRender.new( automaton )
     self.drawing_area:connect("expose-event", self.drawing_area_expose, self )
 
     return self, self.scrolled, self.drawing_area
-end
+end, Object )
 
 local function dot(cr, x, y, c)
     c = c or {0,0,0}

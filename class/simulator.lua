@@ -17,20 +17,10 @@
     Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
 --]]
 
-Simulator         = {}
-Simulator.__index = Simulator
-
-setmetatable( Simulator, Object )
-
-function Simulator.new( gui, automaton )
-    local self = Object.new()
-    setmetatable( self, Simulator )
+Simulator = letk.Class( function( self, automaton )
     self.gui            = gui
-
     self:automaton_load( automaton )
-
-    return self
-end
+end, Object )
 
 function Simulator:automaton_load( automaton )
     self.automaton      = automaton or self.automaton

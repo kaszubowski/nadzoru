@@ -17,13 +17,8 @@
     Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
 --]]
 
-Treeview         = {}
-Treeview.__index = Treeview
-
-setmetatable( Treeview, Object )
-
-function Treeview.new( multiple )
-    local self = Object.new()
+Treeview = letk.Class( function( self, multiple )
+    Object.new( self )
     self.data       = letk.List.new()
     self.columns    = {}
     self.render     = {}
@@ -33,9 +28,7 @@ function Treeview.new( multiple )
     self.selection  = self.view:get_selection()
     self.selection:set_mode( multiple and gtk.SELECTION_MULTIPLE or gtk.SELECTION_BROWSE )
     self.multiple   = multiple or false
-    setmetatable( self, Treeview )
-    return self
-end
+end, Object )
 
 function Treeview:bind_ondoubleclick( callback, param )
     self.view:connect( 'row-activated', callback, param )

@@ -4,12 +4,7 @@
     --use multiple_selector in a language field (button)
 --]]
 
-Selector         = {}
-Selector.__index = Selector
-
-setmetatable( Selector, Object )
-
-function Selector.new( options )
+Selector = letk.Class( function( self, options )
     options = table.complete( options or {}, {
         title      = 'nadzoru selector',
         success_fn = nil,
@@ -51,7 +46,7 @@ function Selector.new( options )
     self.btn_ok:connect("clicked", success)
 
     return self
-end
+end, Object )
 
 function Selector:multipler_selector( options )
     options = table.complete( options or {}, {
