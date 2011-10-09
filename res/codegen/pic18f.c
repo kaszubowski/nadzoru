@@ -1,6 +1,6 @@
-#include <{{devices[device].include}}>
-#fuses {{devices[device].fuses}}
-#use delay(clock={{devices[device].clock}})
+#include <{{include}}>
+#fuses {{fuses}}
+#use delay(clock={{clock}})
 {% if use_lcd %}
 #include <lcd.c>
 {% end %}
@@ -15,7 +15,7 @@
     var_data_pos     = {},
     var_state_map    = {},
 %}
-{% for k_automaton, automaton in automatons:ipairs() %}
+{% for k_automaton, automaton in automata:ipairs() %}
     {% set var_data_pos[k_automaton] = #var_data %}
     {% for k_state, state in automaton.states:ipairs() %}
         {% set var_state_map[ state ] = k_state - 1 %}
@@ -31,10 +31,10 @@
 {% end %}
 const unsigned char ev_number = {{ #events }};
 const unsigned char ev_controllable[{{ #events }}] = { {% for k_event, event in ipairs(events) %}{{ event.controllable and 1 or 0 }}{% notlast %}, {% end %} };
-const unsigned char sup_events[{{ automatons:len() }}][{{ #events }}] = { {% for k_automaton, automaton in automatons:ipairs() %}{ {% for i = 1, #events %}{{ sup_events[k_automaton][i] and 1 or 0 }}{% notlast %},{% end %} }{% notlast %},{% end %} };
-const unsigned char sup_number = {{ automatons:len() }};
-unsigned long int sup_current_state[{{ automatons:len() }}] = { {% for k_automaton, automaton in automatons:ipairs() %}{{automaton.initial - 1}}{% notlast %},{% end %} };
-const unsigned long int sup_data_pos[{{ automatons:len() }}] = { {{ table.concat(var_data_pos, ',') }} };
+const unsigned char sup_events[{{ automata:len() }}][{{ #events }}] = { {% for k_automaton, automaton in automata:ipairs() %}{ {% for i = 1, #events %}{{ sup_events[k_automaton][i] and 1 or 0 }}{% notlast %},{% end %} }{% notlast %},{% end %} };
+const unsigned char sup_number = {{ automata:len() }};
+unsigned long int sup_current_state[{{ automata:len() }}] = { {% for k_automaton, automaton in automata:ipairs() %}{{automaton.initial - 1}}{% notlast %},{% end %} };
+const unsigned long int sup_data_pos[{{ automata:len() }}] = { {{ table.concat(var_data_pos, ',') }} };
 const unsigned char sup_data[ {{ #var_data }} ] = { {{ table.concat( var_data,',' ) }} };
 
 unsigned long int get_state_position( unsigned char supervisor, unsigned long int state ){
@@ -295,10 +295,10 @@ void main(){
     enable_interrupts(INT_TIMER1);
 {% elseif input_fn  == INPUT_MULTIPLEXED %}
     enable_interrupts(GLOBAL);
-    //Extermal Interruption
-    ext_int_edge(0,H_TO_L);
-    clear_interrupt({{ interruption }});
-    enable_interrupts({{ interruption }});
+    //External Interruption
+    ext_int_edge(0,{{external_edge}});
+    clear_interrupt(INT_EXT);
+    enable_interrupts(INT_EXT);
 {% end %}
 {% if random_fn == RANDOM_PSEUDOAD %}
     seed = pic_rand_read_ad();

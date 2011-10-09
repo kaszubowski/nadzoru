@@ -56,8 +56,9 @@ function info.coaccessible( self )
 end
 
 GraphvizSimulator = letk.Class( function( self, gui, automaton )
-    self.image         = nil
+    Simulator.__super( self, automaton )
 
+    self.image         = nil
     self.hbox          = gtk.HBox.new( false, 0 )
         self.scrolled      = gtk.ScrolledWindow.new()
             self.drawing_area  = gtk.DrawingArea.new( )
@@ -107,7 +108,7 @@ GraphvizSimulator = letk.Class( function( self, gui, automaton )
     self:draw()
     self.drawing_area:connect("expose-event", self.drawing_area_expose, self )
     self.btn_statejump:connect('clicked', self.statejump_cb, self)
-end, Object )
+end, Simulator )
 
 function GraphvizSimulator.info( self )
     local fn_name = info[ self.cbx_info:get_active() + 1 ][1]

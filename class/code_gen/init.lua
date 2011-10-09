@@ -1,86 +1,81 @@
---We need check if all the same name events in differens automatons are equals (eg: all are controlable or all are not controlabled)
+--We need check if all the same name events in differens automata are equals (eg: all are controlable or all are not controlabled)
 
-CodeGen    = {}
-CodeGen_MT = { __index = CodeGen }
+Devices = require 'res.codegen.devices.main'
 
---~ require'class.code_gen.template_c'
+CodeGen = letk.Class( function( self, automata, device_id, file_name )
+    self.automata  = automata
+    self.device_id = device_id
+    self.file_name = file_name
+    self.device    = Devices[ device_id ].new()
 
-CodeGen.RANDOM_PSEUDOFIX    = 1
-CodeGen.RANDOM_PSEUDOAD     = 2
-CodeGen.RANDOM_AD           = 3
-CodeGen.CHOICE_RANDOM       = 1
-CodeGen.CHOICE_GLOBAL       = 2
-CodeGen.CHOICE_GLOBALRANDOM = 3
-CodeGen.CHOICE_LOCAL        = 4
-CodeGen.CHOICE_LOCALRANDOM  = 5
-CodeGen.INPUT_TIMER         = 1
-CodeGen.INPUT_MULTIPLEXED   = 2
---CodeGen.INPUT_EXTERNAL      = 3
-CodeGen.SUPTYPE_MONOLITIC   = 1
-CodeGen.SUPTYPE_MODULAR     = 2
-CodeGen.PICC                = 1
-CodeGen.SDCC                = 2
-
-CodeGen.devices = require 'res.codegen.devices.main'
-
-function CodeGen.new( self )
-    assert(self.automatons,'ERRO automat(on/a) expeted')
-    assert(self.device,    'ERRO device expeted')
-
-    table.complete( self, {
-        random_fn  = CodeGen.RANDOM_PSEUDOFIX,
-        choice_fn  = CodeGen.CHOICE_RANDOM,
-        input_fn   = CodeGen.INPUT_TIMER,
-        compiler   = CodeGen.PICC,
-        file_name  = 'code',
-        ad_port    = 'AN0',
-        use_lcd    = true,
-    })
-
-    setmetatable( self, CodeGen_MT )
-
-    local num_automatons = self.automatons:len()
-    if num_automatons == 0 then return end
-    if num_automatons == 1 then
+    local num_automata = self.automata:len()
+    if num_automata == 0 then return end
+    if num_automata == 1 then
         self.type = CodeGen.SUPTYPE_MONOLITIC
     else
         self.type = CodeGen.SUPTYPE_MODULAR
     end
+end, Object )
 
-    return self
-end
+CodeGen.SUPTYPE_MONOLITIC   = 1
+CodeGen.SUPTYPE_MODULAR     = 2
 
-function CodeGen:execute()
+function CodeGen:execute( gui )
+    local function generate( results, numresults )
+        for i, opt in ipairs( Devices[ self.device_id ] ) do
+            if opt.type == 'choice' then
+                self[ opt.var ] = results[ i ][ 1 ]
+            end
+        end
         self.events_map     = {}
         self.events         = {}
         self.sup_events     = {}
-        self.interruption   = 'INT_EXT'
-        self.timer_interval = 65416
 
-    for k_automaton, automaton in self.automatons:ipairs() do
-        for k_event, event in automaton.events:ipairs() do
-            if not self.events_map[ event.name ] then
-                self.events[ #self.events + 1 ] = event
-                self.events_map[ event.name ]   = #self.events
+        for k_automaton, automaton in self.automata:ipairs() do
+            for k_event, event in automaton.events:ipairs() do
+                if not self.events_map[ event.name ] then
+                    self.events[ #self.events + 1 ] = event
+                    self.events_map[ event.name ]   = #self.events
+                end
             end
         end
+
+        for k_automaton, automaton in self.automata:ipairs() do
+            self.sup_events[#self.sup_events + 1] = {}
+            for k_event, event in automaton.events:ipairs() do
+                self.sup_events[#self.sup_events][ self.events_map[ event.name ] ] = true
+            end
+        end
+
+        local Context = letk.Context.new()
+        Context:push( self )
+        Context:push( self.device )
+        local Template = letk.Template.new( './res/codegen/' .. self.device.template_file )
+        local code = Template( Context )
+
+        local file = io.open( self.file_name .. '.c', "w")
+        file:write( code )
+        file:close()
     end
 
-    for k_automaton, automaton in self.automatons:ipairs() do
-        self.sup_events[#self.sup_events + 1] = {}
-        for k_event, event in automaton.events:ipairs() do
-            self.sup_events[#self.sup_events][ self.events_map[ event.name ] ] = true
+    self.gui = {}
+    self.gui.selector, self.gui.vbox = Selector.new({
+        success_fn = generate,
+    }, true)
+    print(self.gui.selector, self.gui.vbox)
+    for _, opt in ipairs( Devices[ self.device_id ] ) do
+        if opt.type == 'choice' then
+            self.gui.selector:add_combobox{
+                list = letk.List.new_from_table( opt ),
+                text_fn  = function( a )
+                    return a[2]
+                end,
+                text = opt.caption,
+            }
+        elseif opt.type == 'spin' then
+
         end
     end
 
-    local Context = letk.Context.new()
-    Context:push( self )
-    local Template = letk.Template.new( './res/codegen/' .. CodeGen.devices[ self.device ].file )
-    local code = Template( Context )
-
-    local file = io.open( self.file_name .. '.c', "w")
-    file:write( code )
-    file:close()
-
-    return self
+    gui:add_tab( self.gui.vbox, 'Code Gen: ' .. self.device.name )
 end

@@ -77,12 +77,9 @@ function Controller:build()
     -----------------------------------
 
     -- ** Menu Itens ** --
-    --self.gui:append_menu('automatonlist', "_Automatons")
     self.gui:append_menu('automata_operations', "_Automata")
     self.gui:append_menu('simulate', "_Simulate")
     self.gui:append_menu('code', "_Code")
-
-
 
     -- ** Actions * --
 
@@ -105,8 +102,7 @@ function Controller:build()
     self.gui:add_action('simulateplant', "Automaton Simulate _Plant", "Simulate the Plant in a OpenGL render", nil, self.simulate_plant, self)
 
     --Code
-    self.gui:add_action('code_gen_pic_c_monolitic', "PIC C (monolitic)", "Generate C code for PIC - Monolitic", nil, self.code_gen_pic_c_monolitic, self)
-    self.gui:add_action('code_gen_pic_c_modular', "PIC C (modular)", "Generate C code for PIC - Modular", nil, self.code_gen_pic_c_modular, self)
+    self.gui:add_action('code_gen_dfa', "DFA - Code Generator", "Deterministic Finite Automata - Code Generate", nil, self.code_gen_dfa, self)
     -- TODO: local modular
 
     -- ** Menu-Action Link ** --
@@ -129,8 +125,7 @@ function Controller:build()
     self.gui:append_menu_item('simulate', 'simulateplant')
 
     --Code
-    self.gui:append_menu_item('code','code_gen_pic_c_monolitic')
-    self.gui:append_menu_item('code','code_gen_pic_c_modular')
+    self.gui:append_menu_item('code','code_gen_dfa')
 end
 
 function Controller:exec()
@@ -257,27 +252,18 @@ function Controller.automaton_edit( data )
     :run()
 end
 
-function Controller.code_gen_pic_c_modular( data )
+function Controller.code_gen_dfa( data )
 Selector.new({
         title = 'nadzoru',
         success_fn = function( results, numresult )
-            local automatons  = results[1]
-            local random_type = results[2] and results[2][1]
-            local choice      = results[3] and results[3][1]
-            local input_fn    = results[4] and results[4][1]
-            local file        = results[5] or './nofilename'
-            local device      = results[6] and results[6][1]
-            if automatons and random_type and choice and input_fn and device then
-                local cg = CodeGen.new{
-                    automatons = letk.List.new_from_table( automatons ) ,
-                    random_fn  = random_type,
-                    choice_fn  = choice,
-                    input_fn   = input_fn,
-                    file_name  = file,
-                    device     = device,
-                }
+            local automata    = results[1]
+            local file_name   = results[2]
+            local device_id   = results[3] and results[3][1]
+            if automata and file_name and device_id then
+                local lautomata = letk.List.new_from_table( automata )
+                local cg = CodeGen.new( lautomata, device_id, file_name )
                 if  cg then
-                    cg:execute()
+                    cg:execute( data.gui )
                 end
             end
         end,
@@ -289,122 +275,17 @@ Selector.new({
         end,
         text = 'Automaton:'
     }
-    :add_combobox{
-        list = letk.List.new_from_table{
-            { CodeGen.RANDOM_PSEUDOFIX , "Pseudo Random Seed Fixed"    },
-            { CodeGen.RANDOM_PSEUDOAD  , "Pseudo Random Seed AD input" },
-            { CodeGen.RANDOM_AD        , "AD input"                    },
-        },
-        text_fn  = function( a )
-            return a[2]
-        end,
-        text = 'Random Type:',
-    }
-    :add_combobox{
-        list = letk.List.new_from_table{
-            { CodeGen.CHOICE_RANDOM       , "Random"                       },
-            --{ CodeGen.CHOICE_GLOBAL       , "Sequential Global Event List" },
-            --{ CodeGen.CHOICE_GLOBALRANDOM , "Random Global Event List"     },
-            --{ CodeGen.CHOICE_LOCAL        , "Sequential Local Event List"  },
-            --{ CodeGen.CHOICE_LOCALRANDOM  , "Random Local Event List"      },
-        },
-        text_fn  = function( a )
-            return a[2]
-        end,
-        text = 'Choice:',
-    }
-    :add_combobox{
-        list = letk.List.new_from_table{
-            { CodeGen.INPUT_TIMER       , "Timer Interruption"                },
-            { CodeGen.INPUT_MULTIPLEXED , "Multiplexed External Interruption" },
-            --{ CodeGen.INPUT_EXTERNAL    , "External Interruption"             },
-        },
-        text_fn  = function( a )
-            return a[2]
-        end,
-        text = 'Input (Delay Sensibility):',
-    }
     :add_file{
         text = 'file',
     }
     :add_combobox{
         list = letk.List.new_from_table{
-            { 'pic18f' , "PIC18F"    },
+            { 'pic18f4620' , "PIC18F4620"    },
         },
         text_fn  = function( a )
             return a[2]
         end,
         text = 'Device:',
-    }
-    :run()
-end
-
-function Controller.code_gen_pic_c_monolitic( data )
-Selector.new({
-        title = 'nadzoru',
-         success_fn = function( results, numresult )
-            local automaton   = results[1]
-            local random_type = results[2] and results[2][1] or 1
-            local choice      = results[3] and results[3][1] or 1
-            local ds          = results[4] and results[4][1] or 1
-            local file        = results[5] or './nofilename'
-            if automaton and random_type then
-                CodeGen.new{
-                    automatons = letk.List.new_from_table{ automaton } ,
-                    random_fn  = random_type,
-                    choice_fn  = choice,
-                    delay_s_fn = ds,
-                    file_name  = file,
-                }
-                :execute()
-            end
-        end,
-    })
-    :add_combobox{
-        list = data.param.elements,
-        text_fn  = function( a )
-            return a:get( 'file_name' )
-        end,
-        text = 'Automaton:'
-    }
-    :add_combobox{
-        list = letk.List.new_from_table{
-            { CodeGen.RANDOM_PSEUDOFIX , "Pseudo Random Seed Fixed"    },
-            { CodeGen.RANDOM_PSEUDOAD  , "Pseudo Random Seed AD input" },
-            { CodeGen.RANDOM_AD        , "AD input"                    },
-        },
-        text_fn  = function( a )
-            return a[2]
-        end,
-        text = 'Random Type:',
-    }
-    :add_combobox{
-        list = letk.List.new_from_table{
-            { CodeGen.CHOICE_RANDOM       , "Random"                       },
-            { CodeGen.CHOICE_GLOBAL       , "Sequential Global Event List" },
-            { CodeGen.CHOICE_GLOBALRANDOM , "Random Global Event List"     },
-            { CodeGen.CHOICE_LOCAL        , "Sequential Local Event List"  },
-            { CodeGen.CHOICE_LOCALRANDOM  , "Random Local Event List"      },
-        },
-        text_fn  = function( a )
-            return a[2]
-        end,
-        text = 'Choice:',
-    }
-    :add_combobox{
-        list = letk.List.new_from_table{
-            { CodeGen.DS_NONE        , "None"                              },
-            { CodeGen.DS_TIMER       , "Timer Interruption"                },
-            { CodeGen.DS_EXTERNAL    , "External Interruption"             },
-            { CodeGen.DS_MULTIPLEXED , "Multiplexed External Interruption" },
-        },
-        text_fn  = function( a )
-            return a[2]
-        end,
-        text = 'Delay Sensibility:',
-    }
-    :add_file{
-        text = 'file',
     }
     :run()
 end

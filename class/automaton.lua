@@ -17,7 +17,7 @@
     Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
 --]]
 Automaton = letk.Class( function( self )
-    Object.new( self )
+    Object.__super( self )
     self.states      = letk.List.new()
     self.events      = letk.List.new()
     self.transitions = letk.List.new()

@@ -4,7 +4,7 @@
     --use multiple_selector in a language field (button)
 --]]
 
-Selector = letk.Class( function( self, options )
+Selector = letk.Class( function( self, options, nowindow )
     options = table.complete( options or {}, {
         title      = 'nadzoru selector',
         success_fn = nil,
@@ -15,21 +15,31 @@ Selector = letk.Class( function( self, options )
     self.num_columns = 0
     setmetatable( self, Selector )
 
-    self.window                   = gtk.Window.new( gtk.TOP_LEVEL )
+    if not nowindow then
+        self.window                   = gtk.Window.new( gtk.TOP_LEVEL )
+    end
         self.vbox_main            = gtk.VBox.new(false, 0)
             self.hbox_main        = gtk.HBox.new(false, 0)
             self.hbox_footer      = gtk.HBox.new(true, 0)
-                self.btn_cancel   = gtk.Button.new_with_label("Cancel")
+                if not nowindow then
+                    self.btn_cancel   = gtk.Button.new_with_label("Cancel")
+                end
                 self.btn_ok       = gtk.Button.new_with_label("OK")
 
-    self.window:add(self.vbox_main)
+    if not nowindow then
+        self.window:add(self.vbox_main)
+    end
         self.vbox_main:pack_start( self.hbox_main, true, true, 0 )
         self.vbox_main:pack_start( self.hbox_footer, false, false, 0 )
-            self.hbox_footer:pack_start( self.btn_cancel, false, true, 0 )
+            if not nowindow then
+                self.hbox_footer:pack_start( self.btn_cancel, false, true, 0 )
+            end
             self.hbox_footer:pack_start( self.btn_ok, false, true, 0 )
 
+    if not nowindow then
     self.window:connect("delete-event", self.window.destroy, self.window)
     self.window:set_modal( true )
+    end
 
     function success()
         if type(options.success_fn) == 'function' then
@@ -37,15 +47,19 @@ Selector = letk.Class( function( self, options )
             for c,k in ipairs( self.result ) do
                 result[c] = k()
             end
-            self.window:destroy()
+            if not nowindow then
+                self.window:destroy()
+            end
             options.success_fn( result, #self.result, self )
         end
     end
 
-    self.btn_cancel:connect("clicked", self.window.destroy, self.window )
+    if not nowindow then
+        self.btn_cancel:connect("clicked", self.window.destroy, self.window )
+    end
     self.btn_ok:connect("clicked", success)
 
-    return self
+    return self, self.vbox_main
 end, Object )
 
 function Selector:multipler_selector( options )
@@ -157,6 +171,7 @@ function Selector:add_combobox( options )
     options = table.complete( options or {}, {
         list        = letk.List.new(),
         text_fn     = nil,
+        result_fn   = nil,
         text        = 'input',
     })
 
@@ -175,7 +190,8 @@ function Selector:add_combobox( options )
     self.single_box:pack_start( label , false, false, 0 )
     self.single_box:pack_start( combobox , false, false, 0 )
     self.result[#self.result + 1] = function()
-        return options.list:get( combobox:get_active() + 1 )
+        local v = options.list:get( combobox:get_active() + 1 )
+        return type(options.result_fn) == 'function' and options.result_fn( v ) or v
     end
 
     return self
@@ -269,13 +285,20 @@ function Selector:add_file( options )
     return self
 end
 
-function Selector:run()
-    local nc = self.num_columns
-    if nc == 0 then nc = 1 end
-    if nc > 5 then nc  = 5 end
-    self.window:set("title", self.options.title, "width-request", nc * 200,
-        "height-request", 450, "window-position", gtk.WIN_POS_CENTER,
-        "icon-name", "gtk-about")
+function Selector:add_spin( options )
 
-    self.window:show_all()
+end
+
+function Selector:run()
+    if not nowindow then
+        local nc = self.num_columns
+        if nc == 0 then nc = 1 end
+        if nc > 5 then nc  = 5 end
+
+        self.window:set("title", self.options.title, "width-request", nc * 200,
+            "height-request", 450, "window-position", gtk.WIN_POS_CENTER,
+            "icon-name", "gtk-about")
+
+        self.window:show_all()
+    end
 end

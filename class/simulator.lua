@@ -18,6 +18,7 @@
 --]]
 
 Simulator = letk.Class( function( self, automaton )
+    Object.__super( self )
     self.gui            = gui
     self:automaton_load( automaton )
 end, Object )
