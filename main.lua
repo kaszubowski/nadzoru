@@ -86,6 +86,7 @@ function Controller:build()
     --File
     self.gui:add_action('import_ides', "_Import IDES", "Import a IDES (.xmd) automaton file", nil, self.import_ides, self)
     self.gui:add_action('create_new_automaton', "_New Automaton", "Create a New Automaton", nil, self.create_new_automaton, self)
+    self.gui:add_action('open_automaton', "_Open Automaton", "Open a New Automaton", nil, self.open_automaton, self)
 
     --Automatons
     --~ self.gui:add_action('remove_automaton', "_Close Automaton", "Close Activate Automaton", nil, self.close_automaton, self)
@@ -108,6 +109,7 @@ function Controller:build()
     -- ** Menu-Action Link ** --
     --File
     self.gui:prepend_menu_item('file','import_ides')
+    self.gui:prepend_menu_item('file','open_automaton')
     self.gui:prepend_menu_item('file','create_new_automaton')
 
     --Automaton
@@ -155,8 +157,30 @@ end
 
 function Controller.create_new_automaton( data )
     local new_automaton = Automaton.new()
-    new_automaton:set('file_name', '*new' )
     data.param:automaton_add( new_automaton )
+end
+
+function Controller.open_automaton( data )
+    local dialog = gtk.FileChooserDialog.new(
+        "Select the file", nil, gtk.FILE_CHOOSER_ACTION_OPEN,
+        "gtk-cancel", gtk.RESPONSE_CANCEL,
+        "gtk-ok", gtk.RESPONSE_OK
+    )
+    local filter = gtk.FileFilter.new()
+    filter:add_pattern("*.nza")
+    filter:set_name("Nadzoru automaton")
+    dialog:add_filter(filter)
+    dialog:set("select-multiple", true)
+    local response = dialog:run()
+    dialog:hide()
+    local filenames = dialog:get_filenames()
+    if response == gtk.RESPONSE_OK and filenames then
+        for k_filename, filename in ipairs( filenames ) do
+            local new_automaton = Automaton.new()
+            new_automaton:load_file( filename )
+            data.param:automaton_add( new_automaton )
+        end
+    end
 end
 
 function Controller.import_ides( data )
@@ -177,8 +201,6 @@ function Controller.import_ides( data )
         for k_filename, filename in ipairs( filenames ) do
             local new_automaton = Automaton.new()
             new_automaton:IDES_import( filename )
-            new_automaton:set('full_file_name', filename)
-            new_automaton:set('file_name', select( 3, filename:find( '.-([^/^\\]*)$' ) ) )
             data.param:automaton_add( new_automaton )
         end
     end

@@ -32,9 +32,15 @@ AutomatonEditor = letk.Class( function( self, gui, automaton )
 
     --save
     self.img_act_save = gtk.Image.new_from_file( './images/icons/save.gif' )
-    self.btn_act_save = gtk.ToolButton.new( self.img_act_save, "Edit" )
+    self.btn_act_save = gtk.ToolButton.new( self.img_act_save, "Save" )
     self.btn_act_save:connect( 'clicked', self.set_act_save, self )
     self.toolbar:insert( self.btn_act_save, -1 )
+
+    --saveas
+    self.img_act_saveas = gtk.Image.new_from_file( './images/icons/save_as.png' )
+    self.btn_act_saveas = gtk.ToolButton.new( self.img_act_saveas, "Save As" )
+    self.btn_act_saveas:connect( 'clicked', self.set_act_save_as, self )
+    self.toolbar:insert( self.btn_act_saveas, -1 )
 
     --edit
     self.img_act_edit = gtk.Image.new_from_file( './images/icons/edit.gif' )
@@ -134,7 +140,39 @@ function AutomatonEditor:toolbar_set_unset_operation( mode )
 end
 
 function AutomatonEditor:set_act_save()
-    print'saved'
+    local status, err, err_list = self.automaton:save()
+    if not status then
+        if err == err_list.NO_FILE_NAME then
+            self:set_act_save_as()
+        elseif err == err_list.INVALID_FILE_TYPE then
+            gtk.InfoDialog.showInfo("This automaton is not a .nza, use 'save as' or 'export'")
+        elseif err == err_list.ACCESS_DENIED then
+            gtk.InfoDialog.showInfo("Access denied for file: " .. tostring(self.automaton:get('full_file_name')) )
+        end
+    end
+end
+
+function AutomatonEditor:set_act_save_as()
+    local dialog = gtk.FileChooserDialog.new(
+        "Save AS", nil,gtk.FILE_CHOOSER_ACTION_SAVE,
+        "gtk-cancel", gtk.RESPONSE_CANCEL,
+        "gtk-ok", gtk.RESPONSE_OK
+    )
+    local filter = gtk.FileFilter.new()
+    filter:add_pattern("*.nza")
+    filter:set_name("Nadzoru Automaton")
+    dialog:add_filter(filter)
+    local response = dialog:run()
+    dialog:hide()
+    local names = dialog:get_filenames()
+    if response == gtk.RESPONSE_OK and names and names[1] then
+        local status, err, err_list = self.automaton:save_as( names[1] )
+        if not status then
+            if err == err_list.ACCESS_DENIED then
+                gtk.InfoDialog.showInfo("Access denied for file: " .. tostring(self.automaton:get('full_file_name')) )
+            end
+        end
+    end
 end
 
 function AutomatonEditor:set_act_edit()
@@ -216,7 +254,9 @@ function AutomatonEditor:drawing_area_press( event )
             self.automaton:state_remove( element.id )
             self.render:draw({},{})
         elseif element and element.type == 'transition' then
-            self.automaton:transition_remove( element.id )
+            for k_transition, transition in ipairs( element ) do
+                self.automaton:transition_remove( transition.object )
+            end
             self.render:draw({},{})
         end
     elseif self.operation == 'transition' then

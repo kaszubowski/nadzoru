@@ -344,10 +344,8 @@ function AutomatonRender:select_element(x,y)
                         tran_select.index  = state_index[s] .. '_' .. state_index[t]
                         tran_select[#tran_select +1] = {
                             object = transitions,
-                            id     = id
                         }
                     end
-
                 else
                     if a >= r.as and a <= r.ae and hip <= r.ar + 3 and hip >= r.ar - 3 then
                         tran_select.type   = 'transition'
@@ -356,16 +354,14 @@ function AutomatonRender:select_element(x,y)
                         tran_select.index  = state_index[s] .. '_' .. state_index[t]
                         tran_select[#tran_select +1] = {
                             object = transitions,
-                            id     = id
                         }
                     end
                 end
             end
         else
-            if s ==  tran_select.source and t == tran_select.target then
+            if state_index[s] ==  tran_select.source and state_index[t] == tran_select.target then
                 tran_select[#tran_select +1] = {
                         object = transitions,
-                        id     = id
                     }
             end
         end
@@ -373,7 +369,6 @@ function AutomatonRender:select_element(x,y)
     if tran_select.type then
         return tran_select
     end
-
 
     return false
 end

@@ -23,6 +23,7 @@ Automaton = letk.Class( function( self )
     self.transitions = letk.List.new()
     --~ self.info        = {}
     self.initial     = nil
+    self:set('file_name', '*new' )
 end, Object )
 
 ------------------------------------------------------------------------
@@ -52,7 +53,7 @@ end, Object )
 
 --States
 function Automaton:state_add( name, marked, initial )
-    local id = self.states:append{
+    local new_state = {
         initial         = initial or false,
         marked          = marked  or false,
         event_target    = {},
@@ -61,11 +62,12 @@ function Automaton:state_add( name, marked, initial )
         transitions_out = letk.List.new(),
         name            = name or tostring( self.states:len() + 1 ),
     }
+    local id = self.states:append( new_state )
     if initial then
         self:state_set_initial( id )
     end
 
-    return id
+    return id, new_state
 end
 
 function Automaton:state_remove( id )
@@ -171,12 +173,16 @@ end
 
 --Events
 function Automaton:event_add(name, observable, controllable)
-    return self.events:append{
+    local new_event = {
         observable   = observable or false,
         controllable = controllable or false,
         name         = name,
         transitions  = letk.List.new(),
     }
+
+    local id = self.events:append( new_event )
+
+    return id, new_event
 end
 
 function Automaton:event_remove( id )
@@ -424,7 +430,124 @@ function Automaton:IDES_import( file_name, get_layout )
     p:close()
     file:close()
 
+    self:set('full_file_name', file_name)
+    self:set('file_name', select( 3, file_name:find( '.-([^/^\\]*)$' ) ) )
+    self:set('file_type', 'xmd')
+
     return self
+end
+
+function Automaton:save_serialize()
+    local data                 = {
+        states      = {},
+        events      = {},
+        transitions = {},
+    }
+    local state_map, event_map = {}, {}
+
+    for k_state, state in self.states:ipairs() do
+        state_map[state] = k_state
+        data.states[ #data.states + 1 ] = {
+            name    = state.name,
+            initial = state.initial or false,
+            marked  = state.marked  or false,
+            x  = state.x,
+            y  = state.y,
+            r  = state.r,
+        }
+    end
+
+    for k_event, event in self.events:ipairs() do
+        event_map[ event ] = k_event
+        data.events[ #data.events + 1 ] = {
+            name         = event.name,
+            controllable = event.controllable or false,
+            observable   = event.observable  or false,
+        }
+    end
+
+    for k_transition, transition in self.transitions:ipairs() do
+        data.transitions[ #data.transitions + 1 ] = {
+            source = state_map[ transition.source ],
+            target = state_map[ transition.target ],
+            event = event_map[ transition.event ],
+        }
+    end
+
+    return letk.serialize( data )
+end
+
+local FILE_ERROS = {}
+FILE_ERROS.ACCESS_DENIED     = 1
+FILE_ERROS.NO_FILE_NAME      = 2
+FILE_ERROS.INVALID_FILE_TYPE = 3
+
+function Automaton:save()
+    local file_type = self:get( 'file_type' )
+    local file_name = self:get( 'full_file_name' )
+    if file_type == 'nza' and file_name then
+        if not file_name:match( '%.nza$' ) then
+            file_name = file_name .. '.nza'
+        end
+        local file = io.open( file_name, "w")
+        if file then
+            local code = self:save_serialize()
+            file:write( code )
+            file:close()
+            return true
+        end
+        return false, FILE_ERROS.ACCESS_DENIED, FILE_ERROS
+    elseif not file_type then
+        return false, FILE_ERROS.NO_FILE_NAME, FILE_ERROS
+    else
+        return false, FILE_ERROS.INVALID_FILE_TYPE, FILE_ERROS
+    end
+end
+
+function Automaton:save_as( file_name )
+    if file_name then
+        if not file_name:match( '%.nza$' ) then
+            file_name = file_name .. '.nza'
+        end
+        local file = io.open( file_name, "w")
+        if file then
+            local code = self:save_serialize()
+            file:write( code )
+            file:close()
+            self:set( 'file_type', 'nza' )
+            self:set( 'full_file_name', file_name )
+            self:set( 'file_name', select( 3, file_name:find( '.-([^/^\\]*)$' ) ) )
+            return true
+        end
+        return false, FILE_ERROS.ACCESS_DENIED, FILE_ERROS
+    else
+        return false, FILE_ERROS.NO_FILE_NAME, FILE_ERROS
+    end
+end
+
+function Automaton:load_file( file_name )
+    local file = io.open( file_name, 'r')
+    if file then
+        local s    = file:read('*a')
+        local data = loadstring('return ' .. s)()
+        if data then
+            for k_state, state in ipairs( data.states ) do
+                local id, new_state = self:state_add( state.name, state.marked, state.initial )
+                new_state.x = state.x
+                new_state.y = state.y
+                new_state.r = state.r
+            end
+            for k_event, event in ipairs( data.events ) do
+                self:event_add( event.name, event.observable, event.controllable )
+            end
+            for k_transition, transition in ipairs( data.transitions ) do
+                self:transition_add( transition.source, transition.target, transition.event )
+            end
+            self:set( 'file_type', 'nza' )
+            self:set( 'full_file_name', file_name )
+            self:set( 'file_name', select( 3, file_name:find( '.-([^/^\\]*)$' ) ) )
+        end
+    end
 end
 
 --utils
