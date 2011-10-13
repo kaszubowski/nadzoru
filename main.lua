@@ -77,57 +77,58 @@ function Controller:build()
     -----------------------------------
 
     -- ** Menu Itens ** --
-    self.gui:append_menu('automata_operations', "_Automata")
+    self.gui:append_menu('automata', "_Automata")
     self.gui:append_menu('simulate', "_Simulate")
-    self.gui:append_menu('code', "_Code")
 
     -- ** Actions * --
 
     --File
-    self.gui:add_action('import_ides', "_Import IDES", "Import a IDES (.xmd) automaton file", nil, self.import_ides, self)
-    self.gui:add_action('create_new_automaton', "_New Automaton", "Create a New Automaton", nil, self.create_new_automaton, self)
-    self.gui:add_action('open_automaton', "_Open Automaton", "Open a New Automaton", nil, self.open_automaton, self)
+    self.gui:add_action('automata_import_ides', "_Import IDES Automaton", "Import a IDES (.xmd) automaton file", nil, self.import_ides, self)
+    self.gui:add_action('automata_new'        , "_New Automaton", "Create a New Automaton", nil, self.create_new_automaton, self)
+    self.gui:add_action('automata_open'       ,"_Open Automaton", "Open a New Automaton", nil, self.open_automaton, self)
 
     --Automatons
     --~ self.gui:add_action('remove_automaton', "_Close Automaton", "Close Activate Automaton", nil, self.close_automaton, self)
 
-    --Automata Operations
+    --Automata
     self.gui:add_action('automaton_edit', "Edit Automaton", "Edit automaton struct", nil, self.automaton_edit, self)
+    self.gui:add_action('code_gen_dfa', "DFA - Code Generator", "Deterministic Finite Automata - Code Generate", nil, self.code_gen_dfa, self)
     self.gui:add_action('operations_accessible', "_Accessible", "Calcule the accessible automata", nil, self.operations_accessible, self)
     self.gui:add_action('operations_coaccessible', "_Coaccessible", "Calcule the coaccessible automata", nil, self.operations_coaccessible, self)
-    self.gui:add_action('operations_sync', "_Sync", "Syncronize two or more automatons", nil, self.operations_sync, self)
+    self.gui:add_action('operations_trim', "_Trim", "Calcule the trim automata", nil, self.operations_trim, self)
     self.gui:add_action('operations_join_no_coaccessible', "_Join Coaccessible", "Join Coaccessible States", nil, self.operations_join_no_coaccessible, self)
+    self.gui:add_action('operations_selfloop', "_SelfLoop", "Self Loop in a automaton with a set of other automata events", nil, self.operations_selfloop, self)
+    self.gui:add_action('operations_synchronization', "_Synchronization", "Synchronization of two or more automatons", nil, self.operations_synchronization, self)
+    self.gui:add_action('operations_product', "_Product", "Calculate the Product of two or more automatons", nil, self.operations_product, self)
 
     --Simulate
     self.gui:add_action('simulategraphviz', "Automaton Simulate _Graphviz", "Simulate Automata in a Graphviz render", nil, self.simulate_graphviz, self)
     self.gui:add_action('simulateplant', "Automaton Simulate _Plant", "Simulate the Plant in a OpenGL render", nil, self.simulate_plant, self)
 
-    --Code
-    self.gui:add_action('code_gen_dfa', "DFA - Code Generator", "Deterministic Finite Automata - Code Generate", nil, self.code_gen_dfa, self)
-    -- TODO: local modular
-
     -- ** Menu-Action Link ** --
     --File
-    self.gui:prepend_menu_item('file','import_ides')
-    self.gui:prepend_menu_item('file','open_automaton')
-    self.gui:prepend_menu_item('file','create_new_automaton')
+    self.gui:prepend_menu_item('file','automata_import_ides')
+    self.gui:prepend_menu_item('file','automata_open')
+    self.gui:prepend_menu_item('file','automata_new')
 
     --Automaton
     --~ self.gui:prepend_menu_item('automatonlist','remove_automaton')
 
     --Automaton Operations
-    self.gui:append_menu_item('automata_operations', 'automaton_edit')
-    self.gui:append_menu_item('automata_operations','operations_accessible')
-    self.gui:append_menu_item('automata_operations','operations_coaccessible')
-    self.gui:append_menu_item('automata_operations','operations_join_no_coaccessible')
-    self.gui:append_menu_item('automata_operations','operations_sync')
+    self.gui:append_menu_item('automata','automaton_edit')
+    self.gui:append_menu_item('automata','code_gen_dfa')
+    self.gui:append_menu_item('automata','operations_accessible')
+    self.gui:append_menu_item('automata','operations_coaccessible')
+    self.gui:append_menu_item('automata','operations_trim')
+    self.gui:append_menu_item('automata','operations_join_no_coaccessible')
+    self.gui:append_menu_item('automata','operations_selfloop')
+    self.gui:append_menu_item('automata','operations_synchronization')
+    self.gui:append_menu_item('automata','operations_product')
 
     --Simulate
     self.gui:append_menu_item('simulate', 'simulategraphviz')
     self.gui:append_menu_item('simulate', 'simulateplant')
 
-    --Code
-    self.gui:append_menu_item('code','code_gen_dfa')
 end
 
 function Controller:exec()
@@ -225,6 +226,9 @@ function Controller.simulate_graphviz( data )
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
+        filter_fn = function( v )
+            return v.__TYPE == 'automaton'
+        end,
         text = 'Automaton:'
     }
     :run()
@@ -269,6 +273,9 @@ function Controller.automaton_edit( data )
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
+        filter_fn = function( v )
+            return v.__TYPE == 'automaton'
+        end,
         text = 'Automaton:'
     }
     :run()
@@ -294,6 +301,9 @@ Selector.new({
         list = data.param.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
+        end,
+        filter_fn = function( v )
+            return v.__TYPE == 'automaton'
         end,
         text = 'Automaton:'
     }
@@ -325,8 +335,7 @@ function Controller.operations_accessible( data )
         success_fn = function( results, numresult )
             local automaton = results[1]
             if automaton then
-                local new_automaton = automaton:clone()
-                new_automaton:accessible( results[2] )
+                local new_automaton = automaton:accessible( results[2], false )
                 new_automaton:set('file_name', 'accessible(' .. automaton:get('file_name') .. ')')
                 data.param.elements:append( new_automaton )
             end
@@ -336,6 +345,9 @@ function Controller.operations_accessible( data )
         list = data.param.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
+        end,
+        filter_fn = function( v )
+            return v.__TYPE == 'automaton'
         end,
         text = 'Automaton:'
     }
@@ -351,8 +363,7 @@ function Controller.operations_coaccessible( data )
         success_fn = function( results, numresult )
             local automaton = results[1]
             if automaton then
-                local new_automaton = automaton:clone()
-                new_automaton:coaccessible( results[2] )
+                local new_automaton = automaton:coaccessible( results[2], false )
                 new_automaton:set('file_name', 'coaccessible(' .. automaton:get('file_name') .. ')')
                 data.param.elements:append( new_automaton )
             end
@@ -362,6 +373,9 @@ function Controller.operations_coaccessible( data )
         list = data.param.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
+        end,
+        filter_fn = function( v )
+            return v.__TYPE == 'automaton'
         end,
         text = 'Automaton:'
     }
@@ -377,8 +391,7 @@ function Controller.operations_join_no_coaccessible( data )
         success_fn = function( results, numresult )
             local automaton = results[1]
             if automaton then
-                local new_automaton = automaton:clone()
-                new_automaton:join_no_coaccessible_states()
+                local new_automaton = automaton:join_no_coaccessible_states( false )
                 new_automaton:set('file_name', 'join_no_coaccessible(' .. automaton:get('file_name') .. ')')
                 data.param.elements:append( new_automaton )
             end
@@ -389,18 +402,86 @@ function Controller.operations_join_no_coaccessible( data )
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
+        filter_fn = function( v )
+            return v.__TYPE == 'automaton'
+        end,
         text = 'Automaton:'
     }
     :run()
 end
 
-function Controller.operations_sync( data )
+function Controller.operations_trim( data )
+     Selector.new({
+        title = 'nadzoru',
+        success_fn = function( results, numresult )
+            local automaton = results[1]
+            if automaton then
+                local new_automaton = automaton:trim( results[2], false )
+                new_automaton:set('file_name', 'trim(' .. automaton:get('file_name') .. ')')
+                data.param.elements:append( new_automaton )
+            end
+        end,
+    })
+    :add_combobox{
+        list = data.param.elements,
+        text_fn  = function( a )
+            return a:get( 'file_name' )
+        end,
+        filter_fn = function( v )
+            return v.__TYPE == 'automaton'
+        end,
+        text = 'Automaton:'
+    }
+    :add_checkbox{
+        text = 'remove states',
+    }
+    :run()
+end
+
+function Controller.operations_selfloop( data )
+     Selector.new({
+        title = 'nadzoru',
+        success_fn = function( results, numresult )
+            local automaton = results[1]
+            if automaton then
+                local new_automaton = automaton:selfloop( false, unpack( results[2] ) )
+                new_automaton:set('file_name', 'selfloop(' .. automaton:get('file_name') .. ', ...' .. ')')
+                data.param.elements:append( new_automaton )
+            end
+        end,
+    })
+    :add_combobox{
+        list = data.param.elements,
+        text_fn  = function( a )
+            return a:get( 'file_name' )
+        end,
+        filter_fn = function( v )
+            return v.__TYPE == 'automaton'
+        end,
+        text = 'Automaton:'
+    }
+    :add_multipler{
+        list = data.param.elements,
+        text_fn  = function( a )
+            return a:get( 'file_name' )
+        end,
+        filter_fn = function( v )
+            return v.__TYPE == 'automaton'
+        end,
+        text = 'Automata (events):'
+    }
+    :run()
+end
+
+function Controller.operations_synchronization( data )
     Selector.new({
         title = 'nadzoru',
         success_fn = function( results, numresult )
             local automatons = results[1]
-            for k, v in ipairs( automatons ) do
-
+             if automatons then
+                local new_automaton = Automaton.synchronization( unpack( automatons ) )
+                new_automaton:set('file_name', 'synchronization(' .. '...' .. ')')
+                data.param.elements:append( new_automaton )
             end
         end,
     })
@@ -409,7 +490,35 @@ function Controller.operations_sync( data )
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
-        text = 'Automaton:'
+        filter_fn = function( v )
+            return v.__TYPE == 'automaton'
+        end,
+        text = 'Automata:'
+    }
+    :run()
+end
+
+function Controller.operations_product( data )
+    Selector.new({
+        title = 'nadzoru',
+        success_fn = function( results, numresult )
+            local automatons = results[1]
+            if automatons then
+                local new_automaton = Automaton.product( unpack( automatons ) )
+                new_automaton:set('file_name', 'product(' .. '...' .. ')')
+                data.param.elements:append( new_automaton )
+            end
+        end,
+    })
+    :add_multipler{
+        list = data.param.elements,
+        text_fn  = function( a )
+            return a:get( 'file_name' )
+        end,
+        filter_fn = function( v )
+            return v.__TYPE == 'automaton'
+        end,
+        text = 'Automata:'
     }
     :run()
 end

@@ -18,7 +18,7 @@ AutomatonEditor = letk.Class( function( self, gui, automaton )
     self.btn_add_event:connect('clicked', self.add_event, self )
     self.btn_delete_event:connect('clicked', self.delete_event, self )
 
-    self.treeview_events:add_column_text("Events",150, self.edit_event, self)
+    self.treeview_events:add_column_text("Events",100, self.edit_event, self)
     self.treeview_events:add_column_toggle("Con", 50, self.toggle_controllable, self )
     self.treeview_events:add_column_toggle("Obs", 50, self.toggle_observable,  self )
 
@@ -41,6 +41,12 @@ AutomatonEditor = letk.Class( function( self, gui, automaton )
     self.btn_act_saveas = gtk.ToolButton.new( self.img_act_saveas, "Save As" )
     self.btn_act_saveas:connect( 'clicked', self.set_act_save_as, self )
     self.toolbar:insert( self.btn_act_saveas, -1 )
+
+    --png
+    self.img_act_png = gtk.Image.new_from_file( './images/icons/png.gif' )
+    self.btn_act_png = gtk.ToolButton.new( self.img_act_png, "PNG" )
+    self.btn_act_png:connect( 'clicked', self.set_act_png, self )
+    self.toolbar:insert( self.btn_act_png, -1 )
 
     --edit
     self.img_act_edit = gtk.Image.new_from_file( './images/icons/edit.gif' )
@@ -119,6 +125,118 @@ function AutomatonEditor:update_treeview_events()
     self.treeview_events:update()
 end
 
+function AutomatonEditor:edit_state( state )
+    local window       = gtk.Window.new(gtk.WINDOW_TOPLEVEL)
+    local vbox         = gtk.VBox.new(false, 0)
+    local hbox1        = gtk.HBox.new(false, 0)
+    local hbox2        = gtk.HBox.new(false, 0)
+    local label        = gtk.Label.new("Name")
+    local entry        = gtk.Entry.new()
+    local btnOk        = gtk.Button.new_with_mnemonic( "OK" )
+    local btnCancel    = gtk.Button.new_with_mnemonic( "Cancel" )
+
+    window:add( vbox )
+        vbox:pack_start(hbox1, false, false, 0)
+            hbox1:pack_start(label, true, true, 0)
+            hbox1:pack_start(entry, true, true, 0)
+        vbox:pack_start(hbox2, false, false, 0)
+            hbox2:pack_start(btnOk, true, true, 0)
+            hbox2:pack_start(btnCancel, true, true, 0)
+
+    entry:set_text( state.name or '' )
+    window:set_modal( true )
+    window:set(
+        "title", "State properties",
+        "width-request", 200,
+        "height-request", 70,
+        "window-position", gtk.WIN_POS_CENTER,
+        "icon-name", "gtk-about"
+    )
+
+    window:connect("delete-event", window.destroy, window)
+    btnCancel:connect('clicked', function()
+        self.render:draw({},{})
+        window:destroy()
+    end)
+    btnOk:connect('clicked', function()
+        state.name = entry:get_text()
+        self.render:draw({},{})
+        window:destroy()
+    end)
+
+    window:show_all()
+end
+
+function AutomatonEditor:edit_transition( source, target )
+    local window          = gtk.Window.new(gtk.WINDOW_TOPLEVEL)
+    local vbox            = gtk.VBox.new(false, 0)
+    local tree            = Treeview.new( true )
+    local btnOk           = gtk.Button.new_with_mnemonic( "OK" )
+    local transitions_map
+    local events_map
+
+    function update()
+        tree:clear_all()
+        transitions_map = {}
+        events_map      = {}
+        for k_event, event in  self.automaton.events:ipairs() do
+            tree:add_row{
+                source.event_target[event] and source.event_target[event][target] and true or false,
+                event.name
+            }
+            events_map[ k_event ] = event
+            if source.event_target[event] and source.event_target[event][target] then
+                for k_transition, transition in source.transitions_out:ipairs() do
+                    if
+                        transition.source == source and
+                        transition.target == target and
+                        transition.event  == event
+                    then
+                        transitions_map[ k_event ] = transition
+                    end
+                end
+            end
+        end
+        tree:update()
+    end
+
+    tree:add_column_toggle("Tran", 50, function(self, row_id)
+        if transitions_map then
+            local item = row_id + 1
+            if transitions_map[ item ]  then
+                self.automaton:transition_remove( transitions_map[ item ] )
+            else
+                self.automaton:transition_add( source, target, events_map[ item ]  )
+            end
+            update()
+        end
+    end, self )
+    tree:add_column_text("Event",100)
+
+    window:add( vbox )
+        vbox:pack_start(tree:build(), true, true, 0)
+        vbox:pack_start(btnOk, false, false, 0)
+
+    update()
+
+    window:set_modal( true )
+    window:set(
+        "title", "Transition properties",
+        "width-request", 200,
+        "height-request", 300,
+        "window-position", gtk.WIN_POS_CENTER,
+        "icon-name", "gtk-about"
+    )
+
+    window:connect("delete-event", window.destroy, window)
+    btnOk:connect('clicked', function()
+        self.render:draw({},{})
+        window:destroy()
+    end)
+
+    window:show_all()
+end
+
 function AutomatonEditor:toolbar_set_unset_operation( mode )
     local btn      = {'edit','move','state','marked','initial','transition','delete'}
     local active   = self['btn_act_' .. mode]:get('active')
@@ -175,6 +293,30 @@ function AutomatonEditor:set_act_save_as()
     end
 end
 
+function AutomatonEditor:set_act_png()
+    local dialog = gtk.FileChooserDialog.new(
+        "Save AS", nil,gtk.FILE_CHOOSER_ACTION_SAVE,
+        "gtk-cancel", gtk.RESPONSE_CANCEL,
+        "gtk-ok", gtk.RESPONSE_OK
+    )
+    local filter = gtk.FileFilter.new()
+    filter:add_pattern("*.png")
+    filter:set_name("Png image")
+    dialog:add_filter(filter)
+    local response = dialog:run()
+    dialog:hide()
+    local names = dialog:get_filenames()
+    if response == gtk.RESPONSE_OK and names and names[1] then
+        local surface = cairo.ImageSurface.create(cairo.FORMAT_ARGB32, (self.render.last_size.x or 512)+64, (self.render.last_size.y or 512)+64 )
+        print( self.render.last_size.x, self.render.last_size.y )
+        local cr      = cairo.Context.create(surface)
+        local size    = self.render:draw_context( cr )
+        surface:write_to_png( names[1] )
+        cr:destroy()
+        surface:destroy()
+    end
+end
+
 function AutomatonEditor:set_act_edit()
     self:toolbar_set_unset_operation( 'edit' )
 end
@@ -219,8 +361,10 @@ function AutomatonEditor:drawing_area_press( event )
     if self.operation == 'edit' then
         if element and element.type == 'state' then
             self.render:draw({[element.id] = {0.85,0,0}},{})
+            self:edit_state( element.object )
         elseif element and element.type == 'transition' then
             self.render:draw({},{[element.index] = {0.85,0,0}})
+            self:edit_transition( element.source_obj, element.target_obj )
         end
     elseif self.operation == 'state' then
         local id = self.automaton:state_add()

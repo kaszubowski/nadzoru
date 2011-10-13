@@ -1,8 +1,8 @@
 AutomatonRender = letk.Class( function( self, automaton )
-
     self.automaton = automaton
     self.color_states      = {}
     self.color_transitions = {}
+    self.last_size         = {}
 
     self.scrolled          = gtk.ScrolledWindow.new()
         self.drawing_area  = gtk.DrawingArea.new( )
@@ -179,7 +179,14 @@ function AutomatonRender:draw( color_states, color_transitions)
 end
 
 function AutomatonRender:drawing_area_expose()
-    local cr                 = gdk.cairo_create( self.drawing_area:get_window() )
+    local cr   = gdk.cairo_create( self.drawing_area:get_window() )
+    local size = self:draw_context( cr )
+    self.drawing_area:set_size_request( size.x+128, size.y+128 )
+    cr:destroy()
+    self.last_size = size
+end
+
+function AutomatonRender:draw_context( cr )
     local size               = {x=0,y=0}
     local states_position    = {}
     local create_X, create_Y = 128, 128
@@ -298,8 +305,7 @@ function AutomatonRender:drawing_area_expose()
         end
     end
 
-    self.drawing_area:set_size_request( size.x+128, size.y+128 )
-    cr:destroy()
+    return size
 end
 
 local function two_point_angle(x1,y1,x2,y2)
@@ -345,6 +351,8 @@ function AutomatonRender:select_element(x,y)
                         tran_select[#tran_select +1] = {
                             object = transitions,
                         }
+                        tran_select.source_obj = s
+                        tran_select.target_obj = t
                     end
                 else
                     if a >= r.as and a <= r.ae and hip <= r.ar + 3 and hip >= r.ar - 3 then
@@ -355,6 +363,8 @@ function AutomatonRender:select_element(x,y)
                         tran_select[#tran_select +1] = {
                             object = transitions,
                         }
+                        tran_select.source_obj = s
+                        tran_select.target_obj = t
                     end
                 end
             end

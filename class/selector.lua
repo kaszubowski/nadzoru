@@ -66,6 +66,7 @@ function Selector:multipler_selector( options )
     options = table.complete( options or {}, {
         list        = letk.List.new(),
         text_fn     = nil,
+        filter_fn   = nil,
         text_input  = 'input',
         text_output = 'output',
         success_fn  = nil,
@@ -116,8 +117,10 @@ function Selector:multipler_selector( options )
     local list_output = letk.List.new()
 
     for k, v in options.list:ipairs() do
-        list_input:append( v )
-        input:add_row{ type(options.text_fn) == 'function' and options.text_fn( v ) or tostring( v ) }
+        if type(options.filter_fn) ~= 'function' or options.filter_fn( v ) then
+            list_input:append( v )
+            input:add_row{ type(options.text_fn) == 'function' and options.text_fn( v ) or tostring( v ) }
+        end
     end
     input:update()
 
@@ -171,6 +174,7 @@ function Selector:add_combobox( options )
     options = table.complete( options or {}, {
         list        = letk.List.new(),
         text_fn     = nil,
+        filter_fn   = nil,
         result_fn   = nil,
         text        = 'input',
     })
@@ -184,7 +188,9 @@ function Selector:add_combobox( options )
     local label    = gtk.Label.new_with_mnemonic( options.text )
     local combobox = gtk.ComboBox.new_text( )
     for k, v in options.list:ipairs() do
-        combobox:append_text(type(options.text_fn) == 'function' and options.text_fn( v ) or tostring( v ) )
+        if type(options.filter_fn) ~= 'function' or options.filter_fn( v ) then
+            combobox:append_text(type(options.text_fn) == 'function' and options.text_fn( v ) or tostring( v ) )
+        end
     end
 
     self.single_box:pack_start( label , false, false, 0 )
@@ -201,12 +207,15 @@ function Selector:add_multipler( options )
     options = table.complete( options or {}, {
         list        = letk.List.new(),
         text_fn     = nil,
+        filter_fn   = nil,
         text        = 'input',
     })
     local treeview = Treeview.new( true )
         :add_column_text(options.text)
     for k, v in options.list:ipairs() do
-        treeview:add_row{ type( options.text_fn ) == 'function' and options.text_fn( v ) or tostring( v ) }
+        if type(options.filter_fn) ~= 'function' or options.filter_fn( v ) then
+            treeview:add_row{ type( options.text_fn ) == 'function' and options.text_fn( v ) or tostring( v ) }
+        end
     end
     self.result[#self.result + 1] = function()
         local selecteds_pos = treeview:get_selected()

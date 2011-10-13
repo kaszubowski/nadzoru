@@ -26,26 +26,7 @@ Automaton = letk.Class( function( self )
     self:set('file_name', '*new' )
 end, Object )
 
-------------------------------------------------------------------------
---                        automaton informations                      --
-------------------------------------------------------------------------
---~ function Automaton:info_set( key, value )
-    --~ if key ~= nil then
-        --~ self.info[key] = value
-    --~ end
---~ end
---~
---~ function Automaton:info_unset( key )
-    --~ if key ~= nil then
-        --~ self.info[key] = nil
-    --~ end
---~ end
---~
---~ function Automaton:info_get( key )
-    --~ if key ~= nil then
-        --~ return self.info[key]
-    --~ end
---~ end
+Automaton.__TYPE = 'automaton'
 
 ------------------------------------------------------------------------
 --               automaton manipulation and definition                --
@@ -269,10 +250,10 @@ end
 
 
 --Transitions
-function Automaton:transition_add( source_id, target_id, event_id )
-    local event  = self.events:find( event_id )
-    local source = self.states:find( source_id )
-    local target = self.states:find( target_id )
+function Automaton:transition_add( source_id, target_id, event_id, isdata )
+    local event  = not isdata and self.events:find( event_id )  or event_id
+    local source = not isdata and self.states:find( source_id ) or source_id
+    local target = not isdata and self.states:find( target_id ) or target_id
 
     source.event_target[event] = source.event_target[event] or {}
     target.event_source[event] = target.event_source[event] or {}
@@ -304,7 +285,10 @@ function Automaton:transition_remove( id )
     trans.source.transitions_out:find_remove( trans )
     trans.target.transitions_in:find_remove( trans )
     self.transitions:remove( trans_id )
-
+    trans.source.event_target[trans.event] = trans.source.event_target[trans.event] or {}
+    trans.target.event_source[trans.event] = trans.target.event_source[trans.event] or {}
+    trans.source.event_target[trans.event][trans.target] = nil
+    trans.target.event_source[trans.event][trans.source] = nil
 end
 
 ------------------------------------------------------------------------
@@ -588,7 +572,7 @@ function Automaton:check()
 end
 
 function Automaton:clone()
-    local new_automaton = Automaton.new()
+    local new_automaton   = Automaton.new()
     local state_map = {}
     local event_map = {}
     for c, v in self.states:ipairs() do
@@ -602,7 +586,6 @@ function Automaton:clone()
     end
 
     return new_automaton
-
 end
 
 local function accessible_search( s )
@@ -614,27 +597,30 @@ local function accessible_search( s )
     end
 end
 
-function Automaton:accessible( remove_states )
-    self.accessible_calc = true
-    for k_s, s in self.states:ipairs() do
+function Automaton:accessible( remove_states, keep )
+    local newautomaton = keep and self or self:clone()
+    newautomaton.accessible_calc = true
+    for k_s, s in newautomaton.states:ipairs() do
         s.no_accessible = true
     end
-    local s = self.states:get( self.initial )
+    local s = newautomaton.states:get( newautomaton.initial )
 
     accessible_search( s )
 
     if remove_states then
         local states_toremove, i = {}, 0
-        for k_s, s in self.states:ipairs() do
+        for k_s, s in newautomaton.states:ipairs() do
             if s.no_accessible then
                 states_toremove[i+1] = k_s - i
                 i = i+1
             end
         end
         for j = 1,i do
-            self:state_remove( states_toremove[j] )
+            newautomaton:state_remove( states_toremove[j] )
         end
     end
+
+    return newautomaton
 end
 
 local function coaccessible_search( s )
@@ -646,14 +632,15 @@ local function coaccessible_search( s )
     end
 end
 
-function Automaton:coaccessible( remove_states )
+function Automaton:coaccessible( remove_states, keep )
+    local newautomaton = keep and self or self:clone()
     --make all states as no_coaccessible
-    self.coaccessible_calc = true
-    for k_s, s in self.states:ipairs() do
+    newautomaton.coaccessible_calc = true
+    for k_s, s in newautomaton.states:ipairs() do
         s.no_coaccessible = true
     end
 
-    for k_s, s in self.states:ipairs() do
+    for k_s, s in newautomaton.states:ipairs() do
         if s.no_coaccessible and s.marked then
             coaccessible_search( s )
         end
@@ -661,94 +648,262 @@ function Automaton:coaccessible( remove_states )
 
     if remove_states then
         local states_toremove, i = {}, 0
-        for k_s, s in self.states:ipairs() do
+        for k_s, s in newautomaton.states:ipairs() do
             if s.no_coaccessible then
                 states_toremove[i+1] = k_s - i
                 i = i+1
             end
         end
         for j = 1,i do
-            self:state_remove( states_toremove[j] )
+            newautomaton:state_remove( states_toremove[j] )
         end
     end
+
+    return newautomaton
 end
 
-function Automaton:join_no_coaccessible_states()
-    if not self.coaccessible_calc then
-        self:coaccessible( false )
+function Automaton:join_no_coaccessible_states( keep )
+    local newautomaton = keep and self or self:clone()
+    if not newautomaton.coaccessible_calc then
+        newautomaton:coaccessible( false )
     end
 
     -- the new no_coaccessible state
-    local Snca                 = self:state_add( 'Snca', false, false )
-    local Snca_state           = self.states:get( Snca )
+    local Snca                 = newautomaton:state_add( 'Snca', false, false )
+    local Snca_state           = newautomaton.states:get( Snca )
     Snca_state.no_coaccessible = true
 
     --repeat all transition to/from a no_coaccessible
-    for k, state in self.states:ipairs() do
+    for k, state in newautomaton.states:ipairs() do
         if k < Snca and state.no_coaccessible then
             --from
             for k_t, t in state.transitions_out:ipairs() do
                 if t.target.no_coaccessible then
-                    self:transition_add( Snca, Snca, t.event )
+                    newautomaton:transition_add( Snca, Snca, t.event )
                 else
                     --yeah, I know it's never be make, but ...
-                    self:transition_add( Snca, t.target, t.event )
+                    newautomaton:transition_add( Snca, t.target, t.event )
                 end
             end
             --to
             for k_t, t in state.transitions_in:ipairs() do
                 if t.source.no_coaccessible then
-                    self:transition_add( Snca, Snca, t.event )
+                    newautomaton:transition_add( Snca, Snca, t.event )
                 else
-                    self:transition_add( t.source, Snca, t.event )
+                    newautomaton:transition_add( t.source, Snca, t.event )
                 end
             end
 
             if state.initial then
-                self:state_set_initial( Snca_state )
+                newautomaton:state_set_initial( Snca_state )
             end
         end
     end
 
-    for k, state in self.states:ipairs() do
+    for k, state in newautomaton.states:ipairs() do
         if k < Snca and state.no_coaccessible then
-            self:state_remove( k )
+            newautomaton:state_remove( k )
+        end
+    end
+
+    return newautomaton
+end
+
+function Automaton:trim( remove_states, keep )
+    return self:coaccessible( remove_states, keep ):accessible( remove_states, true )
+end
+
+function Automaton:selfloop( keep, ... )
+    local newautomaton = keep and self or self:clone()
+    local all          = { ... }
+    local self_events  = {}
+    local loop_events  = {}
+
+    for k_event, event in newautomaton.events:ipairs() do
+        self_events[ event.name ] = true
+    end
+
+    for k_a, a in ipairs( all ) do
+        for k_event, event in a.events:ipairs() do
+            if not self_events[ event.name ] and not loop_events[ event.name ] then
+               loop_events[ event.name ] = newautomaton:event_add(
+                    event.name, event.observable, event.controllable
+                )
+            end
+        end
+    end
+
+    for k_state, state in newautomaton.states:ipairs() do
+        for nm_event, id_event in pairs( loop_events ) do
+            newautomaton:transition_add( k_state, k_state, id_event )
+        end
+    end
+
+    return newautomaton
+end
+
+local function selfloopall( ... )
+    local all           = { ... }
+    local map_events    = {}
+    local all_events    = {}
+    local new_events    = {}
+
+    for k_a, a in ipairs( all ) do
+        map_events[ k_a ] = {}
+        for k_event, event in a.events:ipairs() do
+            map_events[ k_a ][ event.name ] = true
+            all_events[ event.name ]        = event
+        end
+    end
+
+    for k_a, a in ipairs( all ) do
+        new_events[ k_a ] = {}
+        for nm_event, event in pairs( all_events ) do
+            if not map_events[ k_a ][ event.name ] then
+                new_events[ k_a ][ event.name ] = a:event_add(
+                    event.name, event.observable, event.controllable
+                )
+            end
+        end
+    end
+
+    for k_a, a in ipairs( all ) do
+        for k_state, state in a.states:ipairs() do
+            for nm_event, id_event in pairs( new_events[ k_a ]  ) do
+                a:transition_add( k_state, k_state, id_event )
+            end
         end
     end
 end
 
---~ function Automaton:syncronize( p2, ... )
-    --~ local p1     = self
-    --~ local new    = Automaton.new()
-    --~ local map_t  = {}
-    --~ local map_s1 = {}
-    --~ local map_s2 = {}
-    --~ local map_e1 = {}
-    --~ local map_e2 = {}
-    --~ for k_event, event in p1.events:ipairs() do
-        --~ map_e1[event.name]  = event
-    --~ end
-    --~ for k_event, event in p2.events:ipairs() do
-        --~ map_e2[event.name] = event
-    --~ end
-    --~ for k_s, s in p1.states:ipairs() do
-        --~ map_s1[s] = k_s
-    --~ end
-    --~ for k_s, s in p2.states:ipairs() do
-        --~ map_s2[s] = k_s
-    --~ end
---~
-    --~ for k_s1, s1 in p1.states:ipairs() do
-        --~ for k_s2, s2 in p1.states:ipairs() do
-            --~ local e1 = {}
-            --~ local e2 = {}
-            --~ for k_t, t in s1.transitions_out:ipairs() do
-                --~ e1[t.event.name] = map_s1[t.target]
-            --~ end
-            --~ for k_t, t in s2.transitions_out:ipairs() do
-                --~ e2[t.event.name] = map_s2[t.target]
-            --~ end
-        --~ end
-    --~ end
---~ end
+--parallel composition
+function Automaton:synchronization( ... )
+    local all           = { self, ... }
+    local new_all       = {}
 
+    for k_a, a in ipairs( all ) do
+        new_all[ k_a ] = a:clone()
+    end
+
+    selfloopall( unpack( new_all ) )
+
+    return Automaton.product( unpack( new_all ) )
+end
+
+--intersection or meet
+function Automaton:product( ... )
+    local all           = { self, ... }
+    local new_automaton = Automaton:new()
+
+    --find common events:
+    local events        = {}
+    local events_count  = {}
+    for k_a, a in ipairs( all ) do
+        for k_e, e in a.events:ipairs() do
+            events[ e.name ]       = e
+            if events_count[ e.name ] then
+                events_count[ e.name ] = events_count[ e.name ] + 1
+            else
+                events_count[ e.name ] = 1
+            end
+        end
+    end
+    local events_names_id,  events_names_data = {}, {}
+    for e_nm, count in pairs( events_count ) do
+        if count == #all then
+            events_names_id[ e_nm ], events_names_data[ e_nm ] = new_automaton:event_add(
+                events[ e_nm ].name, events[ e_nm ].observable, events[ e_nm ].controllable
+            )
+        else
+            events[ e_nm ] = nil
+        end
+    end
+
+    --Create transitions map
+    local transitions_map    = {}
+    local state_num_data_map = {}
+    for k_a, a in ipairs( all ) do
+        transitions_map[ k_a ]    = {}
+        state_num_data_map[ k_a ] = {}
+        local states_map       = {}
+        for k_s, s in a.states:ipairs() do
+            transitions_map[ k_a ][ k_s ]    = {}
+            states_map[ s ]                  = k_s
+            state_num_data_map[ k_a ][ k_s ] = s
+        end
+        for k_s, s in a.states:ipairs() do
+            for k_e, e in s.transitions_out:ipairs() do
+                if events_names_id[ e.event.name ] then
+                    transitions_map[ k_a ][ k_s ][ e.event.name ] = states_map[ e.target ]
+                end
+            end
+        end
+    end
+
+    --Generate states and transitions
+    local state_stack, ss_top = {}, 0
+    local created_states_data = {}, 0
+    local created_states_id   = nil
+
+    --init
+    local new_stack = {}
+    local marked    = true
+    for k_a,a in ipairs( all ) do
+        new_stack[ k_a ] = a.initial
+        if not state_num_data_map[ k_a ][ a.initial ].marked then
+            marked = false
+        end
+    end
+    ss_top              = ss_top + 1
+    state_stack[ss_top] = new_stack
+    state_map_id        = table.concat( new_stack, ',' )
+    created_states_id, created_states_data[ state_map_id ] = new_automaton:state_add(
+        state_map_id, marked, true
+    )
+
+    --loop
+    while ss_top > 0 do
+        --pop
+        local current            = state_stack[ss_top]
+        local current_state_data = created_states_data[ table.concat( current, ',' ) ]
+        state_stack[ss_top]      = nil
+        ss_top                   = ss_top - 1
+
+        --create states
+        for e_nm, e in pairs( events ) do
+            local ok = true
+            new_stack   = {}
+            marked      = true
+            for k_a, a in ipairs( all ) do
+                local target = transitions_map[ k_a ][ current[k_a] ][ e_nm ]
+                if  target then
+                    new_stack[ k_a ] = target
+                    if not state_num_data_map[ k_a ][ target ].marked then
+                        marked = false
+                    end
+                else
+                    ok = false
+                    break
+                end
+            end
+            if ok then
+                state_map_id = table.concat( new_stack, ',' )
+                if not created_states_data[ state_map_id ] then
+                    created_states_id, created_states_data[ state_map_id ] = new_automaton:state_add(
+                        state_map_id, marked, false
+                    )
+                    ss_top              = ss_top + 1
+                    state_stack[ss_top] = new_stack
+                end
+                new_automaton:transition_add(
+                    current_state_data,
+                    created_states_data[ state_map_id ],
+                    events_names_data[ e_nm ],
+                    true
+                )
+            end
+        end
+    end
+
+    return new_automaton
+end
