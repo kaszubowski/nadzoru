@@ -555,18 +555,21 @@ function Automaton:load_file( file_name )
     if file then
         local s    = file:read('*a')
         local data = loadstring('return ' .. s)()
+        local state_map, event_map = {}, {}
         if data then
             for k_state, state in ipairs( data.states ) do
                 local id, new_state = self:state_add( state.name, state.marked, state.initial )
-                new_state.x = state.x
-                new_state.y = state.y
-                new_state.r = state.r
+                new_state.x         = state.x
+                new_state.y         = state.y
+                new_state.r         = state.r
+                state_map[id]       = new_state
             end
             for k_event, event in ipairs( data.events ) do
-                self:event_add( event.name, event.observable, event.controllable )
+                local id, new_event = self:event_add( event.name, event.observable, event.controllable )
+                event_map[id]       = new_event
             end
             for k_transition, transition in ipairs( data.transitions ) do
-                self:transition_add( transition.source, transition.target, transition.event )
+                self:transition_add( state_map[transition.source], state_map[transition.target], event_map[transition.event], true )
             end
             self:set( 'file_type', 'nza' )
             self:set( 'full_file_name', file_name )
