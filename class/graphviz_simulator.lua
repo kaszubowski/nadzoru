@@ -59,21 +59,21 @@ GraphvizSimulator = letk.Class( function( self, gui, automaton )
     Simulator.__super( self, automaton )
 
     self.image         = nil
-    self.hbox          = gtk.HBox.new( false, 0 )
+    self.hbox          = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
         self.scrolled      = gtk.ScrolledWindow.new()
             self.drawing_area  = gtk.DrawingArea.new( )
-        self.vbox_leftmenu = gtk.VBox.new( false, 0 )
+        self.vbox_leftmenu = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
             self.treeview      = Treeview.new()
                 :add_column_text("Events",100)
                 :add_column_text("State",60)
                 :bind_ondoubleclick(GraphvizSimulator.state_change, self)
-            self.hbox_jumpstate = gtk.HBox.new( false, 0 )
+            self.hbox_jumpstate = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
                 self.sb_statejump = gtk.SpinButton.new_with_range(1, automaton.states:len(), 1)
                 self.btn_statejump = gtk.Button.new_with_mnemonic ("Jump to State")
-            self.hbox_info = gtk.HBox.new( false, 0 )
-                self.cbx_info = gtk.ComboBox.new_text( )
+            self.hbox_info = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
+                self.cbx_info = gtk.ComboBoxText.new()
                 self.btn_info = gtk.Button.new_with_mnemonic ("Show Info")
-            self.hbox_draw_deep = gtk.HBox.new( false, 0 )
+            self.hbox_draw_deep = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
                 self.lbl_draw_deep = gtk.Label.new_with_mnemonic("Deep")
                 self.sb_draw_deep = gtk.SpinButton.new_with_range(1, 20, 1)
                 --self.btn_statejump = gtk.Button.new_with_mnemonic ('Jump to State')
@@ -82,6 +82,9 @@ GraphvizSimulator = letk.Class( function( self, gui, automaton )
         self.cbx_info:append_text( v[2] )
     end
     self.btn_info:connect('clicked', self.info, self)
+    if #info > 0 then
+        self.cbx_info:set('active', 0)
+    end
 
     self.scrolled:add_with_viewport(self.drawing_area)
     self.sb_statejump:set_digits( 0 )
@@ -106,7 +109,7 @@ GraphvizSimulator = letk.Class( function( self, gui, automaton )
     --Build
     self:update_treeview()
     self:draw()
-    self.drawing_area:connect("expose-event", self.drawing_area_expose, self )
+    self.drawing_area:connect('draw', self.drawing_area_expose, self )
     self.btn_statejump:connect('clicked', self.statejump_cb, self)
 end, Simulator )
 
@@ -131,10 +134,10 @@ function GraphvizSimulator.state_change(self, ud_treepath, ud_treeviewcolumn)
     return true
 end
 
-function GraphvizSimulator:drawing_area_expose()
+function GraphvizSimulator:drawing_area_expose( cr )
     if not self.image then return false end
 
-    local cr = gdk.cairo_create( self.drawing_area:get_window() )
+    cr = cairo.Context.wrap(cr)
     local iWidth, iHeight = self.image:get_width(), self.image:get_height()
 
     local surface = cairo.ImageSurface.create(cairo.FORMAT_ARGB32, iWidth, iHeight)

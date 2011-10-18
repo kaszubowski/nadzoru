@@ -29,7 +29,7 @@ function GLRender:configure()
     gl.Enable (gl.BLEND);
     gl.BlendFunc (gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-    drawable:gl_end()
+    --~ drawable:gl_end()
 
     return true
 

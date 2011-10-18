@@ -29,11 +29,11 @@ local function safeload( libs, id, required, msg )
     LibLoad[id], LibLoad[id .. '_info'] = pcall( safeload_call )
     if not LibLoad[id] then
         if required then
-            print('ERRO: fail load library "id"')
+            print('ERRO: fail load library "' .. id .. '"')
             if msg then print( msg ) end
             os.exit()
         else
-            print('WARNING: fail load library "id", some features may not work')
+            print('WARNING: fail load library "' .. id .. '", some features may not work')
             if msg then print( msg ) end
         end
     end
@@ -41,7 +41,7 @@ end
 
 safeload('letk', 'letk', true, [[You need install 'letk' to run this software]])
 safeload({'lgob.gdk','lgob.gtk','lgob.cairo'}, 'gtk', true, [[You need install 'lgob' to run this software, you can found 'lgob' at http://oproj.tuxfamily.org]])
-safeload({'lgob.gtkglext', 'luagl' }, 'opengl', false, [[OpenGL features are disable, a 'lgob' version with 'gtkglext' suport and 'luagl' are required to enable this features]])
+--safeload({'lgob.gtkglext', 'luagl' }, 'opengl', false, [[OpenGL features are disable, a 'lgob' version with 'gtkglext' suport and 'luagl' are required to enable this features]])
 safeload('lxp', 'lxp', false, [[no library 'lxp' to manipulate xml format]])
 
 --Utils
@@ -49,7 +49,7 @@ require('class.object')
 
 require('class.info_dialog')
 require('class.treeview')
-require('class.gl_render')
+-- require('class.gl_render')
 require('class.selector')
 
 require('class.automaton')
@@ -100,10 +100,11 @@ function Controller:build()
     self.gui:add_action('operations_selfloop', "_SelfLoop", "Self Loop in a automaton with a set of other automata events", nil, self.operations_selfloop, self)
     self.gui:add_action('operations_synchronization', "_Synchronization", "Synchronization of two or more automatons", nil, self.operations_synchronization, self)
     self.gui:add_action('operations_product', "_Product", "Calculate the Product of two or more automatons", nil, self.operations_product, self)
+    self.gui:add_action('operations_supc', "_SupC", "Calculate the operations_supc", nil, self.operations_supc, self)
 
     --Simulate
     self.gui:add_action('simulategraphviz', "Automaton Simulate _Graphviz", "Simulate Automata in a Graphviz render", nil, self.simulate_graphviz, self)
-    self.gui:add_action('simulateplant', "Automaton Simulate _Plant", "Simulate the Plant in a OpenGL render", nil, self.simulate_plant, self)
+    --self.gui:add_action('simulateplant', "Automaton Simulate _Plant", "Simulate the Plant in a OpenGL render", nil, self.simulate_plant, self)
 
     -- ** Menu-Action Link ** --
     --File
@@ -124,10 +125,11 @@ function Controller:build()
     self.gui:append_menu_item('automata','operations_selfloop')
     self.gui:append_menu_item('automata','operations_synchronization')
     self.gui:append_menu_item('automata','operations_product')
+    self.gui:append_menu_item('automata','operations_supc')
 
     --Simulate
     self.gui:append_menu_item('simulate', 'simulategraphviz')
-    self.gui:append_menu_item('simulate', 'simulateplant')
+    --self.gui:append_menu_item('simulate', 'simulateplant')
 
 end
 
@@ -519,6 +521,42 @@ function Controller.operations_product( data )
             return v.__TYPE == 'automaton'
         end,
         text = 'Automata:'
+    }
+    :run()
+end
+
+function Controller.operations_supc( data )
+     Selector.new({
+        title = 'nadzoru',
+        success_fn = function( results, numresult )
+            local g = results[1]
+            local k = results[2]
+            if g and k then
+                local new_automaton = Automaton.supC(g, k)
+                new_automaton:set( 'file_name', 'supC(' .. ')' )
+                data.param.elements:append( new_automaton )
+            end
+        end,
+    })
+    :add_combobox{
+        list = data.param.elements,
+        text_fn  = function( a )
+            return a:get( 'file_name' )
+        end,
+        filter_fn = function( v )
+            return v.__TYPE == 'automaton'
+        end,
+        text = 'G:'
+    }
+    :add_combobox{
+        list = data.param.elements,
+        text_fn  = function( a )
+            return a:get( 'file_name' )
+        end,
+        filter_fn = function( v )
+            return v.__TYPE == 'automaton'
+        end,
+        text = 'K:'
     }
     :run()
 end

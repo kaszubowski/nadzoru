@@ -18,9 +18,9 @@ Selector = letk.Class( function( self, options, nowindow )
     if not nowindow then
         self.window                   = gtk.Window.new( gtk.TOP_LEVEL )
     end
-        self.vbox_main            = gtk.VBox.new(false, 0)
-            self.hbox_main        = gtk.HBox.new(false, 0)
-            self.hbox_footer      = gtk.HBox.new(true, 0)
+        self.vbox_main            = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
+            self.hbox_main        = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
+            self.hbox_footer      = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
                 if not nowindow then
                     self.btn_cancel   = gtk.Button.new_with_label("Cancel")
                 end
@@ -75,18 +75,18 @@ function Selector:multipler_selector( options )
     })
 
     local window = gtk.Window.new( gtk.TOP_LEVEL )
-        local vbox_main               = gtk.VBox.new(false, 0)
-            local hbox_main           = gtk.HBox.new(false, 0)
+        local vbox_main               = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
+            local hbox_main           = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
                 local input           = Treeview.new()
                     :add_column_text(options.text_input, 150)
-                local vbox_buttons    = gtk.VBox.new(false, 0)
+                local vbox_buttons    = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
                     local btn_add     = gtk.Button.new_with_label(">")
                     --local btn_add_all = gtk.Button.new_with_label(">>")
                     local btn_rm      = gtk.Button.new_with_label("<")
                     --local btn_rm_all  = gtk.Button.new_with_label("<<")
                 local output          = Treeview.new()
                     :add_column_text(options.text_output, 150)
-            local hbox_footer         = gtk.HBox.new(true, 0)
+            local hbox_footer         = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
                 local btn_cancel      = gtk.Button.new_with_label("Cancel")
                 local btn_ok          = gtk.Button.new_with_label("OK")
 
@@ -180,17 +180,21 @@ function Selector:add_combobox( options )
     })
 
     if not self.single_box then
-        self.single_box = gtk.VBox.new(false, 0)
+        self.single_box = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
         self.hbox_main:pack_start( self.single_box , true, true, 0 )
         self.num_columns = self.num_columns + 1
     end
 
     local label    = gtk.Label.new_with_mnemonic( options.text )
-    local combobox = gtk.ComboBox.new_text( )
+    local combobox = gtk.ComboBoxText.new()
     for k, v in options.list:ipairs() do
         if type(options.filter_fn) ~= 'function' or options.filter_fn( v ) then
             combobox:append_text(type(options.text_fn) == 'function' and options.text_fn( v ) or tostring( v ) )
         end
+    end
+
+    if options.list:len() > 0 then
+        combobox:set('active', 0)
     end
 
     self.single_box:pack_start( label , false, false, 0 )
@@ -237,7 +241,7 @@ function Selector:add_checkbox( options )
     })
     local checkbutton = gtk.CheckButton.new_with_mnemonic( options.text )
     if not self.single_box then
-        self.single_box = gtk.VBox.new(false, 0)
+        self.single_box = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
         self.hbox_main:pack_start( self.single_box , true, true, 0 )
         self.num_columns = self.num_columns + 1
     end
@@ -253,9 +257,9 @@ function Selector:add_file( options )
      options = table.complete( options or {}, {
         text        = 'input',
     })
-    local vbox_file = gtk.VBox.new(false, 0)
+    local vbox_file = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
         local label_info     = gtk.Label.new_with_mnemonic( options.text )
-        local hbox_file      = gtk.HBox.new(false, 5)
+        local hbox_file      = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
             local label_file = gtk.Label.new( )
             local button     = gtk.Button.new_with_mnemonic( '...' )
 
@@ -266,7 +270,7 @@ function Selector:add_file( options )
     )
     local file = ''
     if not self.single_box then
-        self.single_box = gtk.VBox.new(false, 0)
+        self.single_box = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
         self.hbox_main:pack_start( self.single_box , true, true, 0 )
         self.num_columns = self.num_columns + 1
     end

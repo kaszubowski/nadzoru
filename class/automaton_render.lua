@@ -9,7 +9,7 @@ AutomatonRender = letk.Class( function( self, automaton )
 
     self.scrolled:add_with_viewport(self.drawing_area)
 
-    self.drawing_area:connect("expose-event", self.drawing_area_expose, self )
+    self.drawing_area:connect('draw', self.drawing_area_expose, self )
 
     return self, self.scrolled, self.drawing_area
 end, Object )
@@ -178,8 +178,8 @@ function AutomatonRender:draw( color_states, color_transitions)
     self.drawing_area:queue_draw()
 end
 
-function AutomatonRender:drawing_area_expose()
-    local cr   = gdk.cairo_create( self.drawing_area:get_window() )
+function AutomatonRender:drawing_area_expose( cr )
+    cr = cairo.Context.wrap(cr)
     local size = self:draw_context( cr )
     self.drawing_area:set_size_request( size.x+128, size.y+128 )
     cr:destroy()
@@ -241,7 +241,6 @@ function AutomatonRender:draw_context( cr )
     end
     local transitions_out  = {}
     local transitions_self = {}
-
     for id, trans in self.automaton.transitions:ipairs() do
         --trans.source and trans.target are <table>
         local source_id, target_id = states_position[trans.source], states_position[trans.target]

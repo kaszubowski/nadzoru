@@ -3,8 +3,8 @@ PlantSimulator = letk.Class( function( self, gui, simulator )
     self.automaton = self.simulator.automaton
     self.gui       = gui
 
-    self.vbox         = gtk.VBox.new(false, 0)
-        self.hbox         = gtk.HBox.new(false, 0)
+    self.vbox         = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
+        self.hbox         = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
             self.scrolled     = gtk.ScrolledWindow.new( )
                 self.drawing_area = gtk.DrawingArea.new( )
 

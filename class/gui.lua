@@ -21,11 +21,11 @@ Gui = letk.Class( function( self )
     self.tab          = letk.List.new()
 
     self.window       = gtk.Window.new(gtk.WINDOW_TOPLEVEL)
-    self.vbox         = gtk.VBox.new(false, 0)
+    self.vbox         = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
 
     self.menubar      = gtk.MenuBar.new()
     --self.toolbar      = gtk.Toolbar.new()
-    --self.hbox         = gtk.HBox.new(false, 0)
+    --self.hbox         = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
     --self.statusbar    = gtk.Statusbar.new()
 
     --self.context      = self.statusbar:get_context_id("default")

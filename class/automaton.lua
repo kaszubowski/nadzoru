@@ -29,6 +29,44 @@ end, Object )
 Automaton.__TYPE = 'automaton'
 
 ------------------------------------------------------------------------
+--                         Private utils                              --
+------------------------------------------------------------------------
+function remove_states_fn( A, fn )
+
+        local removed_states = A.states:iremove( fn )
+        --remove in/out transition to/from bad states
+        local transitions_to_remove = {}
+        for ksrm, srm in ipairs( removed_states ) do
+            for kt, t in srm.transitions_out:ipairs() do
+                transitions_to_remove[ t ] = true
+                t.target.event_source[t.event]           = t.target.event_source[t.event] or {}
+                t.target.event_source[t.event][t.source] = nil
+            end
+            for kt, t in srm.transitions_in:ipairs() do
+                transitions_to_remove[ t ] = true
+                t.source.event_target[t.event]           = t.source.event_target[t.event] or {}
+                t.source.event_target[t.event][t.target] = nil
+            end
+        end
+        A.transitions:iremove( function( t )
+            return transitions_to_remove[ t ] or false
+        end )
+        for k_s, s in A.states:ipairs() do
+            s.transitions_in:iremove( function( t )
+                return transitions_to_remove[ t ] or false
+            end )
+            s.transitions_out:iremove( function( t )
+                return transitions_to_remove[ t ] or false
+            end )
+        end
+        for k_e, e in A.events:ipairs() do
+            e.transitions:iremove( function( t )
+                return transitions_to_remove[ t ] or false
+            end )
+        end
+end
+
+------------------------------------------------------------------------
 --               automaton manipulation and definition                --
 ------------------------------------------------------------------------
 
@@ -301,11 +339,12 @@ function Automaton:IDES_import( file_name, get_layout )
     local sm        = 0
     local last_tag  = ''
     local last_id   = nil
+    local last_obj  = nil
     local last_ev   = nil
     local run       = false
 
-    local map_state = {}
-    local map_event = {}
+    local map_state, map_state_obj = {}, {}
+    local map_event, map_event_obj = {}, {}
 
 
     local callbacks = {
@@ -328,9 +367,10 @@ function Automaton:IDES_import( file_name, get_layout )
 
             ---*** DATA ***---
             if run == 'data' and name == 'state' then
-                sm                      = t.s
-                last_id                 = self:state_add( tags['id'], false, false )
-                map_state[ tags['id'] ] = last_id
+                sm                          = t.s
+                last_id, last_obj           = self:state_add( tags['id'], false, false )
+                map_state[ tags['id'] ]     = last_id
+                map_state_obj[ tags['id'] ] = last_obj
             end
 
             if run == 'data' and name == 'initial' and sm == t.s then
@@ -343,9 +383,10 @@ function Automaton:IDES_import( file_name, get_layout )
 
             --Event
             if run == 'data' and name == 'event' then
-                sm                      = t.e
-                last_ev                 = self:event_add()
-                map_event[ tags['id'] ] = last_ev
+                sm                          = t.e
+                last_ev, last_obj           = self:event_add()
+                map_event[ tags['id'] ]     = last_ev
+                map_event_obj[ tags['id'] ] = last_obj
             end
 
             if run == 'data' and name == 'observable'   and sm == t.e then
@@ -359,11 +400,11 @@ function Automaton:IDES_import( file_name, get_layout )
             --Transition
 
             if run == 'data' and name == 'transition' then
-                local source = map_state[ tags['source'] ]
-                local target = map_state[ tags['target'] ]
-                local event  = map_event[ tags['event'] ]
+                local source = map_state_obj[ tags['source'] ]
+                local target = map_state_obj[ tags['target'] ]
+                local event  = map_event_obj[ tags['event'] ]
 
-                self:transition_add( source, target, event )
+                self:transition_add( source, target, event, true )
             end
 
             ---*** LAYOUT ***---
@@ -575,14 +616,15 @@ function Automaton:clone()
     local new_automaton   = Automaton.new()
     local state_map = {}
     local event_map = {}
+    local _
     for c, v in self.states:ipairs() do
-        state_map[v] = new_automaton:state_add( v.name, v.marked, v.initial )
+        _, state_map[v] = new_automaton:state_add( v.name, v.marked, v.initial )
     end
     for c, v in self.events:ipairs() do
-        event_map[v] = new_automaton:event_add(v.name, v.observable, v.controllable)
+        _, event_map[v]= new_automaton:event_add(v.name, v.observable, v.controllable)
     end
     for c, v in self.transitions:ipairs() do
-        new_automaton:transition_add( state_map[v.source], state_map[v.target], event_map[v.event] )
+        new_automaton:transition_add( state_map[v.source], state_map[v.target], event_map[v.event], true )
     end
 
     return new_automaton
@@ -603,21 +645,16 @@ function Automaton:accessible( remove_states, keep )
     for k_s, s in newautomaton.states:ipairs() do
         s.no_accessible = true
     end
-    local s = newautomaton.states:get( newautomaton.initial )
 
-    accessible_search( s )
+    local si = newautomaton.states:get( newautomaton.initial )
+    if si then
+        accessible_search( si )
+    end
 
     if remove_states then
-        local states_toremove, i = {}, 0
-        for k_s, s in newautomaton.states:ipairs() do
-            if s.no_accessible then
-                states_toremove[i+1] = k_s - i
-                i = i+1
-            end
-        end
-        for j = 1,i do
-            newautomaton:state_remove( states_toremove[j] )
-        end
+        remove_states_fn( newautomaton, function( s )
+            return s.no_accessible or false
+        end )
     end
 
     return newautomaton
@@ -647,16 +684,9 @@ function Automaton:coaccessible( remove_states, keep )
     end
 
     if remove_states then
-        local states_toremove, i = {}, 0
-        for k_s, s in newautomaton.states:ipairs() do
-            if s.no_coaccessible then
-                states_toremove[i+1] = k_s - i
-                i = i+1
-            end
-        end
-        for j = 1,i do
-            newautomaton:state_remove( states_toremove[j] )
-        end
+        remove_states_fn( newautomaton, function( s )
+            return s.no_coaccessible or false
+        end )
     end
 
     return newautomaton
@@ -700,10 +730,15 @@ function Automaton:join_no_coaccessible_states( keep )
         end
     end
 
+    local states_toremove, i = {}, 0
     for k, state in newautomaton.states:ipairs() do
         if k < Snca and state.no_coaccessible then
-            newautomaton:state_remove( k )
+            states_toremove[i+1] = k - i
+            i = i + 1
         end
+    end
+    for j = 1,i do
+        newautomaton:state_remove( states_toremove[j] )
     end
 
     return newautomaton
@@ -906,4 +941,188 @@ function Automaton:product( ... )
     end
 
     return new_automaton
+end
+
+function Automaton.supC(G, K)
+    local R          = K:clone()
+    local mapG, mapR = {}, {}, {}
+
+    for k_s, s in G.states:ipairs() do
+        mapG[k_s] = s
+        mapG[s]   = k_s
+    end
+
+    for k_s, s in R.states:ipairs() do
+        mapR[k_s] = s
+        mapR[s]   = k_s
+    end
+
+    local count, totalc = 0, R.states:len()
+
+    local last_R_len  = -1
+    local atual_R_len = R.states:len()
+    while last_R_len ~= atual_R_len do
+        last_R_len = atual_R_len
+        -- find all (x,.) and bad states
+        local visited    = {}
+        local stack      = {{G.states:get(G.initial), R.states:get(R.initial)}}
+        local i          = 1
+        local bad_states = {}
+
+        while i > 0 do
+            --pop
+            local current = stack[ i ]
+            i             = i - 1
+            if not current[1] or not current[2] then
+                break
+            end
+
+            local id_g, id_r = mapG[ current[1] ], mapR[ current[2] ]
+            local s_g, s_r   = current[1], current[2]
+            local id     = id_g .. '_' .. id_r
+            if not visited[id] then
+                visited[id] = true
+                local R_t   = {}
+                local G_t   = {}
+                for id_t, t in s_g.transitions_out:ipairs() do
+                    G_t[t.event.name] = t.target
+                end
+                for id_t, t in s_r.transitions_out:ipairs() do
+                    R_t[t.event.name] = t.target
+                    i = i + 1
+                    stack[i] = {
+                        G_t[t.event.name] or s_g, --G
+                        t.target,                 --R
+                    }
+                end
+                for id_e, e in R.events:ipairs() do
+                    if
+                        not bad_states[ s_r ] and
+                        not e.controllable    and
+                        G_t[ e.name ]         and
+                        not R_t[ e.name ]
+                    then
+                        s_r.bad_state         = true
+                        bad_states[ s_r ]     = true
+                    end
+                end
+            end
+        end
+        --recursive check bad_states
+        i = 1
+        while i <= #bad_states do
+            local bs = bad_states[i]
+            i        = i + 1
+            for id_t, t in bs.transitions_in:ipairs() do
+                if not t.event.controllable and not t.source.bad_state then
+                    t.source.bad_state          = true
+                end
+            end
+        end
+
+        --remove bad states
+        remove_states_fn( R, function( s )
+            return s.bad_state or false
+        end )
+
+        --trim
+        R:trim( true, true )
+
+        atual_R_len = R.states:len()
+    end
+
+    return R
+end
+
+function Automaton:check()
+    print'Check start...'
+    local sinit       = self.states:get( self.initial )
+    local states      = {}
+    local events      = {}
+    local transitions = {}
+    if sinit then
+        print'[ OK ] Init find'
+    else
+        print'[ ERRO ] Init NOT find'
+    end
+
+    for k_s, s in self.states:ipairs() do
+        states[ k_s ] = s
+        states[ s ]   = k_s
+    end
+
+    for k_e, e in self.events:ipairs() do
+        events[ k_e ] = e
+        events[ e ]   = k_e
+    end
+
+    print'check main transitions...'
+    for k_t, t in self.transitions:ipairs() do
+        transitions[ k_t ] = t
+        transitions[ t ]   = k_t
+        if not events[ t.event ] then
+            print( string.format('[ ERRO ] Event %s not found in transition %i',
+                tostring( t.event ), k_t
+            ), states[t.source], events[ t.event ], states[t.target])
+        end
+        if not states[ t.target ] then
+            print( string.format('[ ERRO ] State %s (T) not found in transition %i',
+                tostring( t.target ), k_t
+            ), states[t.source], events[ t.event ], states[t.target])
+        end
+        if not states[ t.source ] then
+            print( string.format('[ ERRO ] State %s (S) not found in transition %i',
+                tostring( t.source ), k_t
+            ), states[t.source], events[ t.event ], states[t.target])
+        end
+    end
+
+    print'check state transitions...'
+    for k_s, s in self.states:ipairs() do
+        for k_t, t in s.transitions_out:ipairs() do
+            if not transitions[ t ] then
+                print( string.format('[ERRO] Transition OUT %s not found in state %i',
+                    tostring( t ), k_s
+                ))
+            end
+            if t.source ~= s then
+                print( string.format('[ERRO] Invalid self in Transition OUT %s in state %i',
+                    tostring( t ), k_s
+                ), t.source, s)
+            end
+            if not states[ t.target ] then
+                print( string.format('[ERRO] Invalid target in Transition OUT %s in state %i',
+                    tostring( t ), k_s
+                ))
+            end
+            if not events[ t.event ] then
+                print( string.format('[ERRO] Invalid event in Transition OUT %s in state %i',
+                    tostring( t ), k_s
+                ))
+            end
+        end
+        for k_t, t in s.transitions_in:ipairs() do
+            if not transitions[ t ] then
+                print( string.format('[ERRO] Transition IN %s not found in state %i',
+                    tostring( t ), k_s
+                ))
+            end
+            if t.target ~= s then
+                print( string.format('[ERRO] Invalid self in Transition IN %s in state %i',
+                    tostring( t ), k_s
+                ),t.target,s)
+            end
+            if not states[ t.source ] then
+                print( string.format('[ERRO] Invalid target in Transition IN %s in state %i',
+                    tostring( t ), k_s
+                ))
+            end
+            if not events[ t.event ] then
+                print( string.format('[ERRO] Invalid event in Transition IN %s in state %i',
+                    tostring( t ), k_s
+                ))
+            end
+        end
+    end
+    print'Check finish.'
 end

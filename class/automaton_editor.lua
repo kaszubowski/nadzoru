@@ -2,11 +2,11 @@ AutomatonEditor = letk.Class( function( self, gui, automaton )
     self.operation = nil
     self.automaton = automaton
 
-    self.vbox                  = gtk.VBox.new( false, 0 )
+    self.vbox                  = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
         self.toolbar           = gtk.Toolbar.new()
-        self.hbox                  = gtk.HBox.new( false, 0 )
+        self.hbox                  = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
             self.render, self.scrolled, self.drawing_area = AutomatonRender.new( automaton )
-            self.vbox2             = gtk.VBox.new( false, 0 )
+            self.vbox2             = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
                 self.treeview_events      = Treeview.new( true )
                 self.btn_add_event        = gtk.Button.new_from_stock( 'gtk-add' )
                 self.btn_delete_event     = gtk.Button.new_from_stock( 'gtk-delete' )
@@ -104,12 +104,12 @@ AutomatonEditor = letk.Class( function( self, gui, automaton )
     -- *** State Edit Window *** --
     self.state_window = {}
     self.state_window.window = gtk.Window.new(gtk.WINDOW_TOPLEVEL)
-    self.state_window.vbox   = gtk.VBox.new(false, 0)
-    self.state_window.hbox_1 = gtk.HBox.new(false, 0)
+    self.state_window.vbox   = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
+    self.state_window.hbox_1 = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
         self.state_window.lbl_nm = gtk.Label.new("Name")
         self.state_window.lbl_nm:set("xalign", 1)
         self.state_window.ent_nm = gtk.Entry.new()
-    self.state_window.hbox_2 = gtk.HBox.new(false, 0)
+    self.state_window.hbox_2 = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
 
 
     self.state_window.window:set("title", "nadzoru - edit state", "width-request", 300,
@@ -127,9 +127,9 @@ end
 
 function AutomatonEditor:edit_state( state )
     local window       = gtk.Window.new(gtk.WINDOW_TOPLEVEL)
-    local vbox         = gtk.VBox.new(false, 0)
-    local hbox1        = gtk.HBox.new(false, 0)
-    local hbox2        = gtk.HBox.new(false, 0)
+    local vbox         = gtk.gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
+    local hbox1        = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
+    local hbox2        = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
     local label        = gtk.Label.new("Name")
     local entry        = gtk.Entry.new()
     local btnOk        = gtk.Button.new_with_mnemonic( "OK" )
@@ -169,7 +169,7 @@ end
 
 function AutomatonEditor:edit_transition( source, target )
     local window          = gtk.Window.new(gtk.WINDOW_TOPLEVEL)
-    local vbox            = gtk.VBox.new(false, 0)
+    local vbox            = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
     local tree            = Treeview.new( true )
     local btnOk           = gtk.Button.new_with_mnemonic( "OK" )
     local transitions_map
