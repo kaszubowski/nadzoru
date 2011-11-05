@@ -31,7 +31,7 @@ AutomatonEditor = letk.Class( function( self, gui, automaton )
             self.vbox2:pack_start( self.btn_delete_event, false, false, 0 )
 
     --save
-    self.img_act_save = gtk.Image.new_from_file( './images/icons/save.gif' )
+    self.img_act_save = gtk.Image.new_from_file( './images/icons/save.png' )
     self.btn_act_save = gtk.ToolButton.new( self.img_act_save, "Save" )
     self.btn_act_save:connect( 'clicked', self.set_act_save, self )
     self.toolbar:insert( self.btn_act_save, -1 )
@@ -43,55 +43,55 @@ AutomatonEditor = letk.Class( function( self, gui, automaton )
     self.toolbar:insert( self.btn_act_saveas, -1 )
 
     --png
-    self.img_act_png = gtk.Image.new_from_file( './images/icons/png.gif' )
+    self.img_act_png = gtk.Image.new_from_file( './images/icons/png.png' )
     self.btn_act_png = gtk.ToolButton.new( self.img_act_png, "PNG" )
     self.btn_act_png:connect( 'clicked', self.set_act_png, self )
     self.toolbar:insert( self.btn_act_png, -1 )
 
     --edit
-    self.img_act_edit = gtk.Image.new_from_file( './images/icons/edit.gif' )
+    self.img_act_edit = gtk.Image.new_from_file( './images/icons/edit.png' )
     self.btn_act_edit = gtk.ToggleToolButton.new( )
     self.btn_act_edit:set_icon_widget( self.img_act_edit )
     self.btn_act_edit:connect( 'toggled', self.set_act_edit, self )
     self.toolbar:insert( self.btn_act_edit, -1 )
 
     --move
-    self.img_act_move = gtk.Image.new_from_file( './images/icons/move.gif' )
+    self.img_act_move = gtk.Image.new_from_file( './images/icons/move.png' )
     self.btn_act_move = gtk.ToggleToolButton.new( )
     self.btn_act_move:set_icon_widget( self.img_act_move )
     self.btn_act_move:connect( 'toggled', self.set_act_move, self )
     self.toolbar:insert( self.btn_act_move, -1 )
 
     --state
-    self.img_act_state = gtk.Image.new_from_file( './images/icons/state.gif' )
+    self.img_act_state = gtk.Image.new_from_file( './images/icons/state.png' )
     self.btn_act_state = gtk.ToggleToolButton.new( )
     self.btn_act_state:set_icon_widget( self.img_act_state )
     self.btn_act_state:connect( 'toggled', self.set_act_state, self )
     self.toolbar:insert( self.btn_act_state, -1 )
 
      --state initial
-    self.img_act_initial = gtk.Image.new_from_file( './images/icons/state_initial.gif' )
+    self.img_act_initial = gtk.Image.new_from_file( './images/icons/state_initial.png' )
     self.btn_act_initial = gtk.ToggleToolButton.new( )
     self.btn_act_initial:set_icon_widget( self.img_act_initial )
     self.btn_act_initial:connect( 'toggled', self.set_act_initial, self )
     self.toolbar:insert( self.btn_act_initial, -1 )
 
     --state marked
-    self.img_act_marked = gtk.Image.new_from_file( './images/icons/state_marked.gif' )
+    self.img_act_marked = gtk.Image.new_from_file( './images/icons/state_marked.png' )
     self.btn_act_marked = gtk.ToggleToolButton.new( )
     self.btn_act_marked:set_icon_widget( self.img_act_marked )
     self.btn_act_marked:connect( 'toggled', self.set_act_marked, self )
     self.toolbar:insert( self.btn_act_marked, -1 )
 
     --transition
-    self.img_act_transition = gtk.Image.new_from_file( './images/icons/transition.gif' )
+    self.img_act_transition = gtk.Image.new_from_file( './images/icons/transition.png' )
     self.btn_act_transition = gtk.ToggleToolButton.new( )
     self.btn_act_transition:set_icon_widget( self.img_act_transition )
     self.btn_act_transition:connect( 'toggled', self.set_act_transition, self )
     self.toolbar:insert( self.btn_act_transition, -1 )
 
     --delete
-    self.img_act_delete = gtk.Image.new_from_file( './images/icons/delete.gif' )
+    self.img_act_delete = gtk.Image.new_from_file( './images/icons/delete.png' )
     self.btn_act_delete = gtk.ToggleToolButton.new( )
     self.btn_act_delete:set_icon_widget( self.img_act_delete )
     self.btn_act_delete:connect( 'toggled', self.set_act_delete, self )
@@ -127,7 +127,7 @@ end
 
 function AutomatonEditor:edit_state( state )
     local window       = gtk.Window.new(gtk.WINDOW_TOPLEVEL)
-    local vbox         = gtk.gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
+    local vbox         = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
     local hbox1        = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
     local hbox2        = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
     local label        = gtk.Label.new("Name")

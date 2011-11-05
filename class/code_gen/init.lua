@@ -62,7 +62,7 @@ function CodeGen:execute( gui )
     self.gui.selector, self.gui.vbox = Selector.new({
         success_fn = generate,
     }, true)
-    print(self.gui.selector, self.gui.vbox)
+
     for _, opt in ipairs( Devices[ self.device_id ] ) do
         if opt.type == 'choice' then
             self.gui.selector:add_combobox{

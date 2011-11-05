@@ -514,7 +514,7 @@ function Automaton:save()
         if not file_name:match( '%.nza$' ) then
             file_name = file_name .. '.nza'
         end
-        local file = io.open( file_name, "w")
+        local file = io.open( file_name, 'w')
         if file then
             local code = self:save_serialize()
             file:write( code )
@@ -534,7 +534,7 @@ function Automaton:save_as( file_name )
         if not file_name:match( '%.nza$' ) then
             file_name = file_name .. '.nza'
         end
-        local file = io.open( file_name, "w")
+        local file = io.open( file_name, 'w')
         if file then
             local code = self:save_serialize()
             file:write( code )
@@ -696,15 +696,12 @@ function Automaton:coaccessible( remove_states, keep )
 end
 
 function Automaton:join_no_coaccessible_states( keep )
-    local newautomaton = keep and self or self:clone()
-    if not newautomaton.coaccessible_calc then
-        newautomaton:coaccessible( false )
-    end
+    local newautomaton = self:coaccessible( false, keep )
 
     -- the new no_coaccessible state
-    local Snca                 = newautomaton:state_add( 'Snca', false, false )
-    local Snca_state           = newautomaton.states:get( Snca )
-    Snca_state.no_coaccessible = true
+    local Snca, Snca_state            = newautomaton:state_add( 'Snca', false, false )
+    Snca_state.no_coaccessible        = true
+    Snca_state.no_coaccessible_remove = true
 
     --repeat all transition to/from a no_coaccessible
     for k, state in newautomaton.states:ipairs() do
@@ -712,18 +709,18 @@ function Automaton:join_no_coaccessible_states( keep )
             --from
             for k_t, t in state.transitions_out:ipairs() do
                 if t.target.no_coaccessible then
-                    newautomaton:transition_add( Snca, Snca, t.event )
+                    newautomaton:transition_add( Snca_state, Snca_state, t.event, true )
                 else
                     --yeah, I know it's never be make, but ...
-                    newautomaton:transition_add( Snca, t.target, t.event )
+                    newautomaton:transition_add( Snca_state, t.target, t.event, true )
                 end
             end
             --to
             for k_t, t in state.transitions_in:ipairs() do
                 if t.source.no_coaccessible then
-                    newautomaton:transition_add( Snca, Snca, t.event )
+                    newautomaton:transition_add( Snca_state, Snca_state, t.event, true )
                 else
-                    newautomaton:transition_add( t.source, Snca, t.event )
+                    newautomaton:transition_add( t.source, Snca_state, t.event, true )
                 end
             end
 
@@ -733,16 +730,9 @@ function Automaton:join_no_coaccessible_states( keep )
         end
     end
 
-    local states_toremove, i = {}, 0
-    for k, state in newautomaton.states:ipairs() do
-        if k < Snca and state.no_coaccessible then
-            states_toremove[i+1] = k - i
-            i = i + 1
-        end
-    end
-    for j = 1,i do
-        newautomaton:state_remove( states_toremove[j] )
-    end
+    remove_states_fn( newautomaton, function( s )
+        return (s.no_coaccessible and not s.no_coaccessible_remove ) and true or false
+    end )
 
     return newautomaton
 end
@@ -1035,6 +1025,119 @@ function Automaton.supC(G, K)
     end
 
     return R
+end
+
+function Automaton:check_choice_problem( keep )
+    local newautomaton = keep and self or self:clone()
+
+    --create a map(s_ce) Q,e --> Qa
+    local s_ce = {}
+    for k_s, s in newautomaton.states:ipairs() do
+        s_ce[ s ] = {}
+        for k_t, t in s.transitions_out:ipairs() do
+            if  t.event.controllable then
+                s_ce[ s ][ t.event ] = t.target
+            end
+        end
+    end
+
+    --check the choice problem
+    for Q, t in pairs( s_ce ) do
+        local ok = true
+        for e, Qa in pairs( t ) do
+            for ev_ch, _ in pairs( t ) do
+                if ev_ch ~= e and not s_ce[Qa][ev_ch] then
+                    ok = false
+                    break
+                end
+            end
+            if not ok then break end
+        end
+        if not ok then
+            Q.choice_problem = true
+        end
+    end
+
+    newautomaton.choice_problem_calc = true
+
+    return newautomaton
+end
+
+function Automaton:check_avalanche_effect( keep, uncontrollable_only )
+    local newautomaton = keep and self or self:clone()
+
+    --create a map(s_ce) Q,e --> Qa
+    local s_ce      = {}
+    local state_map = {}
+    for k_s, s in newautomaton.states:ipairs() do
+        s_ce[ s ]      = {}
+        state_map[ s ] = k_s
+        for k_t, t in s.transitions_out:ipairs() do
+            if  not t.event.controllable or not uncontrollable_only then
+                s_ce[ s ][ t.event ] = t.target
+            end
+        end
+    end
+
+    --check avalanche effect
+    for Q, t in pairs( s_ce ) do
+        for e, Qa in pairs( t ) do
+            if s_ce[ Qa ][ e ] then
+                Q.avalanche_effect           = Q.avalanche_effect or {}
+                Q.avalanche_effect[ e.name ] = state_map[ Qa ]
+            end
+        end
+    end
+
+    newautomaton.avalanche_effect_calc = true
+
+    return newautomaton
+end
+
+function Automaton:check_inexact_synchronization( keep )
+    local newautomaton = keep and self or self:clone()
+
+    --create a map(s_ce) Q,e --> Qa
+    local s_ce      = {}
+    for k_s, s in newautomaton.states:ipairs() do
+        s_ce[ s ]      = {}
+        for k_t, t in s.transitions_out:ipairs() do
+                s_ce[ s ][ t.event ] = t.target
+        end
+    end
+
+    --check inexact synchronization
+    --
+    -- Q--|---ec----->Qa------eu----->Qc
+    -- |
+    -- |----- eu----->Qb--|---ec----->Qd
+    --
+    --if (Qc == Qd) then OK else NOT
+    for Q, t in pairs( s_ce ) do
+        for ec, Qa in pairs( t ) do
+            if ec.controllable then
+                for eu, Qb in pairs( t ) do
+                    if not eu.controllable then
+                        local Qc = s_ce[ Qa ][ eu ]
+                        local Qd = s_ce[ Qb ][ ec ]
+                        if not Qc or not Qd or Qc ~= Qd then
+                            Q.inexact_synchronization = Q.inexact_synchronization or {}
+                            table.insert( Q.inexact_synchronization, {
+                                controlable   = ec,
+                                uncontrolable = eu,
+                                target_c_u    = Qc,
+                                target_u_c    = Qd,
+                            })
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    newautomaton.inexact_synchronization_calc = true
+
+    return newautomaton
 end
 
 function Automaton:check()

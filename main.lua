@@ -101,6 +101,9 @@ function Controller:build()
     self.gui:add_action('operations_synchronization', "_Synchronization", "Synchronization of two or more automatons", nil, self.operations_synchronization, self)
     self.gui:add_action('operations_product', "_Product", "Calculate the Product of two or more automatons", nil, self.operations_product, self)
     self.gui:add_action('operations_supc', "_SupC", "Calculate the operations_supc", nil, self.operations_supc, self)
+    self.gui:add_action('operations_check_choice_problem', "_Check Choice Problem", "Check if states have the choice problem", nil, self.operations_check_choice_problem, self)
+    self.gui:add_action('operations_check_avalanche_effect', "_Check Avalanche Effect", "Check if states have the avalanche effect", nil, self.operations_check_avalanche_effect, self)
+    self.gui:add_action('operations_check_inexact_synchronization', "_Check Inexact Synchronization", "Check Inexact Synchronization", nil, self.operations_check_inexact_synchronization, self)
 
     --Simulate
     self.gui:add_action('simulategraphviz', "Automaton Simulate _Graphviz", "Simulate Automata in a Graphviz render", nil, self.simulate_graphviz, self)
@@ -126,6 +129,9 @@ function Controller:build()
     self.gui:append_menu_item('automata','operations_synchronization')
     self.gui:append_menu_item('automata','operations_product')
     self.gui:append_menu_item('automata','operations_supc')
+    self.gui:append_menu_item('automata','operations_check_choice_problem')
+    self.gui:append_menu_item('automata','operations_check_avalanche_effect')
+    self.gui:append_menu_item('automata','operations_check_inexact_synchronization')
 
     --Simulate
     self.gui:append_menu_item('simulate', 'simulategraphviz')
@@ -557,6 +563,84 @@ function Controller.operations_supc( data )
             return v.__TYPE == 'automaton'
         end,
         text = 'K:'
+    }
+    :run()
+end
+
+function Controller.operations_check_choice_problem( data )
+    Selector.new({
+        title = 'nadzoru',
+        success_fn = function( results, numresult )
+            local automaton = results[1]
+            if automaton then
+                local new_automaton = automaton:check_choice_problem( false )
+                new_automaton:set('file_name', 'choice(' .. automaton:get('file_name') .. ')')
+                data.param.elements:append( new_automaton )
+            end
+        end,
+    })
+    :add_combobox{
+        list = data.param.elements,
+        text_fn  = function( a )
+            return a:get( 'file_name' )
+        end,
+        filter_fn = function( v )
+            return v.__TYPE == 'automaton'
+        end,
+        text = 'Automaton:'
+    }
+    :run()
+end
+
+function Controller.operations_check_avalanche_effect( data )
+    Selector.new({
+        title = 'nadzoru',
+        success_fn = function( results, numresult )
+            local automaton = results[1]
+            if automaton then
+                local new_automaton = automaton:check_avalanche_effect( false, results[2]  )
+                new_automaton:set('file_name', 'avalanche(' .. automaton:get('file_name') .. ')')
+                data.param.elements:append( new_automaton )
+            end
+        end,
+    })
+    :add_combobox{
+        list = data.param.elements,
+        text_fn  = function( a )
+            return a:get( 'file_name' )
+        end,
+        filter_fn = function( v )
+            return v.__TYPE == 'automaton'
+        end,
+        text = 'Automaton:'
+    }
+    :add_checkbox{
+        text = 'Uncontrollable only',
+    }
+    :run()
+end
+
+function Controller.operations_check_inexact_synchronization( data )
+    Selector.new({
+        title = 'nadzoru',
+        success_fn = function( results, numresult )
+            local automaton = results[1]
+            if automaton then
+                local new_automaton = automaton:check_inexact_synchronization( false )
+                new_automaton:set('file_name', 'inexactsync(' .. automaton:get('file_name') .. ')')
+                data.param.elements:append( new_automaton )
+            end
+        end,
+    })
+    :add_combobox{
+        list = data.param.elements,
+        text_fn  = function( a )
+            return a:get( 'file_name' )
+        end,
+        filter_fn = function( v )
+            return v.__TYPE == 'automaton'
+        end,
+        text = 'Automaton:'
     }
     :run()
 end

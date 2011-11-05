@@ -19,8 +19,11 @@
 
 --Info
 local info = {
-    {'coaccessible', "Coaccessible"},
-    {'length', "Length  "},
+    {'coaccessible'            , "Coaccessible"            },
+    {'length'                  , "Length"                  },
+    {'choice_problem'          , "Choice Problem"          },
+    {'avalanche_effect'        , "Avalanche Effect"        },
+    {'inexact_synchronization' , "Inexact Synchronization" },
 }
 
 function info.length( self )
@@ -49,10 +52,90 @@ function info.coaccessible( self )
     end
     local text_lines = {}
     for k, v in ipairs( no_ca_states ) do
-        text_lines[#text_lines + 1] = table.concat( v, ", " )
+        text_lines[#text_lines + 1] = table.concat( v, "; " )
     end
 
     gtk.InfoDialog.showInfo( string.format("No Coaccessible States: (found: %i)\n", count) .. table.concat( text_lines, ", \n" ) )
+end
+
+function info.choice_problem( self )
+    if not self.automaton.choice_problem_calc then
+        gtk.InfoDialog.showInfo("Choice problem check are NOT processed!")
+        return
+    end
+    local choice_problem_states = {}
+    local count                 = 0
+    for k,v in self.automaton.states:ipairs() do
+        if v.choice_problem then
+            if count % 20 == 0 then
+                choice_problem_states[#choice_problem_states + 1] = {}
+            end
+            table.insert( choice_problem_states[#choice_problem_states], tostring(k) ) --v.name or '???'
+            count = count + 1
+        end
+    end
+    local text_lines = {}
+    for k, v in ipairs( choice_problem_states ) do
+        text_lines[#text_lines + 1] = table.concat( v, "; " )
+    end
+
+    gtk.InfoDialog.showInfo( string.format("Choice Problem States: (found: %i)\n", count) .. table.concat( text_lines, ", \n" ) )
+end
+
+function info.avalanche_effect( self )
+    if not self.automaton.avalanche_effect_calc then
+        gtk.InfoDialog.showInfo("Avalanche effect check are NOT processed!")
+        return
+    end
+    local avalanche_effect_states = {}
+    local count                   = 0
+    for k,v in self.automaton.states:ipairs() do
+        if v.avalanche_effect then
+            for ev, t_s in pairs( v.avalanche_effect ) do
+                if count % 5 == 0 then
+                    avalanche_effect_states[#avalanche_effect_states + 1] = {}
+                end
+                table.insert( avalanche_effect_states[#avalanche_effect_states],
+                    string.format("%i,%s -> %i",k,ev,t_s)
+                ) --v.name or '???'
+                count = count + 1
+            end
+        end
+    end
+    local text_lines = {}
+    for k, v in ipairs( avalanche_effect_states ) do
+        text_lines[#text_lines + 1] = table.concat( v, "; " )
+    end
+
+    gtk.InfoDialog.showInfo( string.format("Avalanche effect: (found: %i)\n", count) .. table.concat( text_lines, ", \n" ) )
+end
+
+function info.inexact_synchronization( self )
+    if not self.automaton.inexact_synchronization_calc then
+        gtk.InfoDialog.showInfo("Inexact Synchronization check are NOT processed!")
+        return
+    end
+    local inexact_synchronization = {}
+    local count                   = 0
+    for k,v in self.automaton.states:ipairs() do
+        if v.inexact_synchronization then
+            for _, evs in ipairs( v.inexact_synchronization ) do
+                if count % 5 == 0 then
+                    inexact_synchronization[#inexact_synchronization + 1] = {}
+                end
+                table.insert( inexact_synchronization[#inexact_synchronization],
+                    string.format("%i(%s,%s)",k,evs.controlable.name,evs.uncontrolable.name)
+                )
+                count = count + 1
+            end
+        end
+    end
+    local text_lines = {}
+    for k, v in ipairs( inexact_synchronization ) do
+        text_lines[#text_lines + 1] = table.concat( v, "; " )
+    end
+
+    gtk.InfoDialog.showInfo( string.format("Inexact Synchronization: (found: %i)\n", count) .. table.concat( text_lines, ", \n" ) )
 end
 
 GraphvizSimulator = letk.Class( function( self, gui, automaton )
