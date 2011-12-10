@@ -26,7 +26,7 @@ AutomatonEditor = letk.Class( function( self, gui, automaton )
     self.vbox:pack_start( self.hbox, true, true, 0 )
         self.hbox:pack_start( self.scrolled, true, true, 0 )
         self.hbox:pack_start( self.vbox2, false, false, 0 )
-            self.vbox2:pack_start( self.treeview_events:build(), true, true, 0 )
+            self.vbox2:pack_start( self.treeview_events:build{ width = 236 }, true, true, 0 )
             self.vbox2:pack_start( self.btn_add_event, false, false, 0 )
             self.vbox2:pack_start( self.btn_delete_event, false, false, 0 )
 

@@ -72,8 +72,18 @@ void printlcd(const char *s, int line){
     lcd_puts( s );
     delay_ms(250);
 }
+void printlcd2(const char *s, int line){
+    //lcd_home();
+    lcd_goto_lc(line,0);
+    lcd_puts( "                " );
+    lcd_goto_lc(line,0);
+    lcd_puts( s );
+}
 void printfrmlcd( int line ){
     printlcd( frmlcd, line );
+}
+void printfrmlcd2( int line ){
+    printlcd2( frmlcd, line );
 }
 {% end %}
 
@@ -137,11 +147,17 @@ void make_transition( {{char}} event ){
             position++;
             while(num_transitions--){
                 if(sup_data[position] == event){
-                    sup_current_state[i] = ( {{int_cast}} sup_data[position + 1] ) * 256{{ns}} + ( {{int_cast}} sup_data[position + 2{{ns}}]);
+                    sup_current_state[i] = ( {{int_cast}} sup_data[position + 1] ) * 255{{ns}} + ( {{int_cast}} sup_data[position + 2{{ns}}]);
                     break;
                 }
                 position+=3{{ns}};
             }
+            {% if debug_mode and use_lcd %}
+            sprintf(frmlcd, "E: %i, %c", event, ev_controllable[ event ] ? 'c' : 'u' );
+            printfrmlcd2(0);
+            sprintf(frmlcd, "S: %i", sup_current_state[i]);
+            printfrmlcd(1);
+            {% end %}
         }
     }
 }
@@ -271,46 +287,47 @@ void input_buffer_add( {{char}} event ){
     return input_buffer_pnt_add == input_buffer_pnt_get;
 }
 
-{% for k_event, event in ipairs(events) %}
-    {% if not event.controllable %}
-{{char}} input_read_{{ event.name }}(){
-    {{ event_code[ event.name ] and event_code[ event.name ].input or 'return 0;'  }}
-}
-    {% end %}
-{% end %}
-
-
-{% if compiler == CCS %}
-{{char}} input_read( {{char}} ev ){
-    {{char}} result = 0;
-    switch( ev ){
-    {% for k_event, event in ipairs(events) %}
-        {% if not event.controllable %}
-        case EV_{{ event.name }}:
-            result = input_read_{{ event.name }}();
-            break;
-        {% end %}
-    {% end %}
-    }
-    return result;
-}
-{% elseif compiler == SDCC %}
-{{char}} input_read( {{char}} ev ){
-    {{char}} result       = 0;
-    switch( ev ){
-    {% for k_event, event in ipairs(events) %}
-        {% if not event.controllable %}
-        case EV_{{ event.name }}:
-            result = input_read_{{ event.name }}();
-            break;
-        {% end %}
-    {% end %}
-    }
-    return result;
-}
-{% end %}
-
 {#
+    {% for k_event, event in ipairs(events) %}
+    {% if not event.controllable %}
+    {{char}} input_read_{{ event.name }}(){
+    {{ event_code[ event.name ] and event_code[ event.name ].input or 'return 0;'  }}
+    }
+    {% end %}
+    {% end %}
+
+
+    {% if compiler == CCS %}
+    {{char}} input_read( {{char}} ev ){
+        {{char}} result = 0;
+        switch( ev ){
+        {% for k_event, event in ipairs(events) %}
+            {% if not event.controllable %}
+            case EV_{{ event.name }}:
+                result = input_read_{{ event.name }}();
+                break;
+            {% end %}
+        {% end %}
+        }
+        return result;
+    }
+    {% elseif compiler == SDCC %}
+    {{char}} input_read( {{char}} ev ){
+        {{char}} result       = 0;
+        switch( ev ){
+        {% for k_event, event in ipairs(events) %}
+            {% if not event.controllable %}
+            case EV_{{ event.name }}:
+                result = input_read_{{ event.name }}();
+                break;
+            {% end %}
+        {% end %}
+        }
+        return result;
+    }
+    {% end %}
+#}
+
 {{char}} input_read( {{char}} ev ){
     switch( ev ){
     {% for k_event, event in ipairs(events) %}
@@ -323,7 +340,6 @@ void input_buffer_add( {{char}} event ){
     }
     return 0;
 }
-#}
 
 {{char}} last_events[{{#events}}] = { {% for i = 1,#events %}0{% notlast %},{% end %} };
 
@@ -359,23 +375,24 @@ void input_buffer_add( {{char}} event ){
 {% end %}
 
 /*Callback*/
-{% for k_event, event in ipairs(events) %}
-void callback_{{ event.name }}(){
-    {{ event_code[ event.name ] and event_code[ event.name ].output or ''  }}
-}
-{% end %}
-
-void callback( {{char}} ev ){
-    switch( ev ){
-        {% for k_event, event in ipairs(events) %}
-        case EV_{{ event.name }}:
-            callback_{{ event.name }}();
-            break;
-        {% end %}
-    }
-}
-
 {#
+    {% for k_event, event in ipairs(events) %}
+    void callback_{{ event.name }}(){
+    {{ event_code[ event.name ] and event_code[ event.name ].output or ''  }}
+    }
+    {% end %}
+
+    void callback( {{char}} ev ){
+        switch( ev ){
+            {% for k_event, event in ipairs(events) %}
+                case EV_{{ event.name }}:
+                    callback_{{ event.name }}();
+                    break;
+            {% end %}
+        }
+    }
+#}
+
 void callback( {{char}} ev ){
     switch( ev ){
         {% for k_event, event in ipairs(events) %}
@@ -385,13 +402,17 @@ void callback( {{char}} ev ){
         {% end %}
     }
 }
-#}
 
 void main(){
 
-    {% if use_lcd and compiler == SDCC %}
         //LCD init
+    {% if use_lcd %}
         lcd_init( FOURBIT_MODE );
+    {% end %}
+
+    {% if debug_mode and use_lcd %}
+        sprintf(frmlcd, "Debug Mode: On" );
+        printfrmlcd(0);
     {% end %}
 
     {% if compiler == SDCC %}
@@ -449,6 +470,7 @@ void main(){
 {% end %}
 
 {% if random_fn == RANDOM_PSEUDOAD %}
+    //seed AD init
     seed = pic_rand_read_ad();
 {% end %}
 
@@ -461,11 +483,15 @@ void main(){
             callback( event );
         }
         if( get_next_controllable( &event ) ){
-            if( !input_buffer_check_empty() ) continue;
+            {% if debug_mode and use_lcd %}
+                sprintf(frmlcd, "gnc: %i", event);
+                printfrmlcd(0);
+            {% end %}
+            //if( !input_buffer_check_empty() ) continue;
             make_transition( event );
             callback( event );
         }
-        delay_ms(100);
+        delay_ms(250);
     }
 }
 

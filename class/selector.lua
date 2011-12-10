@@ -13,6 +13,7 @@ Selector = letk.Class( function( self, options, nowindow )
     self.options     = options
     self.result      = {}
     self.num_columns = 0
+    self.nowindow    = nowindow
     setmetatable( self, Selector )
 
     if not nowindow then
@@ -20,47 +21,51 @@ Selector = letk.Class( function( self, options, nowindow )
     end
         self.vbox_main            = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
             self.hbox_main        = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
-            self.hbox_footer      = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
                 if not nowindow then
-                    self.btn_cancel   = gtk.Button.new_with_label("Cancel")
+                    self.hbox_footer      = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
+                        self.btn_cancel   = gtk.Button.new_with_label("Cancel")
+                        self.btn_ok       = gtk.Button.new_with_label("OK")
                 end
-                self.btn_ok       = gtk.Button.new_with_label("OK")
 
     if not nowindow then
         self.window:add(self.vbox_main)
     end
         self.vbox_main:pack_start( self.hbox_main, true, true, 0 )
-        self.vbox_main:pack_start( self.hbox_footer, false, false, 0 )
             if not nowindow then
-                self.hbox_footer:pack_start( self.btn_cancel, false, true, 0 )
+                self.vbox_main:pack_start( self.hbox_footer, false, false, 0 )
+                    self.hbox_footer:pack_start( self.btn_cancel, true, true, 0 )
+                    self.hbox_footer:pack_start( self.btn_ok, true, true, 0 )
             end
-            self.hbox_footer:pack_start( self.btn_ok, false, true, 0 )
 
     if not nowindow then
-    self.window:connect("delete-event", self.window.destroy, self.window)
-    self.window:set_modal( true )
-    end
-
-    function success()
-        if type(options.success_fn) == 'function' then
-            local result = {}
-            for c,k in ipairs( self.result ) do
-                result[c] = k()
-            end
-            if not nowindow then
-                self.window:destroy()
-            end
-            options.success_fn( result, #self.result, self )
-        end
+        self.window:connect("delete-event", self.window.destroy, self.window)
+        self.window:set_modal( true )
     end
 
     if not nowindow then
         self.btn_cancel:connect("clicked", self.window.destroy, self.window )
+        self.btn_ok:connect("clicked", self.success, self)
     end
-    self.btn_ok:connect("clicked", success)
 
     return self, self.vbox_main
 end, Object )
+
+function Selector:success()
+    if type(self.options.success_fn) == 'function' then
+        local result = {}
+        for c,k in ipairs( self.result ) do
+            result[c] = k()
+        end
+        if not self.nowindow then
+            self.window:destroy()
+        end
+        self.options.success_fn( result, #self.result, self, self.options.success_fn_param )
+    else
+        if not self.nowindow then
+            self.window:destroy()
+        end
+    end
+end
 
 function Selector:multipler_selector( options )
     options = table.complete( options or {}, {

@@ -40,7 +40,7 @@ local function safeload( libs, id, required, msg )
 end
 
 safeload('letk', 'letk', true, [[You need install 'letk' to run this software]])
-safeload({'lgob.gdk','lgob.gtk','lgob.cairo'}, 'gtk', true, [[You need install 'lgob' to run this software, you can found 'lgob' at http://oproj.tuxfamily.org]])
+safeload({'lgob.gdk','lgob.gtk','lgob.cairo','lgob.gtksourceview'}, 'gtk', true, [[You need install 'lgob' to run this software, you can found 'lgob' at http://oproj.tuxfamily.org]])
 --safeload({'lgob.gtkglext', 'luagl' }, 'opengl', false, [[OpenGL features are disable, a 'lgob' version with 'gtkglext' suport and 'luagl' are required to enable this features]])
 safeload('lxp', 'lxp', false, [[no library 'lxp' to manipulate xml format]])
 
@@ -60,6 +60,8 @@ require('class.graphviz_simulator')
 require('class.plant_simulator')
 require('class.automaton_render')
 require('class.automaton_editor')
+
+local CodeGenDevices = require 'res.codegen.devices.main'
 
 Controller = letk.Class( function( self )
     self.gui              = Gui.new()
@@ -290,13 +292,22 @@ function Controller.automaton_edit( data )
 end
 
 function Controller.code_gen_dfa( data )
-Selector.new({
+    local devices_list = {}
+    for id, device in pairs(CodeGenDevices) do
+        if device.display then
+            devices_list[#devices_list + 1] = { id , device.name }
+        end
+    end
+
+    table.sort( devices_list, function( a,b ) return a[1] > a[2] end )
+
+    Selector.new({
         title = 'nadzoru',
         success_fn = function( results, numresult )
             local automata    = results[1]
             local file_name   = results[2]
             local device_id   = results[3] and results[3][1]
-            if automata and file_name and device_id then
+            if #automata > 0 and #file_name > 0 and device_id then
                 local lautomata = letk.List.new_from_table( automata )
                 local cg = CodeGen.new( lautomata, device_id, file_name )
                 if  cg then
@@ -319,9 +330,7 @@ Selector.new({
         text = 'file',
     }
     :add_combobox{
-        list = letk.List.new_from_table{
-            { 'pic18f4620' , "PIC18F4620"    },
-        },
+        list = letk.List.new_from_table( devices_list ),
         text_fn  = function( a )
             return a[2]
         end,

@@ -19,6 +19,7 @@
 
 Treeview = letk.Class( function( self, multiple )
     Object.new( self )
+    self.scrolled   = gtk.ScrolledWindow.new()
     self.data       = letk.List.new()
     self.columns    = {}
     self.render     = {}
@@ -28,10 +29,18 @@ Treeview = letk.Class( function( self, multiple )
     self.selection  = self.view:get_selection()
     self.selection:set_mode( multiple and gtk.SELECTION_MULTIPLE or gtk.SELECTION_BROWSE )
     self.multiple   = multiple or false
+
+    self.scrolled:add( self.view )
 end, Object )
 
 function Treeview:bind_ondoubleclick( callback, param )
     self.view:connect( 'row-activated', callback, param )
+
+    return self
+end
+
+function Treeview:bind_onclick( callback, param )
+    self.view:connect( 'cursor-changed', callback, param )
 
     return self
 end
@@ -67,7 +76,7 @@ function Treeview:add_column_toggle( caption, width, callback, param )
         #self.columns
     )
     if tonumber( width ) then
-        self.render[#self.render]:set('width',width)
+        self.render[#self.render]:set('width', width)
     end
     self.view:append_column( self.columns[#self.columns] )
     self.model_list[#self.model_list +1] = 'gboolean'
@@ -78,11 +87,18 @@ function Treeview:add_column_toggle( caption, width, callback, param )
     return self
 end
 
-function Treeview:build(  )
+function Treeview:build( options )
+    options = options or {}
     self.model = gtk.ListStore.new( unpack( self.model_list ) )
     self.view:set( 'model', self.model )
+    if options.width then
+        self.scrolled:set('width-request', options.width )
+    end
+    if options.height then
+        self.scrolled:set('height-request', options.height )
+    end
 
-    return self.view
+    return self.scrolled
 end
 
 function Treeview:clear_data()
@@ -130,6 +146,8 @@ function Treeview:get_selected( column )
             else
                 return pos + 1
             end
+        else
+            return false
         end
     else
         local position                = self.selection:get_selected_rows()

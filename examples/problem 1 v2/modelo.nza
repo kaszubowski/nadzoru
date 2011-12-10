@@ -51,11 +51,11 @@
 ["controllable"] = true}},
 ["states"] = {
 [1] = {
-["initial"] = false,
+["initial"] = true,
 ["x"] = 80,
 ["name"] = "1",
 ["r"] = 20,
-["marked"] = false,
+["marked"] = true,
 ["y"] = 273},
 [2] = {
 ["initial"] = false,

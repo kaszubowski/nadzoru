@@ -11,9 +11,9 @@ CodeGen = letk.Class( function( self, automata, device_id, file_name )
     local num_automata = self.automata:len()
     if num_automata == 0 then return end
     if num_automata == 1 then
-        self.type = CodeGen.SUPTYPE_MONOLITIC
+        self.supervisor_type = CodeGen.SUPTYPE_MONOLITIC
     else
-        self.type = CodeGen.SUPTYPE_MODULAR
+        self.supervisor_type = CodeGen.SUPTYPE_MODULAR
     end
 end, Object )
 
@@ -21,49 +21,74 @@ CodeGen.SUPTYPE_MONOLITIC   = 1
 CodeGen.SUPTYPE_MODULAR     = 2
 
 function CodeGen:execute( gui )
-    local function generate( results, numresults )
-        for i, opt in ipairs( Devices[ self.device_id ] ) do
-            if opt.type == 'choice' then
-                self[ opt.var ] = results[ i ][ 1 ]
+    self:read_automata( )
+    self:build_gui( gui )
+end
+
+------------------------------------------------------------------------
+--                         Read Automata                              --
+------------------------------------------------------------------------
+function CodeGen:read_automata()
+    self.event_code      = {}
+    self.events_map      = {}
+    self.events          = {}
+    self.sup_events      = {}
+
+    for k_automaton, automaton in self.automata:ipairs() do
+        for k_event, event in automaton.events:ipairs() do
+            if not self.events_map[ event.name ] then
+                self.events[ #self.events + 1 ] = event
+                self.events_map[ event.name ]   = #self.events
+                self.event_code[ event.name ]   = {
+                    id           = #self.events,
+                    input        = '',
+                    output       = '',
+                    automaton    = {},
+                    controllable = event.controllable,
+                    source       = "Automaton",
+                }
             end
+            self.event_code[ event.name ].automaton[ k_automaton ] = event.controllable and 'c' or 'n'
         end
-        self.events_map     = {}
-        self.events         = {}
-        self.sup_events     = {}
-
-        for k_automaton, automaton in self.automata:ipairs() do
-            for k_event, event in automaton.events:ipairs() do
-                if not self.events_map[ event.name ] then
-                    self.events[ #self.events + 1 ] = event
-                    self.events_map[ event.name ]   = #self.events
-                end
-            end
-        end
-
-        for k_automaton, automaton in self.automata:ipairs() do
-            self.sup_events[#self.sup_events + 1] = {}
-            for k_event, event in automaton.events:ipairs() do
-                self.sup_events[#self.sup_events][ self.events_map[ event.name ] ] = true
-            end
-        end
-
-        local Context = letk.Context.new()
-        Context:push( self )
-        Context:push( self.device )
-        local Template = letk.Template.new( './res/codegen/' .. self.device.template_file )
-        local code = Template( Context )
-
-        local file = io.open( self.file_name .. '.c', "w")
-        file:write( code )
-        file:close()
     end
 
-    self.gui = {}
-    self.gui.selector, self.gui.vbox = Selector.new({
-        success_fn = generate,
+    for k_automaton, automaton in self.automata:ipairs() do
+        self.sup_events[#self.sup_events + 1] = {}
+        for k_event, event in automaton.events:ipairs() do
+            self.sup_events[#self.sup_events][ self.events_map[ event.name ] ] = true
+        end
+    end
+end
+
+------------------------------------------------------------------------
+--                               GUI                                  --
+------------------------------------------------------------------------
+function CodeGen:build_gui( gui )
+    self.gui              = {}
+    self.gui.vbox         = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
+        self.gui.hbox         = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
+        self.gui.hbox_footer  = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
+            self.gui.btn_load     = gtk.Button.new_with_label("Load Project")
+            self.gui.btn_save     = gtk.Button.new_with_label("Save Project")
+            self.gui.btn_execute  = gtk.Button.new_with_label("Generate")
+
+    self.gui.vbox:pack_start( self.gui.hbox, true, true, 0 )
+    self.gui.vbox:pack_start( self.gui.hbox_footer, false, false, 0 )
+    self.gui.hbox_footer:pack_start( self.gui.btn_load, true, true, 0 )
+    self.gui.hbox_footer:pack_start( self.gui.btn_save, true, true, 0 )
+    self.gui.hbox_footer:pack_start( self.gui.btn_execute, true, true, 0 )
+
+    -------------------------------------------------
+    --                  TOP                        --
+    -------------------------------------------------
+
+    --**** Device Options ****--
+    self.gui.selector, self.gui.selector_vbox = Selector.new({
+        success_fn       = self.generate,
+        success_fn_param = self,
     }, true)
 
-    for _, opt in ipairs( Devices[ self.device_id ] ) do
+    for _, opt in ipairs( Devices[ self.device_id ].options ) do
         if opt.type == 'choice' then
             self.gui.selector:add_combobox{
                 list = letk.List.new_from_table( opt ),
@@ -76,6 +101,215 @@ function CodeGen:execute( gui )
 
         end
     end
+    self.gui.hbox:pack_start( self.gui.selector_vbox, false, false, 0 )
+
+    --**** right notebook ****--
+    self.gui.note  = gtk.Notebook.new()
+    self.gui.hbox:pack_start( self.gui.note, true, true, 5 )
+
+    --** Source View - Input **--
+    self.gui.code_input_hbox    = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
+        self.gui.code_input_vbox    = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
+
+    self.gui.code_input_treeview = Treeview.new()
+        :add_column_text("Events",100)
+        :bind_onclick(CodeGen.change_event_input, self)
+
+    self.gui.code_input_label = gtk.Label.new_with_mnemonic( '---' )
+
+    self.gui.code_input_view     = gtk.SourceView.new()
+    self.gui.code_input_buffer   = self.gui.code_input_view:get('buffer')
+    self.gui.code_input_manager  = gtk.source_language_manager_get_default()
+    self.gui.code_input_lang     = self.gui.code_input_manager:get_language('c')
+    self.gui.code_input_scroll   = gtk.ScrolledWindow.new()
+    self.gui.code_input_view:set('show-line-numbers', true, 'highlight-current-line', true, 'auto-indent', true)
+    self.gui.code_input_scroll:set('hscrollbar-policy', gtk.POLICY_AUTOMATIC, 'vscrollbar-policy', gtk.POLICY_AUTOMATIC)
+    self.gui.code_input_scroll:add(self.gui.code_input_view)
+    self.gui.code_input_buffer:set('language', self.gui.code_input_lang)
+
+    self.gui.note:insert_page( self.gui.code_input_hbox, gtk.Label.new("Input"), -1)
+    self.gui.code_input_hbox:pack_start( self.gui.code_input_treeview:build{width = 150}, false, false, 0 )
+    self.gui.code_input_hbox:pack_start( self.gui.code_input_vbox, true, true, 0 )
+        self.gui.code_input_vbox:pack_start( self.gui.code_input_label, false, false, 0 )
+        self.gui.code_input_vbox:pack_start( self.gui.code_input_scroll, true, true, 0 )
+
+    self.gui.code_input_buffer:connect('changed', CodeGen.change_code_input, self )
+
+    --** Source View - Output **--
+    self.gui.code_output_hbox    = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
+        self.gui.code_output_vbox    = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
+
+    self.gui.code_output_treeview = Treeview.new()
+        :add_column_text("Events",100)
+        :bind_onclick(CodeGen.change_event_output, self)
+
+    self.gui.code_output_label = gtk.Label.new_with_mnemonic( '---' )
+
+    self.gui.code_output_view     = gtk.SourceView.new()
+    self.gui.code_output_buffer   = self.gui.code_output_view:get('buffer')
+    self.gui.code_output_manager  = gtk.source_language_manager_get_default()
+    self.gui.code_output_lang     = self.gui.code_output_manager:get_language('c')
+    self.gui.code_output_scroll   = gtk.ScrolledWindow.new()
+    self.gui.code_output_view:set('show-line-numbers', true, 'highlight-current-line', true, 'auto-indent', true)
+    self.gui.code_output_scroll:set('hscrollbar-policy', gtk.POLICY_AUTOMATIC, 'vscrollbar-policy', gtk.POLICY_AUTOMATIC)
+    self.gui.code_output_scroll:add(self.gui.code_output_view)
+    self.gui.code_output_buffer:set('language', self.gui.code_output_lang)
+
+    self.gui.note:insert_page( self.gui.code_output_hbox, gtk.Label.new("Output"), -1)
+    self.gui.code_output_hbox:pack_start( self.gui.code_output_treeview:build{width = 150}, false, false, 0 )
+    self.gui.code_output_hbox:pack_start( self.gui.code_output_vbox, true, true, 0 )
+        self.gui.code_output_vbox:pack_start( self.gui.code_output_label, false, false, 0 )
+        self.gui.code_output_vbox:pack_start( self.gui.code_output_scroll, true, true, 0 )
+
+    self.gui.code_output_buffer:connect('changed', CodeGen.change_code_output, self )
+
+    -- Source View - All --
+
+    self:update_treeviews()
+
+    --** Footer Buttons Connect **--
+
+    self.gui.btn_execute:connect('clicked', self.gui.selector.success, self.gui.selector )
+    self.gui.btn_save:connect('clicked', self.save_project, self )
+    self.gui.btn_load:connect('clicked', self.load_project, self )
 
     gui:add_tab( self.gui.vbox, 'Code Gen: ' .. self.device.name )
+end
+
+function CodeGen:update_treeviews()
+    local in_ev  = {}
+    local out_ev = {}
+    for ev_nm, prop in pairs( self.event_code ) do
+        if not prop.controllable then
+            in_ev[#in_ev +1] = ev_nm
+        end
+        out_ev[#out_ev +1] = ev_nm
+    end
+    table.sort( in_ev )
+    table.sort( out_ev )
+
+    self.gui.code_input_treeview:clear_all()
+    self.gui.code_output_treeview:clear_all()
+
+    for k_ev, ev_nm in ipairs( in_ev ) do
+        self.gui.code_input_treeview:add_row{ ev_nm }
+    end
+    for k_ev, ev_nm in ipairs( out_ev ) do
+        self.gui.code_output_treeview:add_row{ ev_nm }
+    end
+
+    self.gui.code_input_treeview:update()
+    self.gui.code_output_treeview:update()
+
+    self.gui.code_input_label:set_text( '---' )
+    self.gui.code_output_label:set_text( '---' )
+end
+
+function CodeGen:change_event_input( )
+    self.selected_event_input = self.gui.code_input_treeview:get_selected(1)
+    if self.selected_event_input then
+        self.gui.code_input_label:set_text( self.selected_event_input )
+        self.gui.code_input_buffer:set( 'text',  self.event_code[ self.selected_event_input ].input )
+    end
+end
+
+function CodeGen:change_event_output(  )
+    self.selected_event_output = self.gui.code_output_treeview:get_selected(1)
+    if self.selected_event_output then
+        self.gui.code_output_label:set_text( self.selected_event_output )
+        self.gui.code_output_buffer:set( 'text',  self.event_code[ self.selected_event_output ].output )
+    end
+end
+
+function CodeGen:change_code_input(  )
+    self.event_code[ self.selected_event_input ].input = self.gui.code_input_buffer:get( 'text' )
+end
+
+function CodeGen:change_code_output(  )
+    self.event_code[ self.selected_event_output ].output = self.gui.code_output_buffer:get( 'text' )
+end
+
+function CodeGen:save_project(  )
+     local dialog = gtk.FileChooserDialog.new(
+        "Save AS", nil,gtk.FILE_CHOOSER_ACTION_SAVE,
+        "gtk-cancel", gtk.RESPONSE_CANCEL,
+        "gtk-ok", gtk.RESPONSE_OK
+    )
+    local filter = gtk.FileFilter.new()
+    filter:add_pattern("*.ncp")
+    filter:set_name("Nadzoru Code Project")
+    dialog:add_filter(filter)
+    local response = dialog:run()
+    dialog:hide()
+    local names = dialog:get_filenames()
+    if response == gtk.RESPONSE_OK and names and names[1] then
+        local file = io.open( names[1], 'w')
+        if file then
+            local data_event_code = {}
+            for nm_ev, prop in pairs( self.event_code ) do
+                data_event_code[ nm_ev ] = {
+                    input        = prop.input,
+                    output       = prop.output,
+                    controllable = prop.controllable
+                }
+            end
+            file:write( letk.serialize( data_event_code ) )
+            file:close()
+        end
+    end
+end
+
+function CodeGen:load_project(  )
+     local dialog = gtk.FileChooserDialog.new(
+        "Save AS", nil,gtk.FILE_CHOOSER_ACTION_SAVE,
+        "gtk-cancel", gtk.RESPONSE_CANCEL,
+        "gtk-ok", gtk.RESPONSE_OK
+    )
+    local filter = gtk.FileFilter.new()
+    filter:add_pattern("*.ncp")
+    filter:set_name("Nadzoru Code Project")
+    dialog:add_filter(filter)
+    local response = dialog:run()
+    dialog:hide()
+    local names = dialog:get_filenames()
+    if response == gtk.RESPONSE_OK and names and names[1] then
+        local file = io.open( names[1], 'r')
+        if file then
+            local s               = file:read('*a')
+            local data_event_code = loadstring('return ' .. s)()
+            for nm_ev, prop in pairs( data_event_code ) do
+                if not self.event_code[ nm_ev ] then
+                    self.event_code[ nm_ev ] = {
+                        source = "Project",
+                    }
+                end
+                self.event_code[ nm_ev ].input        = prop.input
+                self.event_code[ nm_ev ].output       = prop.output
+                self.event_code[ nm_ev ].controllable = self.event_code[ nm_ev ].controllable or prop.controllable
+            end
+            self:update_treeviews()
+        end
+    end
+end
+
+------------------------------------------------------------------------
+--                             GENERATE                               --
+------------------------------------------------------------------------
+
+function CodeGen.generate( results, numresults, selector, self )
+    for i, opt in ipairs( Devices[ self.device_id ].options ) do
+        if opt.type == 'choice' then
+            self[ opt.var ] = results[ i ][ 1 ]
+        end
+    end
+
+    local Context = letk.Context.new()
+    Context:push( self )
+    Context:push( self.device )
+    local Template = letk.Template.new( './res/codegen/' .. self.device.template_file )
+    local code = Template( Context )
+
+    local file = io.open( self.file_name .. '.c', "w")
+    file:write( code )
+    file:close()
 end
