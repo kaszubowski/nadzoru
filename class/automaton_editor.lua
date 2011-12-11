@@ -2,6 +2,8 @@ AutomatonEditor = letk.Class( function( self, gui, automaton )
     self.operation = nil
     self.automaton = automaton
 
+    self.gui = gui
+
     self.vbox                  = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
         self.toolbar           = gtk.Toolbar.new()
         self.hbox                  = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
@@ -97,7 +99,7 @@ AutomatonEditor = letk.Class( function( self, gui, automaton )
     self.btn_act_delete:connect( 'toggled', self.set_act_delete, self )
     self.toolbar:insert( self.btn_act_delete, -1 )
 
-    gui:add_tab( self.vbox, 'edit ' .. (automaton:get('file_name') or '-x-') )
+    gui:add_tab( self.vbox, "edit " .. (automaton:get('file_name') or "-x-") )
 
     self:update_treeview_events()
 
@@ -107,14 +109,14 @@ AutomatonEditor = letk.Class( function( self, gui, automaton )
     self.state_window.vbox   = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
     self.state_window.hbox_1 = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
         self.state_window.lbl_nm = gtk.Label.new("Name")
-        self.state_window.lbl_nm:set("xalign", 1)
+        self.state_window.lbl_nm:set('xalign', 1)
         self.state_window.ent_nm = gtk.Entry.new()
     self.state_window.hbox_2 = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
 
 
-    self.state_window.window:set("title", "nadzoru - edit state", "width-request", 300,
-        "height-request", 200, "window-position", gtk.WIN_POS_CENTER,
-        "icon-name", "gtk-about")
+    self.state_window.window:set('title', "nadzoru - edit state", 'width-request', 300,
+        'height-request', 200, 'window-position', gtk.WIN_POS_CENTER,
+        'icon-name', 'gtk-about')
 end, Object )
 
 function AutomatonEditor:update_treeview_events()
@@ -289,6 +291,8 @@ function AutomatonEditor:set_act_save_as()
             if err == err_list.ACCESS_DENIED then
                 gtk.InfoDialog.showInfo("Access denied for file: " .. tostring(self.automaton:get('full_file_name')) )
             end
+        else
+            self.gui:set_tab_page_title( self.vbox, "edit " .. (self.automaton:get('file_name') or "-x-") )
         end
     end
 end

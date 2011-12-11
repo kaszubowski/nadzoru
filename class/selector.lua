@@ -263,15 +263,16 @@ function Selector:add_file( options )
         text        = 'input',
     })
     local vbox_file = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
-        local label_info     = gtk.Label.new_with_mnemonic( options.text )
-        local hbox_file      = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
-            local label_file = gtk.Label.new( )
-            local button     = gtk.Button.new_with_mnemonic( '...' )
+        local label_info = gtk.Label.new_with_mnemonic( options.text )
+        local button     = gtk.Button.new( )
+            local hbox_btn  = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
+                local btn_img   = gtk.Image.new_from_stock( 'gtk-file', gtk.ICON_SIZE_BUTTON )
+                local btn_label = gtk.Label.new_with_mnemonic( "..." )
 
     local dialog = gtk.FileChooserDialog.new(
         "Create the file", self.window,gtk.FILE_CHOOSER_ACTION_SAVE,
-        "gtk-cancel", gtk.RESPONSE_CANCEL,
-        "gtk-ok", gtk.RESPONSE_OK
+        'gtk-cancel', gtk.RESPONSE_CANCEL,
+        'gtk-ok', gtk.RESPONSE_OK
     )
     local file = ''
     if not self.single_box then
@@ -281,17 +282,18 @@ function Selector:add_file( options )
     end
     self.single_box:pack_start( vbox_file , false, false, 0 )
         vbox_file:pack_start( label_info , false, false, 0 )
-        vbox_file:pack_start( hbox_file , false, false, 0 )
-            hbox_file:pack_start( label_file , true, true, 0 )
-            hbox_file:pack_start( button , false, false, 0 )
+        vbox_file:pack_start( button , false, false, 0 )
+            button:add( hbox_btn )
+                hbox_btn:pack_start( btn_img , false, false, 0 )
+                hbox_btn:pack_start( btn_label , true, true, 0 )
 
     button:connect( 'clicked', function()
         local response = dialog:run()
         dialog:hide()
         local names = dialog:get_filenames()
         if response == gtk.RESPONSE_OK and names and names[1] then
-            local display = (#names[1] <= 25) and names[1] or (names[1]:sub(1,5) .. '...' .. names[1]:sub(-17,-1))
-            label_file:set_text( display )
+            local display = (#names[1] <= 25) and names[1] or (names[1]:sub(1,5) .. "..." .. names[1]:sub(-17,-1))
+            btn_label:set_text   ( display )
             file = names[1]
         end
     end)

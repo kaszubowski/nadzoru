@@ -88,6 +88,9 @@ function Controller:build()
     self.gui:add_action('automata_import_ides', "_Import IDES Automaton", "Import a IDES (.xmd) automaton file", nil, self.import_ides, self)
     self.gui:add_action('automata_new'        , "_New Automaton", "Create a New Automaton", nil, self.create_new_automaton, self)
     self.gui:add_action('automata_open'       ,"_Open Automaton", "Open a New Automaton", nil, self.open_automaton, self)
+    self.gui:add_action('tab_close_current'   ,"_Close Current Tab", "Close CurrentTab", nil, function()
+        self.gui:remove_current_tab()
+    end)
 
     --Automatons
     --~ self.gui:add_action('remove_automaton', "_Close Automaton", "Close Activate Automaton", nil, self.close_automaton, self)
@@ -113,6 +116,9 @@ function Controller:build()
 
     -- ** Menu-Action Link ** --
     --File
+    self.gui:prepend_menu_separator('file')
+    self.gui:prepend_menu_item('file','tab_close_current')
+    self.gui:prepend_menu_separator('file')
     self.gui:prepend_menu_item('file','automata_import_ides')
     self.gui:prepend_menu_item('file','automata_open')
     self.gui:prepend_menu_item('file','automata_new')
@@ -123,17 +129,18 @@ function Controller:build()
     --Automaton Operations
     self.gui:append_menu_item('automata','automaton_edit')
     self.gui:append_menu_item('automata','code_gen_dfa')
-    self.gui:append_menu_item('automata','operations_accessible')
-    self.gui:append_menu_item('automata','operations_coaccessible')
-    self.gui:append_menu_item('automata','operations_trim')
-    self.gui:append_menu_item('automata','operations_join_no_coaccessible')
-    self.gui:append_menu_item('automata','operations_selfloop')
-    self.gui:append_menu_item('automata','operations_synchronization')
-    self.gui:append_menu_item('automata','operations_product')
-    self.gui:append_menu_item('automata','operations_supc')
-    self.gui:append_menu_item('automata','operations_check_choice_problem')
-    self.gui:append_menu_item('automata','operations_check_avalanche_effect')
-    self.gui:append_menu_item('automata','operations_check_inexact_synchronization')
+    self.gui:append_sub_menu('automata','operations', "Operations")
+    self.gui:append_menu_item('operations','operations_accessible')
+    self.gui:append_menu_item('operations','operations_coaccessible')
+    self.gui:append_menu_item('operations','operations_trim')
+    self.gui:append_menu_item('operations','operations_join_no_coaccessible')
+    self.gui:append_menu_item('operations','operations_selfloop')
+    self.gui:append_menu_item('operations','operations_synchronization')
+    self.gui:append_menu_item('operations','operations_product')
+    self.gui:append_menu_item('operations','operations_supc')
+    self.gui:append_menu_item('operations','operations_check_choice_problem')
+    self.gui:append_menu_item('operations','operations_check_avalanche_effect')
+    self.gui:append_menu_item('operations','operations_check_inexact_synchronization')
 
     --Simulate
     self.gui:append_menu_item('simulate', 'simulategraphviz')
@@ -327,7 +334,7 @@ function Controller.code_gen_dfa( data )
         text = 'Automaton:'
     }
     :add_file{
-        text = 'file',
+        text = 'File:',
     }
     :add_combobox{
         list = letk.List.new_from_table( devices_list ),

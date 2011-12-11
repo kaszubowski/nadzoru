@@ -95,6 +95,40 @@ function Gui:prepend_menu( name, caption )
     return menu_item
 end
 
+function Gui:append_sub_menu( parent, name, caption )
+    self.menu[name] = gtk.Menu.new()
+    local menu_item = gtk.MenuItem.new_with_mnemonic( caption )
+    menu_item:set_submenu( self.menu[name] )
+    self.menu[parent]:append( menu_item )
+    self.window:show_all()
+
+    self.menu_item[name] = {}
+
+    return menu_item
+end
+
+function Gui:prepend_sub_menu( parent, name, caption )
+    self.menu[name] = gtk.Menu.new()
+    local menu_item = gtk.MenuItem.new_with_mnemonic( caption )
+    menu_item:set_submenu( self.menu[name] )
+    self.menu[parent]:prepend( menu_item )
+    self.window:show_all()
+
+    self.menu_item[name] = {}
+
+    return menu_item
+end
+
+function Gui:append_menu_separator( name )
+    local separator = gtk.SeparatorMenuItem.new()
+    self.menu[name]:append( separator )
+end
+
+function Gui:prepend_menu_separator( name )
+    local separator = gtk.SeparatorMenuItem.new()
+    self.menu[name]:prepend( separator )
+end
+
 function Gui:remove_menu( menu )
     self.menubar:remove( menu )
     self.menu_item[name] = nil
@@ -124,9 +158,11 @@ function Gui:append_menu_item( menu_name, action_name, ...  )
     else
         return
     end
-    self.menu[menu_name]:append ( menu_item )
-    self.menu_item[menu_name][ #self.menu_item[menu_name] +1] = menu_item
-    self.window:show_all()
+    if self.menu[menu_name] then
+        self.menu[menu_name]:append ( menu_item )
+        self.menu_item[menu_name][ #self.menu_item[menu_name] +1] = menu_item
+        self.window:show_all()
+    end
     if (...) then
         return menu_item, self:append_menu_item( menu_name, ... )
     end
@@ -191,7 +227,7 @@ end
 
 function Gui:add_tab( widget, title, destroy_callback, param )
     local note =  self.note:insert_page( widget, gtk.Label.new(title), -1)
-    self.tab:add({ destroy_callback = destroy_callback, param = param }, note + 1)
+    self.tab:add({ destroy_callback = destroy_callback, param = param, widget = widget }, note + 1)
     self.window:show_all()
 
     return note
@@ -206,6 +242,14 @@ function Gui:remove_current_tab( )
             destroy.destroy_callback( destroy.param )
         end
     end
+    self.window:show_all()
+end
+
+function Gui:set_tab_page_title( widget, title )
+    local page_label = self.note:get_tab_label( widget )
+
+    page_label:set_text( title )
+
     self.window:show_all()
 end
 
