@@ -23,7 +23,7 @@ Automaton = letk.Class( function( self )
     self.transitions = letk.List.new()
     --~ self.info        = {}
     self.initial     = nil
-    self:set('file_name', '*new' )
+    self:set('file_name', '*new automaton' )
 end, Object )
 
 Automaton.__TYPE = 'automaton'

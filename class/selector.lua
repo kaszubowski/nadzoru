@@ -183,6 +183,7 @@ function Selector:add_combobox( options )
         result_fn   = nil,
         text        = 'input',
     })
+    options.valid_list = letk.List.new()
 
     if not self.single_box then
         self.single_box = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
@@ -195,17 +196,18 @@ function Selector:add_combobox( options )
     for k, v in options.list:ipairs() do
         if type(options.filter_fn) ~= 'function' or options.filter_fn( v ) then
             combobox:append_text(type(options.text_fn) == 'function' and options.text_fn( v ) or tostring( v ) )
+            options.valid_list:append( v )
         end
     end
 
-    if options.list:len() > 0 then
+    if options.valid_list:len() > 0 then
         combobox:set('active', 0)
     end
 
     self.single_box:pack_start( label , false, false, 0 )
     self.single_box:pack_start( combobox , false, false, 0 )
     self.result[#self.result + 1] = function()
-        local v = options.list:get( combobox:get_active() + 1 )
+        local v = options.valid_list:get( combobox:get_active() + 1 )
         return type(options.result_fn) == 'function' and options.result_fn( v ) or v
     end
 

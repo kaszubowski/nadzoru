@@ -60,6 +60,8 @@ Gui = letk.Class( function( self )
         "icon-name", "gtk-about")
 
     self.window:connect("delete-event", gtk.main_quit)
+
+    self.note:set('enable-popup', true, 'scrollable', true, 'show-border', true)
 end, Object )
 
 function Gui:run()

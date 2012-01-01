@@ -2,10 +2,10 @@ Object  = letk.Class( function( self )
     self.triggers = {}
 end )
 
-function Object:trigger(event)
+function Object:trigger(event, ... )
     if self.triggers[event] then
         for ch_fn, fn in ipairs( self.triggers[event] ) do
-            fn.fn( self, fn.param )
+            fn.fn( self, fn.param, ... )
         end
     end
 end

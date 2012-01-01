@@ -203,7 +203,7 @@ end
 
 function GraphvizSimulator.statejump_cb( self )
     local st = self.sb_statejump:get_value()
-    self.state = st
+    self.current_state_id = st
     self:update_treeview()
     self:draw()
 end

@@ -41,7 +41,6 @@ end
 
 safeload('letk', 'letk', true, [[You need install 'letk' to run this software]])
 safeload({'lgob.gdk','lgob.gtk','lgob.cairo','lgob.gtksourceview'}, 'gtk', true, [[You need install 'lgob' to run this software, you can found 'lgob' at http://oproj.tuxfamily.org]])
---safeload({'lgob.gtkglext', 'luagl' }, 'opengl', false, [[OpenGL features are disable, a 'lgob' version with 'gtkglext' suport and 'luagl' are required to enable this features]])
 safeload('lxp', 'lxp', false, [[no library 'lxp' to manipulate xml format]])
 
 --Utils
@@ -49,7 +48,6 @@ require('class.object')
 
 require('class.info_dialog')
 require('class.treeview')
--- require('class.gl_render')
 require('class.selector')
 
 require('class.automaton')
@@ -60,6 +58,7 @@ require('class.graphviz_simulator')
 require('class.plant_simulator')
 require('class.automaton_render')
 require('class.automaton_editor')
+require('class.scada.init')
 
 local CodeGenDevices = require 'res.codegen.devices.main'
 
@@ -80,20 +79,17 @@ function Controller:build()
 
     -- ** Menu Itens ** --
     self.gui:append_menu('automata', "_Automata")
-    self.gui:append_menu('simulate', "_Simulate")
+    self.gui:append_menu('scada', "_SCADA")
 
     -- ** Actions * --
 
     --File
     self.gui:add_action('automata_import_ides', "_Import IDES Automaton", "Import a IDES (.xmd) automaton file", nil, self.import_ides, self)
     self.gui:add_action('automata_new'        , "_New Automaton", "Create a New Automaton", nil, self.create_new_automaton, self)
-    self.gui:add_action('automata_open'       ,"_Open Automaton", "Open a New Automaton", nil, self.open_automaton, self)
-    self.gui:add_action('tab_close_current'   ,"_Close Current Tab", "Close CurrentTab", nil, function()
+    self.gui:add_action('automata_open'       , "_Open Automaton", "Open a New Automaton", nil, self.open_automaton, self)
+    self.gui:add_action('tab_close_current'   , "_Close Current Tab", "Close CurrentTab", nil, function()
         self.gui:remove_current_tab()
     end)
-
-    --Automatons
-    --~ self.gui:add_action('remove_automaton', "_Close Automaton", "Close Activate Automaton", nil, self.close_automaton, self)
 
     --Automata
     self.gui:add_action('automaton_edit', "Edit Automaton", "Edit automaton struct", nil, self.automaton_edit, self)
@@ -114,6 +110,13 @@ function Controller:build()
     self.gui:add_action('simulategraphviz', "Automaton Simulate _Graphviz", "Simulate Automata in a Graphviz render", nil, self.simulate_graphviz, self)
     --self.gui:add_action('simulateplant', "Automaton Simulate _Plant", "Simulate the Plant in a OpenGL render", nil, self.simulate_plant, self)
 
+    --SCADA
+    self.gui:add_action('scada_plant_new'   , "_New Plant", "Create a New SCADA Plant", nil, self.create_new_scada_plant, self)
+    self.gui:add_action('scada_plant_load'   , "_Load Plant", "Load a SCADA Plant", nil, self.load_scada_plant, self)
+    self.gui:add_action('scada_plant_edit'  , "Edit Plant", "Edit a SCADA Plant", nil, self.scada_plant_edit, self)
+    self.gui:add_action('scada_plant_view'  , "View", "SCADA View Interface", nil, self.scada_plant_view, self)
+    self.gui:add_action('scada_plant_server', "Server", "SCADA Server", nil, self.scada_plant_server, self)
+
     -- ** Menu-Action Link ** --
     --File
     self.gui:prepend_menu_separator('file')
@@ -122,9 +125,6 @@ function Controller:build()
     self.gui:prepend_menu_item('file','automata_import_ides')
     self.gui:prepend_menu_item('file','automata_open')
     self.gui:prepend_menu_item('file','automata_new')
-
-    --Automaton
-    --~ self.gui:prepend_menu_item('automatonlist','remove_automaton')
 
     --Automaton Operations
     self.gui:append_menu_item('automata','automaton_edit')
@@ -141,10 +141,14 @@ function Controller:build()
     self.gui:append_menu_item('operations','operations_check_choice_problem')
     self.gui:append_menu_item('operations','operations_check_avalanche_effect')
     self.gui:append_menu_item('operations','operations_check_inexact_synchronization')
+    self.gui:append_menu_item('automata', 'simulategraphviz')
 
-    --Simulate
-    self.gui:append_menu_item('simulate', 'simulategraphviz')
-    --self.gui:append_menu_item('simulate', 'simulateplant')
+    --SCADA
+    self.gui:append_menu_item('scada', 'scada_plant_new')
+    self.gui:append_menu_item('scada', 'scada_plant_load')
+    self.gui:append_menu_item('scada', 'scada_plant_edit')
+    self.gui:append_menu_item('scada', 'scada_plant_view')
+    self.gui:append_menu_item('scada', 'scada_plant_server')
 
 end
 
@@ -152,30 +156,19 @@ function Controller:exec()
     gtk.main()
 end
 
-function Controller:automaton_add( new_automaton )
-    self.elements:append( new_automaton )
+function Controller:element_add( new_element )
+    self.elements:append( new_element )
 end
-
---[[
-function Controller:automaton_remove( automaton_pos )
-    local r_automaton = self.elements:remove( automaton_pos )
-    if self.active_automaton == automaton_pos then
-        self.active_automaton = nil
-    end
-    local menu_item = r_automaton:get_info( 'menu_item' )
-    self.gui:remove_menu_item( 'automatonlist', menu_item )
-end
---]]
-
-
 
 ------------------------------------------------------------------------
 --                           CALLBACKS                                --
 ------------------------------------------------------------------------
 
+--- AUTOMATA ---
+
 function Controller.create_new_automaton( data )
     local new_automaton = Automaton.new()
-    data.param:automaton_add( new_automaton )
+    data.param:element_add( new_automaton )
 end
 
 function Controller.open_automaton( data )
@@ -196,7 +189,7 @@ function Controller.open_automaton( data )
         for k_filename, filename in ipairs( filenames ) do
             local new_automaton = Automaton.new()
             new_automaton:load_file( filename )
-            data.param:automaton_add( new_automaton )
+            data.param:element_add( new_automaton )
         end
     end
 end
@@ -219,7 +212,7 @@ function Controller.import_ides( data )
         for k_filename, filename in ipairs( filenames ) do
             local new_automaton = Automaton.new()
             new_automaton:IDES_import( filename )
-            data.param:automaton_add( new_automaton )
+            data.param:element_add( new_automaton )
         end
     end
 end
@@ -345,12 +338,6 @@ function Controller.code_gen_dfa( data )
     }
     :run()
 end
-
---~ function Controller.close_automaton( data )
-    --~ if data.param.active_automaton then
-        --~ data.param:automaton_remove( data.param.active_automaton )
-    --~ end
---~ end
 
 -- ** Operations ** --
 function Controller.operations_accessible( data )
@@ -660,10 +647,71 @@ function Controller.operations_check_inexact_synchronization( data )
     }
     :run()
 end
+
+--- SCADA ---
+
+function Controller.create_new_scada_plant( data )
+    local new_scada_plant = ScadaPlant.new()
+    data.param:element_add( new_scada_plant )
+end
+
+function Controller.load_scada_plant( data )
+    local dialog = gtk.FileChooserDialog.new(
+        "Select the file", nil, gtk.FILE_CHOOSER_ACTION_OPEN,
+        "gtk-cancel", gtk.RESPONSE_CANCEL,
+        "gtk-ok", gtk.RESPONSE_OK
+    )
+    local filter = gtk.FileFilter.new()
+    filter:add_pattern("*.nsp")
+    filter:set_name("Nadzoru SCADA Plant")
+    dialog:add_filter(filter)
+    dialog:set("select-multiple", true)
+    local response = dialog:run()
+    dialog:hide()
+    local filenames = dialog:get_filenames()
+    if response == gtk.RESPONSE_OK and filenames then
+        for k_filename, filename in ipairs( filenames ) do
+            local new_scada_plant = ScadaPlant.new()
+            new_scada_plant:load_file( filename )
+            data.param:element_add( new_scada_plant )
+        end
+    end
+end
+
+function Controller.scada_plant_edit( data )
+    Selector.new({
+        title = "Select scada plant to edit",
+        success_fn = function( results, numresult )
+            local plant = results[1]
+            if plant then
+                ScadaEditor.new( data.gui, plant )
+            end
+        end,
+    })
+    :add_combobox{
+        list = data.param.elements,
+        text_fn  = function( a )
+            return a:get( 'file_name' )
+        end,
+        filter_fn = function( v )
+            return v.__TYPE == 'scadaplant'
+        end,
+        text = 'Plant:'
+    }
+    :run()
+end
+
+function Controller.scada_plant_view( data )
+
+end
+
+function Controller.scada_plant_server( data )
+
+end
+
 ------------------------------------------------------------------------
 --                          Main Chuck                                --
 ------------------------------------------------------------------------
-
 controller_instance = Controller.new()
 controller_instance:exec()
 

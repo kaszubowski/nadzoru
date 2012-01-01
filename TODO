@@ -2,7 +2,7 @@ Task:
     -> change os.execute to lua file system
         -> change linux only path to images
     -> remove loaded automatons
-    -> close tabs
+    ->[OK] close tabs
 
 Features:
     ->Operations

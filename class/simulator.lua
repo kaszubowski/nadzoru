@@ -24,27 +24,30 @@ Simulator = letk.Class( function( self, automaton )
 end, Object )
 
 function Simulator:automaton_load( automaton )
-    self.automaton      = automaton or self.automaton
-    self.event_name_map = {}
-    self.event_map      = {}
-    self.state_map      = {}
-    self.state          = self.automaton.initial
+    self.automaton        = automaton or self.automaton
+    self.event_name_map   = {}
+    self.event_map        = {}
+    self.state_map        = {}
+    self.current_state_id = self.automaton.initial or 1
 
     --Events
     for event_index, event in automaton.events:ipairs() do
         self.event_name_map[event.name] = event_index
         self.event_map[event]           = event_index
+        self.event_map[event_index]     = event
     end
 
     --States
     for state_index, state in automaton.states:ipairs() do
-        self.state_map[state] = state_index
+        self.state_map[state]       = state_index
+        self.state_map[state_index] = state
     end
 end
 
 function Simulator:get_current_state()
-    local node  = self.automaton.states:get( self.state )
-    return self.state, node
+    --~ local node  = self.automaton.states:get( self.current_state_id )
+    local node  = self.state_map[ self.current_state_id ]
+    return self.current_state_id, node
 end
 
 function Simulator:get_current_state_info()
@@ -82,7 +85,7 @@ function Simulator:change_state( state_index )
     state_index = tonumber( state_index )
     if not state_index then return end
 
-    self.state = state_index
+    self.current_state_id = state_index
 end
 
 
