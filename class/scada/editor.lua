@@ -6,10 +6,11 @@ ScadaEditor = letk.Class( function( self, gui, scada_plant )
     self:build_gui()
 
     -- Interface states
-    self.operation                     = nil
-    self.selected_component_IconView   = nil --from IconView
-    self.selected_component            = nil --from DrawningArea
-    self.selected_component_properties = nil --map id -> prop_name
+    self.operation                      = nil
+    self.selected_component_IconView    = nil --from IconView
+    self.selected_component             = nil --from DrawningArea
+    self.selected_component_move_motion_diff_x = nil
+    self.selected_component_move_motion_diff_y = nil
 
 end, Object )
 
@@ -19,23 +20,27 @@ function ScadaEditor:build_gui()
         self.hbox                         = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
             self.scrolled                 = gtk.ScrolledWindow.new()
                 self.drawing_area         = gtk.DrawingArea.new( )
-            self.treeview_properties  = Treeview.new( true )
+            --~ self.treeview_properties      = Treeview.new( true )
+            self.properties               = PropertyEditor.new( )
 
-
+    --~ self.drawing_area:add_events( gdk.POINTER_MOTION_MASK ) --movimento do mouse
+    self.drawing_area:add_events( gdk.BUTTON_MOTION_MASK ) --movimento do mouse clicado
+    self.drawing_area:connect("motion_notify_event", self.drawing_area_move_motion, self )
     self.drawing_area:add_events( gdk.BUTTON_PRESS_MASK )
     self.drawing_area:connect("button_press_event", self.drawing_area_press, self )
     self.drawing_area:connect('draw', self.drawing_area_expose, self )
 
-    self.treeview_properties:add_column_text( "Property",100 )
-    self.treeview_properties:add_column_text( "Value", 50, self.change_property, self )
+    --~ self.treeview_properties:add_column_text( "Property",100 )
+    --~ self.treeview_properties:add_column_text( "Value", 50, self.change_property, self )
 
     self.vbox:pack_start( self.toolbar, false, false, 0 )
     self.vbox:pack_start( self.hbox, true, true, 0 )
         self.hbox:pack_start( self.scrolled, true, true, 0 )
             self.scrolled:add_with_viewport(self.drawing_area)
-        self.hbox:pack_start( self.treeview_properties:build{ width = 236 }, false, false, 0 )
+        self.hbox:pack_start( self.properties:build( 128, 200 ), false, false, 0 )
 
     self:build_gui_components_list()
+    self.properties:draw_interface()
 
     --save
     self.img_act_save = gtk.Image.new_from_file( './images/icons/save.png' )
@@ -62,12 +67,12 @@ function ScadaEditor:build_gui()
     self.btn_act_edit:connect( 'toggled', self.set_act_edit, self )
     self.toolbar:insert( self.btn_act_edit, -1 )
 
-    --move
-    self.img_act_move = gtk.Image.new_from_file( './images/icons/move.png' )
-    self.btn_act_move = gtk.ToggleToolButton.new( )
-    self.btn_act_move:set_icon_widget( self.img_act_move )
-    self.btn_act_move:connect( 'toggled', self.set_act_move, self )
-    self.toolbar:insert( self.btn_act_move, -1 )
+    --move_motion
+    self.img_act_move_motion = gtk.Image.new_from_file( './images/icons/move_motion.png' )
+    self.btn_act_move_motion = gtk.ToggleToolButton.new( )
+    self.btn_act_move_motion:set_icon_widget( self.img_act_move_motion )
+    self.btn_act_move_motion:connect( 'toggled', self.set_act_move_motion, self )
+    self.toolbar:insert( self.btn_act_move_motion, -1 )
 
     --add
     self.img_act_add = gtk.Image.new_from_file( './images/icons/add.png' )
@@ -121,39 +126,56 @@ function ScadaEditor:build_gui_components_list()
     self.icon_view:connect('selection-changed', self.select_component, self )
 end
 
-function ScadaEditor:drawing_area_press( event )
-    if self.last_drawing_area_lock then return end
-    self.last_drawing_area_lock = true
-
-    glib.timeout_add(glib.PRIORITY_DEFAULT, 100, function( self )
-        self.last_drawing_area_lock = nil
-    end, self )
-
-    local _, x, y                      = gdk.Event.get_coords( event )
-    local selected_component, position = self.scada_plant:get_selected( x, y )
-
-    if self.operation == 'add' and self.selected_component_IconView then
-        local new_component = self.scada_plant:add_component( self.selected_component_IconView )
-        new_component:set_property( 'x', x )
-        new_component:set_property( 'y', y )
-        self.selected_component = new_component
-        self:update()
-    elseif self.operation == 'edit' then
-        self.selected_component  = selected_component
-        self:update_properties()
-    elseif self.operation == 'move' then
-        if not self.selected_component then
-            self.selected_component = selected_component
-        else
-            self.selected_component:set_property( 'x', x )
-            self.selected_component:set_property( 'y', y )
-            self.selected_component = nil
+function ScadaEditor:drawing_area_move_motion( event )
+    local stats, coord_x, coord_y           = gdk.Event.get_coords( event )
+    if self.operation == 'move_motion' then
+        if self.selected_component then
+            local v_x = math.floor(coord_x) - (self.selected_component_move_motion_diff_x or 0)
+            local v_y = math.floor(coord_y) - (self.selected_component_move_motion_diff_y or 0)
+            self.selected_component:set_property( 'x', v_x )
+            self.selected_component:set_property( 'y', v_y )
+            self.properties:set_value( 'x', self.selected_component:get_property( 'x' ) )
+            self.properties:set_value( 'y', self.selected_component:get_property( 'y' ) )
+            self:update_render()
         end
-        self:update()
-    elseif self.operation == 'delete' then
-        if selected_component and position then
-            self.scada_plant.component:remove( position )
+    end
+end
+
+function ScadaEditor:drawing_area_press( event )
+    local stats, button_press = gdk.Event.get_button( event )
+
+    if button_press == 1 then
+        if self.last_drawing_area_lock then return end
+        self.last_drawing_area_lock = true
+
+        glib.timeout_add(glib.PRIORITY_DEFAULT, 100, function( self )
+            self.last_drawing_area_lock = nil
+        end, self )
+
+        local _, x, y                      = gdk.Event.get_coords( event )
+        local selected_component, position = self.scada_plant:get_selected( x, y )
+
+        if self.operation == 'add' and self.selected_component_IconView then
+            local new_component = self.scada_plant:add_component( self.selected_component_IconView )
+            new_component:set_property( 'x', x )
+            new_component:set_property( 'y', y )
+            self.selected_component = new_component
             self:update()
+        elseif self.operation == 'edit' then
+            self.selected_component  = selected_component
+            self:update_properties()
+        elseif self.operation == 'move_motion' then
+            if selected_component then
+                self.selected_component = selected_component
+                self.selected_component_move_motion_diff_x = math.floor(x) - self.selected_component:get_property( 'x', x )
+                self.selected_component_move_motion_diff_y = math.floor(y) - self.selected_component:get_property( 'y', y )
+                self:update()
+            end
+        elseif self.operation == 'delete' then
+            if selected_component and position then
+                self.scada_plant.component:remove( position )
+                self:update()
+            end
         end
     end
 end
@@ -165,13 +187,13 @@ function ScadaEditor:select_component()
     end
 end
 
-function ScadaEditor:change_property( row_id, new_value )
-    if self.selected_component and self.selected_component_properties then
+function ScadaEditor:change_property( prop_name, old_value, new_value )
+    if self.selected_component then
         self.selected_component:set_property(
-            self.selected_component_properties[ row_id+1 ],
+            prop_name,
             new_value
         )
-        self:update()
+        self:update_render()
     end
 end
 
@@ -185,28 +207,31 @@ function ScadaEditor:update_render()
 end
 
 function ScadaEditor:update_properties()
-    self.treeview_properties:clear_all()
-    self.selected_component_properties = {}
+    self.properties:clear()
 
     if self.selected_component then
+        self.properties:add_change_callback( self.change_property, self )
         for prop_name, prop in pairs( self.selected_component.properties ) do
             if not prop.private then
-                self.treeview_properties:add_row{ prop.caption, self.selected_component:get_property( prop_name ) }
-                self.selected_component_properties[ #self.selected_component_properties + 1 ] = prop_name
+                if prop.type == 'integer' then
+                    self.properties:add_row_entry( prop_name,prop.caption,self.selected_component:get_property( prop_name ), { min = prop.min, max = prop.max, type = 'integer'})
+                elseif prop.type == 'number' then
+                    self.properties:add_row_entry( prop_name,prop.caption,self.selected_component:get_property( prop_name ), { min = prop.min, max = prop.max, type = 'number'})
+                end
             end
         end
     end
 
-    self.treeview_properties:update()
+    self.properties:draw_interface()
 end
 
 function ScadaEditor:update()
-    self:update_render( cr )
-    self:update_properties( cr )
+    self:update_render( )
+    self:update_properties( )
 end
 
 function ScadaEditor:toolbar_set_unset_operation( mode )
-    local btn      = {'edit','move','add','delete'}
+    local btn      = {'edit','move_motion','add','delete'}
     local active   = self['btn_act_' .. mode]:get('active')
 
     if active then
@@ -271,8 +296,8 @@ function ScadaEditor:set_act_edit()
     self:toolbar_set_unset_operation( 'edit' )
 end
 
-function ScadaEditor:set_act_move()
-    self:toolbar_set_unset_operation( 'move' )
+function ScadaEditor:set_act_move_motion()
+    self:toolbar_set_unset_operation( 'move_motion' )
 end
 
 function ScadaEditor:set_act_add()

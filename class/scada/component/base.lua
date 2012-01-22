@@ -39,10 +39,10 @@ function ScadaComponent.Base:change_properties( changes )
 end
 
 ScadaComponent.Base:init_properties{
-        ['x']        = { type = 'number', caption = "Position x", default = 0   , private = false },
-        ['y']        = { type = 'number', caption = "Position y", default = 0   , private = false },
-        ['w']        = { type = 'number', caption = "Width"     , default = 128 , private = false },
-        ['h']        = { type = 'number', caption = "Height"    , default = 128 , private = false },
+        ['x']        = { type = 'integer', caption = "Position x", default = 0   , private = false, min=0 },
+        ['y']        = { type = 'integer', caption = "Position y", default = 0   , private = false, min=0 },
+        ['w']        = { type = 'integer', caption = "Width"     , default = 128 , private = false },
+        ['h']        = { type = 'integer', caption = "Height"    , default = 128 , private = false },
         ['onupdate'] = { type = 'code'  , caption = "On Update" , default = ''  , private = false },
     }
 ScadaComponent.Base.final_component = false
@@ -83,7 +83,7 @@ end
 
 function ScadaComponent.Base:set_property( key, value )
     if self.properties[ key ] then
-        if self.properties[ key ].type == 'number' then
+        if self.properties[ key ].type == 'number' or self.properties[ key ].type == 'integer' then
             self.properties_values[ key ] = tonumber(value)
             if self.properties[ key ].min and self.properties_values[ key ] < self.properties[ key ].min then
                 self.properties_values[ key ] = self.properties[ key ].min

@@ -3,7 +3,7 @@ ScadaComponent.SimpleSilo = letk.Class( function( self )
 end, ScadaComponent.Base )
 
 ScadaComponent.SimpleSilo:init_properties{
-    ['state'] = { type = 'number', caption = "State", default = 1   , private = false, min=1, max=5 },
+    ['state'] = { type = 'integer', caption = "State", default = 1   , private = false, min=1, max=5 },
 }
 ScadaComponent.SimpleSilo.final_component = true
 ScadaComponent.SimpleSilo.caption         = "Simple Silo"

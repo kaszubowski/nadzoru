@@ -90,37 +90,8 @@ function Treeview:add_column_toggle( caption, width, callback, param )
     return self
 end
 
-function Treeview:add_column_cell_render_callback( caption, width, callback, cell_data_callback, param )
-    self.render[#self.render +1]   = gtk.CellRendererText.new()
-    self.columns[#self.columns +1] = gtk.TreeViewColumn.new_with_attributes(
-        caption,
-        self.render[#self.render],
-        'text',
-        #self.columns
-    )
+function Treeview:add_column_combobox( caption, width, callback, param )
 
-    if tonumber( width ) then
-        self.render[#self.render]:set('width',width)
-    end
-
-    self.view:append_column( self.columns[#self.columns] )
-    self.model_list[#self.model_list +1] = 'gchararray'
-
-    if type(callback) == 'function' then
-        self.render[#self.render]:set('editable', true)
-        self.render[#self.render]:connect('edited', callback, param)
-    end
-
-    if type(cell_data_callback) == 'function' then
-        self.columns[#self.columns]:set_cell_data_func(
-            self.render[#self.render],
-            cell_data_callback,
-            nil,
-            param
-        )
-    end
-
-    return self
 end
 
 function Treeview:build( options )

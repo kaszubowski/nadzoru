@@ -3,10 +3,10 @@ ScadaComponent.Conveyor = letk.Class( function( self )
 end, ScadaComponent.Base )
 
 ScadaComponent.Conveyor:init_properties{
-    ['state'] = { type = 'number', caption = "State", default = 1   , private = false, min=1, max=2 },
+    ['state'] = { type = 'integer', caption = "State", default = 1   , private = false, min=1, max=2 },
 }
 ScadaComponent.Conveyor.final_component = true
-ScadaComponent.Conveyor.caption         = "Single Silo"
+ScadaComponent.Conveyor.caption         = "Single Conveyor"
 ScadaComponent.Conveyor.icon            = 'res/scada/images/conveyor.png'
 ScadaComponent.Conveyor:change_properties{
     ['h']              = { default = 32 },

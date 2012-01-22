@@ -49,6 +49,7 @@ require('class.object')
 require('class.info_dialog')
 require('class.treeview')
 require('class.selector')
+require('class.property_editor')
 
 require('class.automaton')
 require('class.code_gen.init')

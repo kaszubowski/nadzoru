@@ -14,6 +14,9 @@ AutomatonEditor = letk.Class( function( self, gui, automaton )
                 self.btn_delete_event     = gtk.Button.new_from_stock( 'gtk-delete' )
 
 
+    --~ self.drawing_area:add_events( gdk.POINTER_MOTION_MASK ) --movimento do mouse
+    self.drawing_area:add_events( gdk.BUTTON_MOTION_MASK ) --movimento do mouse clicado
+    self.drawing_area:connect("motion_notify_event", self.drawing_area_move_motion, self )
     self.drawing_area:add_events( gdk.BUTTON_PRESS_MASK )
     self.drawing_area:connect("button_press_event", self.drawing_area_press, self )
 
@@ -63,6 +66,13 @@ AutomatonEditor = letk.Class( function( self, gui, automaton )
     self.btn_act_move:set_icon_widget( self.img_act_move )
     self.btn_act_move:connect( 'toggled', self.set_act_move, self )
     self.toolbar:insert( self.btn_act_move, -1 )
+
+    --move_motion
+    self.img_act_move_motion = gtk.Image.new_from_file( './images/icons/move_motion.png' )
+    self.btn_act_move_motion = gtk.ToggleToolButton.new( )
+    self.btn_act_move_motion:set_icon_widget( self.img_act_move_motion )
+    self.btn_act_move_motion:connect( 'toggled', self.set_act_move_motion, self )
+    self.toolbar:insert( self.btn_act_move_motion, -1 )
 
     --state
     self.img_act_state = gtk.Image.new_from_file( './images/icons/state.png' )
@@ -240,7 +250,7 @@ function AutomatonEditor:edit_transition( source, target )
 end
 
 function AutomatonEditor:toolbar_set_unset_operation( mode )
-    local btn      = {'edit','move','state','marked','initial','transition','delete'}
+    local btn      = {'edit','move','state','marked','initial','transition','delete','move_motion'}
     local active   = self['btn_act_' .. mode]:get('active')
 
     if active then
@@ -329,6 +339,10 @@ function AutomatonEditor:set_act_move()
     self:toolbar_set_unset_operation( 'move' )
 end
 
+function AutomatonEditor:set_act_move_motion()
+    self:toolbar_set_unset_operation( 'move_motion' )
+end
+
 function AutomatonEditor:set_act_state()
     self:toolbar_set_unset_operation( 'state' )
 end
@@ -347,6 +361,17 @@ end
 
 function AutomatonEditor:set_act_delete()
     self:toolbar_set_unset_operation( 'delete' )
+end
+
+function AutomatonEditor:drawing_area_move_motion( event )
+    local stats, coord_x, coord_y           = gdk.Event.get_coords( event )
+    if self.operation == 'move_motion' then
+        if self.last_element and self.last_element.type == 'state'  then
+            self.last_element.object.x = math.floor(coord_x) - (self.selected_component_move_motion_diff_x or 0)
+            self.last_element.object.y = math.floor(coord_y) - (self.selected_component_move_motion_diff_y or 0)
+            self.render:draw({ [self.last_element.id] = {0.85,0,0} }, {})
+        end
+    end
 end
 
 function AutomatonEditor:drawing_area_press( event )
@@ -381,6 +406,13 @@ function AutomatonEditor:drawing_area_press( event )
             self.render:draw({},{})
         elseif element and element.type == 'state' then
             self.last_element = element
+            self.render:draw({ [element.id] = {0.85,0,0} }, {})
+        end
+    elseif self.operation == 'move_motion' then
+        if element and element.type == 'state' then
+            self.last_element               = element
+            self.element_move_motion_diff_x = math.floor(x) - element.object.x
+            self.element_move_motion_diff_y = math.floor(y) - element.object.y
             self.render:draw({ [element.id] = {0.85,0,0} }, {})
         end
     elseif self.operation == 'initial' then
