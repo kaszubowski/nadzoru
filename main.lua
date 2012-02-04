@@ -685,7 +685,7 @@ function Controller.scada_plant_edit( data )
         success_fn = function( results, numresult )
             local plant = results[1]
             if plant then
-                ScadaEditor.new( data.gui, plant )
+                ScadaEditor.new( data.gui, plant, data.param.elements )
             end
         end,
     })

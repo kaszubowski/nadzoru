@@ -23,7 +23,11 @@ function ScadaComponent.Base:init_properties( properties )
     self.properties = {}
     copy_properties( self, self )
     for property, info in pairs( properties ) do
-        self.properties[ property ] = info
+        if type(info) == 'boolean' and info == false then
+            self.properties[ property ] = nil --remove inherited properties
+        else
+            self.properties[ property ] = info
+        end
     end
 end
 
@@ -38,12 +42,19 @@ function ScadaComponent.Base:change_properties( changes )
     end
 end
 
+local default_onupdate_code = [[
+function onupdate( self, event, dfa_sim_list )
+    --Your code here--
+    
+end
+]]
+
 ScadaComponent.Base:init_properties{
         ['x']        = { type = 'integer', caption = "Position x", default = 0   , private = false, min=0 },
         ['y']        = { type = 'integer', caption = "Position y", default = 0   , private = false, min=0 },
         ['w']        = { type = 'integer', caption = "Width"     , default = 128 , private = false },
         ['h']        = { type = 'integer', caption = "Height"    , default = 128 , private = false },
-        ['onupdate'] = { type = 'code'  , caption = "On Update" , default = ''  , private = false },
+        ['onupdate'] = { type = 'code'   , caption = "On Update" , default = default_onupdate_code  , private = false, help = true },
     }
 ScadaComponent.Base.final_component = false
 ScadaComponent.Base.caption         = "Base"
@@ -59,12 +70,13 @@ function ScadaComponent.Base:render( cr )
     local rw, rh = w/ow, h/oh
     local surface = cairo.ImageSurface.create(cairo.FORMAT_ARGB32, ow, oh )
     local ic      = cairo.Context.create(surface)
-    cr:scale( rw, rh )
-    ic:rectangle(0, 0, ow, oh )
-    ic:fill()
-    cr:set_source_surface( image, x/rw,y/rh )
-    cr:mask_surface( surface, x/rw, y/rh )
-    cr:identity_matrix()
+    cr:save()
+        cr:scale( rw, rh )
+        ic:rectangle(0, 0, ow, oh )
+        ic:fill()
+        cr:set_source_surface( image, x/rw,y/rh )
+        cr:mask_surface( surface, x/rw, y/rh )
+    cr:restore()
     ic:destroy()
     surface:destroy()
     image:destroy()
@@ -91,8 +103,12 @@ function ScadaComponent.Base:set_property( key, value )
             if self.properties[ key ].max and self.properties_values[ key ] > self.properties[ key ].max then
                 self.properties_values[ key ] = self.properties[ key ].max
             end
-        elseif self.properties[ key ].type == 'string' then
+        elseif self.properties[ key ].type == 'string' or self.properties[ key ].type == 'code' then
             self.properties_values[ key ] = tostring(value)
+        elseif self.properties[ key ].type == 'combobox' then
+            self.properties_values[ key ] = tonumber( value )
+        elseif self.properties[ key ].type == 'color' then
+            self.properties_values[ key ] = value
         end
     end
 end

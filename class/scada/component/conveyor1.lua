@@ -1,18 +1,18 @@
-ScadaComponent.Conveyor = letk.Class( function( self )
+ScadaComponent.Conveyor1 = letk.Class( function( self )
     ScadaComponent.Base.__super( self )
 end, ScadaComponent.Base )
 
-ScadaComponent.Conveyor:init_properties{
+ScadaComponent.Conveyor1:init_properties{
     ['state'] = { type = 'integer', caption = "State", default = 1   , private = false, min=1, max=2 },
 }
-ScadaComponent.Conveyor.final_component = true
-ScadaComponent.Conveyor.caption         = "Single Conveyor"
-ScadaComponent.Conveyor.icon            = 'res/scada/images/conveyor.png'
-ScadaComponent.Conveyor:change_properties{
+ScadaComponent.Conveyor1.final_component = true
+ScadaComponent.Conveyor1.caption         = "Single Conveyor"
+ScadaComponent.Conveyor1.icon            = 'res/scada/images/conveyor.png'
+ScadaComponent.Conveyor1:change_properties{
     ['h']              = { default = 32 },
 }
 
-function ScadaComponent.Conveyor:render( cr )
+function ScadaComponent.Conveyor1:render( cr )
     local state_image = { 'conveyor_off','conveyor_on' }
     local image_file  = 'res/scada/images/' .. state_image[ self:get_property( 'state' ) ] .. '.png'
     local image       = cairo.ImageSurface.create_from_png( image_file )
@@ -24,12 +24,13 @@ function ScadaComponent.Conveyor:render( cr )
     local rw, rh      = w/ow, h/oh
     local surface     = cairo.ImageSurface.create(cairo.FORMAT_ARGB32, ow, oh )
     local ic          = cairo.Context.create(surface)
-    cr:scale( rw, rh )
-    ic:rectangle(0, 0, ow, oh )
-    ic:fill()
-    cr:set_source_surface( image, x/rw,y/rh )
-    cr:mask_surface( surface, x/rw, y/rh )
-    cr:identity_matrix()
+    cr:save()
+        cr:scale( rw, rh )
+        ic:rectangle(0, 0, ow, oh )
+        ic:fill()
+        cr:set_source_surface( image, x/rw,y/rh )
+        cr:mask_surface( surface, x/rw, y/rh )
+    cr:restore()
     ic:destroy()
     surface:destroy()
     image:destroy()

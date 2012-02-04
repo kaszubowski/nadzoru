@@ -1,8 +1,16 @@
 ScadaPlant = letk.Class( function( self )
     Object.__super( self )
 
-    self.component = letk.List.new()
     self:set('file_name', '*new plant' )
+    
+    self.component = letk.List.new()
+    self.automata = {
+        g = {},
+        e = {},
+        k = {},
+        s = {},
+    }
+    self.automata_object = nil
 end, Object )
 
 ScadaPlant.__TYPE = 'scadaplant'
@@ -12,6 +20,23 @@ function ScadaPlant:add_component( name )
     self.component:append( new_component )
 
     return new_component
+end
+
+function ScadaPlant:load_automata( element_list )
+    self.automata_object = {}
+    for k, v in element_list:ipairs() do
+        if v.__TYPE == 'automaton' then
+            local file_nm = v:get( 'file_name' )
+            if file_nm and (
+                self.automata.g[ file_nm ] or
+                self.automata.e[ file_nm ] or
+                self.automata.k[ file_nm ] or
+                self.automata.s[ file_nm ]
+            ) then
+                self.automata_object[ file_nm ] = v
+            end
+        end
+    end
 end
 
 function ScadaPlant:get_selected( x, y )
@@ -32,11 +57,22 @@ end
 function ScadaPlant:save_serialize()
     local data                 = {
         components       = {},
-        automatons_files = {},
+        automata_files = {
+            g = {},
+            e = {},
+            k = {},
+            s = {},
+        },
     }
 
     for k, component in self.component:ipairs() do
         data.components[ #data.components + 1 ] = component:dump()
+    end
+    
+    for t, l in pairs( self.automata ) do
+        for name, const in pairs( l ) do
+            data.automata_files[ t ][ name ] = true
+        end
     end
 
     return letk.serialize( data )
@@ -99,6 +135,12 @@ function ScadaPlant:load_file( file_name )
             for k, component in ipairs( data.components ) do
                 local new_component = self:add_component( component.name or 'Base' )
                 new_component:charge( component )
+            end
+            
+            for t, l in pairs( data.automata_files ) do
+                for name, const in pairs( l ) do
+                    self.automata[ t ][ name ] = true
+                end
             end
 
             self:set( 'file_type', 'nsp' )
