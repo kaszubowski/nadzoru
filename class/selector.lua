@@ -263,6 +263,8 @@ end
 function Selector:add_file( options )
      options = table.complete( options or {}, {
         text        = 'input',
+        filter      = nil,
+        filter_name = nil,
     })
     local vbox_file = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
         local label_info = gtk.Label.new_with_mnemonic( options.text )
@@ -276,6 +278,12 @@ function Selector:add_file( options )
         'gtk-cancel', gtk.RESPONSE_CANCEL,
         'gtk-ok', gtk.RESPONSE_OK
     )
+    if options.filter then
+        local filter = gtk.FileFilter.new()
+        filter:add_pattern('*.' .. options.filter)
+        filter:set_name( options.filter_name or options.filter )
+        dialog:add_filter(filter)
+    end
     local file = ''
     if not self.single_box then
         self.single_box = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
@@ -294,6 +302,11 @@ function Selector:add_file( options )
         dialog:hide()
         local names = dialog:get_filenames()
         if response == gtk.RESPONSE_OK and names and names[1] then
+            if options.filter then
+                if not names[1]:match( '%.' .. options.filter .. '$' ) then
+                    names[1] = names[1] .. '.' .. options.filter
+                end
+            end
             local display = (#names[1] <= 25) and names[1] or (names[1]:sub(1,5) .. "..." .. names[1]:sub(-17,-1))
             btn_label:set_text   ( display )
             file = names[1]

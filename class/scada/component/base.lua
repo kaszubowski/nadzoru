@@ -80,6 +80,8 @@ function ScadaComponent.Base:render( cr )
     ic:destroy()
     surface:destroy()
     image:destroy()
+    
+    return x+w, y+h
 end
 
 function ScadaComponent.Base:is_selected( x, y )
@@ -97,17 +99,31 @@ function ScadaComponent.Base:set_property( key, value )
     if self.properties[ key ] then
         if self.properties[ key ].type == 'number' or self.properties[ key ].type == 'integer' then
             self.properties_values[ key ] = tonumber(value)
-            if self.properties[ key ].min and self.properties_values[ key ] < self.properties[ key ].min then
+            if self.properties[ key ].min and type( self.properties[ key ].min ) == 'number' and self.properties_values[ key ] < self.properties[ key ].min then
                 self.properties_values[ key ] = self.properties[ key ].min
             end
-            if self.properties[ key ].max and self.properties_values[ key ] > self.properties[ key ].max then
+            if self.properties[ key ].min and type( self.properties[ key ].min ) == 'string' then
+                local min_val = self:get_property( self.properties[ key ].min )
+                if self.properties_values[ key ] < min_val then
+                    self.properties_values[ key ] = min_val
+                end
+            end
+            if self.properties[ key ].max and type( self.properties[ key ].max ) == 'number' and self.properties_values[ key ] > self.properties[ key ].max then
                 self.properties_values[ key ] = self.properties[ key ].max
+            end
+            if self.properties[ key ].max and type( self.properties[ key ].max ) == 'string' then
+                local max_val = self:get_property( self.properties[ key ].max )
+                if self.properties_values[ key ] > max_val then
+                    self.properties_values[ key ] = max_val
+                end
             end
         elseif self.properties[ key ].type == 'string' or self.properties[ key ].type == 'code' then
             self.properties_values[ key ] = tostring(value)
         elseif self.properties[ key ].type == 'combobox' then
             self.properties_values[ key ] = tonumber( value )
         elseif self.properties[ key ].type == 'color' then
+            self.properties_values[ key ] = value
+        elseif self.properties[ key ].type == 'boolean' then
             self.properties_values[ key ] = value
         end
     end
@@ -142,4 +158,34 @@ function ScadaComponent.Base:charge( component )
     for k,v in pairs( component.properties ) do
         self:set_property( k, v )
     end
+end
+
+function ScadaComponent.Base:translate_color( scolor )
+    local color  = {0,0,0}
+    local cdigits = (#scolor - 1)/3
+    for i = 1,3 do
+        color[i] = tonumber( '0x' .. scolor:sub(2 + (i-1)*cdigits, 1+i*cdigits) ) / ( 16^cdigits )
+    end
+    
+    return color
+end
+
+function ScadaComponent.Base:write_text(cr,x,y,text,font,color)
+    color = color or { 0,0,0 }
+    cr:select_font_face("sans", cairo.FONT_SLANT_OBLIQUE)
+    cr:set_font_size(font)
+    local txt_ext = cairo.TextExtents.create( )
+    cr:text_extents( text or "", txt_ext )
+    local x_bearing, y_bearing, txt_width, txt_height, x_advance, y_advance = txt_ext:get()
+    txt_ext:destroy()
+    cr:move_to( x -(txt_width/2), y + (txt_height/2) )
+    --~ cr:rotate()
+    cr:set_source_rgb(color[1], color[2], color[3])
+    cr:show_text( text or "" )
+    cr:stroke()
+    return (txt_width/2), (txt_height/2), x -(txt_width/2), y + (txt_height/2)
+end
+
+function ScadaComponent.Base:tick()
+
 end

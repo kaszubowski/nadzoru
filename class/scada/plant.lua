@@ -3,14 +3,9 @@ ScadaPlant = letk.Class( function( self )
 
     self:set('file_name', '*new plant' )
     
-    self.component = letk.List.new()
-    self.automata = {
-        g = {},
-        e = {},
-        k = {},
-        s = {},
-    }
-    self.automata_object = nil
+    self.component           = letk.List.new()
+    self.automata_group      = nil
+    self.automata_group_name = nil
 end, Object )
 
 ScadaPlant.__TYPE = 'scadaplant'
@@ -22,20 +17,13 @@ function ScadaPlant:add_component( name )
     return new_component
 end
 
-function ScadaPlant:load_automata( element_list )
-    self.automata_object = {}
-    for k, v in element_list:ipairs() do
-        if v.__TYPE == 'automaton' then
-            local file_nm = v:get( 'file_name' )
-            if file_nm and (
-                self.automata.g[ file_nm ] or
-                self.automata.e[ file_nm ] or
-                self.automata.k[ file_nm ] or
-                self.automata.s[ file_nm ]
-            ) then
-                self.automata_object[ file_nm ] = v
-            end
-        end
+function ScadaPlant:add_automata_group( ag )
+    if type( ag ) == 'string' then
+        self.automata_group_name = ag
+    else
+        self.automata_group      = ag
+        self.automata_group_name = ag:get( 'file_name' )
+        print( 'added', self.automata_group_name )
     end
 end
 
@@ -49,30 +37,44 @@ function ScadaPlant:get_selected( x, y )
 end
 
 function ScadaPlant:render( cr )
+    local max_x, max_y = 200,200
     for k, component in self.component:ipairs() do
-        component:render( cr )
+        local x, y = component:render( cr )
+        if max_x < x then max_x = x end
+        if max_y < y then max_y = y end
     end
+    return max_x, max_y
+end
+
+function ScadaPlant:load_automata_group( element_list )
+    if self.automata_group_name then
+        for k, v in element_list:ipairs() do
+            if v.__TYPE == 'automatagroup' then
+                local file_nm = v:get( 'file_name' )
+                if file_nm and file_nm == self.automata_group_name then
+                    self.automata_group = v
+                    v:load_automata( element_list )
+                    return true
+                end
+            end
+        end    
+        return false
+    end
+    return false
 end
 
 function ScadaPlant:save_serialize()
     local data                 = {
-        components       = {},
-        automata_files = {
-            g = {},
-            e = {},
-            k = {},
-            s = {},
-        },
+        components          = {},
+        automata_group_name = nil,
     }
 
     for k, component in self.component:ipairs() do
         data.components[ #data.components + 1 ] = component:dump()
     end
     
-    for t, l in pairs( self.automata ) do
-        for name, const in pairs( l ) do
-            data.automata_files[ t ][ name ] = true
-        end
+    if self.automata_group_name then
+        data.automata_group_name = self.automata_group_name
     end
 
     return letk.serialize( data )
@@ -126,7 +128,7 @@ function ScadaPlant:save_as( file_name )
     end
 end
 
-function ScadaPlant:load_file( file_name )
+function ScadaPlant:load_file( file_name, elements )
     local file = io.open( file_name, 'r')
     if file then
         local s    = file:read('*a')
@@ -137,11 +139,8 @@ function ScadaPlant:load_file( file_name )
                 new_component:charge( component )
             end
             
-            for t, l in pairs( data.automata_files ) do
-                for name, const in pairs( l ) do
-                    self.automata[ t ][ name ] = true
-                end
-            end
+            self.automata_group_name = data.automata_group_name
+            self:load_automata_group( elements )
 
             self:set( 'file_type', 'nsp' )
             self:set( 'full_file_name', file_name )

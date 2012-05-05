@@ -34,4 +34,6 @@ function ScadaComponent.SimpleSilo:render( cr )
     ic:destroy()
     surface:destroy()
     image:destroy()
+    
+    return x+w, y+h
 end

@@ -34,4 +34,6 @@ function ScadaComponent.Conveyor1:render( cr )
     ic:destroy()
     surface:destroy()
     image:destroy()
+    
+    return x+w, y+h
 end

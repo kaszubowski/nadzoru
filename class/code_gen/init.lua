@@ -2,11 +2,14 @@
 
 Devices = require 'res.codegen.devices.main'
 
-CodeGen = letk.Class( function( self, automata, device_id, file_name )
-    self.automata  = automata
-    self.device_id = device_id
-    self.file_name = file_name
-    self.device    = Devices[ device_id ].new()
+CodeGen = letk.Class( function( self, options )
+    options             = options or {}
+    self.automata       = options.automata
+    self.device_id      = options.device_id
+    self.file_name      = options.file_name
+    self.event_map      = options.event_map
+    self.event_map_file = options.event_map_file
+    self.device         = Devices[ self.device_id ].new()
 
     local num_automata = self.automata:len()
     if num_automata == 0 then return end
@@ -296,6 +299,18 @@ end
 --                             GENERATE                               --
 ------------------------------------------------------------------------
 
+function CodeGen:generate_event_map()
+    if not self.event_map or not self.event_map_file then return end
+    local ev_map = {}
+    for name, id in pairs( self.events_map ) do
+        ev_map[ name ] = id
+        ev_map[ id   ] = name
+    end
+    local file = io.open( self.event_map_file, "w")
+    file:write( letk.serialize( ev_map )  )
+    file:close()
+end
+
 function CodeGen.generate( results, numresults, selector, self )
     for i, opt in ipairs( Devices[ self.device_id ].options ) do
         if opt.type == 'choice' then
@@ -309,7 +324,9 @@ function CodeGen.generate( results, numresults, selector, self )
     local Template = letk.Template.new( './res/codegen/' .. self.device.template_file )
     local code = Template( Context )
 
-    local file = io.open( self.file_name .. '.c', "w")
+    local file = io.open( self.file_name, "w")
     file:write( code )
     file:close()
+    
+    self:generate_event_map()
 end

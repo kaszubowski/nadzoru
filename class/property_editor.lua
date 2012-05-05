@@ -46,8 +46,18 @@ local function entry_callback( data )
         local new_number
         new_number = tonumber( new_text )
         if not new_number then ok = false end
-        if ok and data.row.options.min and new_number < data.row.options.min then ok = false end
-        if ok and data.row.options.max and new_number > data.row.options.max then ok = false end
+        if ok and type( data.row.options.min ) == 'number' and new_number < data.row.options.min then ok = false end
+        if ok and type( data.row.options.min ) == 'string' then 
+            if new_number < tonumber(data.self.rows[ data.row.options.min ].value) then
+                ok = false
+            end
+        end
+        if ok and type( data.row.options.max ) == 'number' and new_number > data.row.options.max then ok = false end
+        if ok and type( data.row.options.max ) == 'string' then 
+            if new_number > tonumber(data.self.rows[ data.row.options.max ].value) then
+                ok = false
+            end
+        end
         if ok and data.row.options.type == 'integer' and math.floor( new_number ) ~= new_number then ok = false end
     end
     
@@ -324,6 +334,9 @@ function PropertyEditor:add_row_entry( name, caption, default, options, callback
 end
 
 function PropertyEditor:add_row_combobox( name, caption, default, itens, options, callback, param )
+    if type(itens) == 'function' then
+        itens = itens( options )
+    end
     self.rows[ name ] = {
         name     = name,
         type     = 'combobox',

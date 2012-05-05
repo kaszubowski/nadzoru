@@ -42,6 +42,7 @@ end
 safeload('letk', 'letk', true, [[You need install 'letk' to run this software]])
 safeload({'lgob.gdk','lgob.gtk','lgob.cairo','lgob.gtksourceview'}, 'gtk', true, [[You need install 'lgob' to run this software, you can found 'lgob' at http://oproj.tuxfamily.org]])
 safeload('lxp', 'lxp', false, [[no library 'lxp' to manipulate xml format]])
+safeload('redis', 'redis', false, [[no library 'redis' (redis-lua)]])
 
 --Utils
 require('class.object')
@@ -52,6 +53,7 @@ require('class.selector')
 require('class.property_editor')
 
 require('class.automaton')
+require('class.automata_group')
 require('class.code_gen.init')
 require('class.gui')
 require('class.simulator')
@@ -85,14 +87,17 @@ function Controller:build()
     -- ** Actions * --
 
     --File
-    self.gui:add_action('automata_import_ides', "_Import IDES Automaton", "Import a IDES (.xmd) automaton file", nil, self.import_ides, self)
-    self.gui:add_action('automata_new'        , "_New Automaton", "Create a New Automaton", nil, self.create_new_automaton, self)
-    self.gui:add_action('automata_open'       , "_Open Automaton", "Open a New Automaton", nil, self.open_automaton, self)
     self.gui:add_action('tab_close_current'   , "_Close Current Tab", "Close CurrentTab", nil, function()
         self.gui:remove_current_tab()
     end)
 
     --Automata
+    self.gui:add_action('automata_new'        , "_New Automaton", "Create a New Automaton", nil, self.create_new_automaton, self)
+    self.gui:add_action('automata_open'       , "_Open Automaton", "Open a New Automaton", nil, self.open_automaton, self)
+    self.gui:add_action('automata_import_ides', "_Import IDES Automaton", "Import a IDES (.xmd) automaton file", nil, self.import_ides, self)
+    self.gui:add_action('automata_group_new'  , "_New Automata Group", "Create a New Automata Group", nil, self.automata_group_new, self)
+    self.gui:add_action('automata_group_load'  , "_Load Automata Group", "Load an Automata Group", nil, self.automata_group_load, self)
+    self.gui:add_action('automata_group_edit'  , "_Edit Automata Group", "Edit an Automata Group", nil, self.automata_group_edit, self)
     self.gui:add_action('automaton_edit', "Edit Automaton", "Edit automaton struct", nil, self.automaton_edit, self)
     self.gui:add_action('code_gen_dfa', "DFA - Code Generator", "Deterministic Finite Automata - Code Generate", nil, self.code_gen_dfa, self)
     self.gui:add_action('operations_accessible', "_Accessible", "Calcule the accessible automata", nil, self.operations_accessible, self)
@@ -122,12 +127,17 @@ function Controller:build()
     --File
     self.gui:prepend_menu_separator('file')
     self.gui:prepend_menu_item('file','tab_close_current')
-    self.gui:prepend_menu_separator('file')
-    self.gui:prepend_menu_item('file','automata_import_ides')
-    self.gui:prepend_menu_item('file','automata_open')
-    self.gui:prepend_menu_item('file','automata_new')
+    
 
     --Automaton Operations
+    self.gui:append_menu_item('automata','automata_new')
+    self.gui:append_menu_item('automata','automata_open')
+    self.gui:append_menu_item('automata','automata_import_ides')
+    self.gui:append_menu_separator('automata')
+    self.gui:append_menu_item('automata','automata_group_new')
+    self.gui:append_menu_item('automata','automata_group_load')
+    self.gui:append_menu_item('automata','automata_group_edit')
+    self.gui:append_menu_separator('automata')
     self.gui:append_menu_item('automata','automaton_edit')
     self.gui:append_menu_item('automata','code_gen_dfa')
     self.gui:append_sub_menu('automata','operations', "Operations")
@@ -305,12 +315,20 @@ function Controller.code_gen_dfa( data )
     Selector.new({
         title = 'nadzoru',
         success_fn = function( results, numresult )
-            local automata    = results[1]
-            local file_name   = results[2]
-            local device_id   = results[3] and results[3][1]
+            local automata       = results[1]
+            local file_name      = results[2]
+            local device_id      = results[3] and results[3][1]
+            local event_map      = results[4]
+            local event_map_file = results[5]
             if #automata > 0 and #file_name > 0 and device_id then
                 local lautomata = letk.List.new_from_table( automata )
-                local cg = CodeGen.new( lautomata, device_id, file_name )
+                local cg = CodeGen.new{ 
+                    automata       = lautomata, 
+                    device_id      = device_id, 
+                    file_name      = file_name,
+                    event_map      = event_map,
+                    event_map_file = event_map_file
+                }
                 if  cg then
                     cg:execute( data.gui )
                 end
@@ -325,17 +343,27 @@ function Controller.code_gen_dfa( data )
         filter_fn = function( v )
             return v.__TYPE == 'automaton'
         end,
-        text = 'Automaton:'
+        text = "Automaton:"
     }
     :add_file{
-        text = 'File:',
+        text = "Code File:",
+        filter = 'c',
+        filter_name = "C Code",
     }
     :add_combobox{
         list = letk.List.new_from_table( devices_list ),
         text_fn  = function( a )
             return a[2]
         end,
-        text = 'Device:',
+        text = "Device:",
+    }
+    :add_checkbox{
+        text = "Generate Event Map"
+    }
+    :add_file{
+        text = "Event Map File:",
+        filter = 'nem',
+        filter_name = "Nadzoru Event Map",
     }
     :run()
 end
@@ -417,14 +445,14 @@ function Controller.operations_join_no_coaccessible( data )
         filter_fn = function( v )
             return v.__TYPE == 'automaton'
         end,
-        text = 'Automaton:'
+        text = "Automaton:"
     }
     :run()
 end
 
 function Controller.operations_trim( data )
      Selector.new({
-        title = 'nadzoru',
+        title = "nadzoru",
         success_fn = function( results, numresult )
             local automaton = results[1]
             if automaton then
@@ -442,10 +470,10 @@ function Controller.operations_trim( data )
         filter_fn = function( v )
             return v.__TYPE == 'automaton'
         end,
-        text = 'Automaton:'
+        text = "Automaton:"
     }
     :add_checkbox{
-        text = 'remove states',
+        text = "Remove states",
     }
     :run()
 end
@@ -470,7 +498,7 @@ function Controller.operations_selfloop( data )
         filter_fn = function( v )
             return v.__TYPE == 'automaton'
         end,
-        text = 'Automaton:'
+        text = "Automaton:"
     }
     :add_multipler{
         list = data.param.elements,
@@ -480,7 +508,7 @@ function Controller.operations_selfloop( data )
         filter_fn = function( v )
             return v.__TYPE == 'automaton'
         end,
-        text = 'Automata (events):'
+        text = "Automata (events):"
     }
     :run()
 end
@@ -505,7 +533,7 @@ function Controller.operations_synchronization( data )
         filter_fn = function( v )
             return v.__TYPE == 'automaton'
         end,
-        text = 'Automata:'
+        text = "Automata:"
     }
     :run()
 end
@@ -530,7 +558,7 @@ function Controller.operations_product( data )
         filter_fn = function( v )
             return v.__TYPE == 'automaton'
         end,
-        text = 'Automata:'
+        text = "Automata:"
     }
     :run()
 end
@@ -591,7 +619,7 @@ function Controller.operations_check_choice_problem( data )
         filter_fn = function( v )
             return v.__TYPE == 'automaton'
         end,
-        text = 'Automaton:'
+        text = "Automaton:"
     }
     :run()
 end
@@ -616,10 +644,10 @@ function Controller.operations_check_avalanche_effect( data )
         filter_fn = function( v )
             return v.__TYPE == 'automaton'
         end,
-        text = 'Automaton:'
+        text = "Automaton:"
     }
     :add_checkbox{
-        text = 'Uncontrollable only',
+        text = "Uncontrollable only",
     }
     :run()
 end
@@ -644,7 +672,61 @@ function Controller.operations_check_inexact_synchronization( data )
         filter_fn = function( v )
             return v.__TYPE == 'automaton'
         end,
-        text = 'Automaton:'
+        text = "Automaton:"
+    }
+    :run()
+end
+
+--- Automata Group ---
+function Controller.automata_group_new( data )
+    local nag = AutomataGroup .new()
+    data.param:element_add( nag )
+end
+
+function Controller.automata_group_load( data )
+    local dialog = gtk.FileChooserDialog.new(
+        "Select the file", nil, gtk.FILE_CHOOSER_ACTION_OPEN,
+        "gtk-cancel", gtk.RESPONSE_CANCEL,
+        "gtk-ok", gtk.RESPONSE_OK
+    )
+    local filter = gtk.FileFilter.new()
+    filter:add_pattern("*.nag")
+    filter:set_name("Nadzoru Automata Group")
+    dialog:add_filter(filter)
+    dialog:set("select-multiple", true)
+    local response = dialog:run()
+    dialog:hide()
+    local filenames = dialog:get_filenames()
+    if response == gtk.RESPONSE_OK and filenames then
+        for k_filename, filename in ipairs( filenames ) do
+            local nag = AutomataGroup.new()
+            nag:load_file( filename )
+            data.param:element_add( nag )
+        end
+    end
+end
+
+function Controller.automata_group_edit( data )
+    Selector.new({
+        title = "Select an Automata Group to edit",
+        success_fn = function( results, numresult )
+            local ag = results[1]
+            if ag then
+                local AG_editor = AutomataGroupEditor.new( data.gui, ag, data.param.elements )
+                AG_editor:start_automaton_window()
+                AG_editor:update_automaton_window()
+            end
+        end,
+    })
+    :add_combobox{
+        list = data.param.elements,
+        text_fn  = function( a )
+            return a:get( 'file_name' )
+        end,
+        filter_fn = function( v )
+            return v.__TYPE == 'automatagroup'
+        end,
+        text = "Automata Group:"
     }
     :run()
 end
@@ -673,7 +755,7 @@ function Controller.load_scada_plant( data )
     if response == gtk.RESPONSE_OK and filenames then
         for k_filename, filename in ipairs( filenames ) do
             local new_scada_plant = ScadaPlant.new()
-            new_scada_plant:load_file( filename )
+            new_scada_plant:load_file( filename, data.param.elements )
             data.param:element_add( new_scada_plant )
         end
     end
@@ -697,17 +779,60 @@ function Controller.scada_plant_edit( data )
         filter_fn = function( v )
             return v.__TYPE == 'scadaplant'
         end,
-        text = 'Plant:'
+        text = "Plant:"
     }
     :run()
 end
 
 function Controller.scada_plant_view( data )
-
+    Selector.new({
+        title = "Select scada plant to view/run",
+        success_fn = function( results, numresult )
+            local plant = results[1]
+            if plant then
+                ScadaView.new( data.gui, plant, data.param.elements )
+            end
+        end,
+    })
+    :add_combobox{
+        list = data.param.elements,
+        text_fn  = function( a )
+            return a:get( 'file_name' )
+        end,
+        filter_fn = function( v )
+            return v.__TYPE == 'scadaplant'
+        end,
+        text = "Plant:"
+    }
+    :run()
 end
 
 function Controller.scada_plant_server( data )
-
+     Selector.new({
+        title = "Open Server",
+        success_fn = function( results, numresult )
+            local plant = results[1]
+            if plant then
+                ScadaView.new( data.gui, plant, data.param.elements )
+            end
+        end,
+    })
+    :add_combobox{
+        list = data.param.elements,
+        text_fn  = function( a )
+            return a:get( 'file_name' )
+        end,
+        filter_fn = function( v )
+            return v.__TYPE == 'automatagroup'
+        end,
+        text = "Automata Group:"
+    }
+    :add_file{
+        text = "Event Map:",
+        filter = 'nem',
+        filter_name = "Nadzoru Event Map",
+    }
+    :run()
 end
 
 ------------------------------------------------------------------------

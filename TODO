@@ -2,13 +2,38 @@ Task:
     -> change os.execute to lua file system
         -> change linux only path to images
     -> remove loaded automatons
-    ->[OK] close tabs
 
 Features:
     ->Operations
 90%    ->Automaton Editor
+		--show forbiden events ???? like: (---->) in red
     ->Simulator - PIC serial Communication and Integration
     ->I18N (use user locate)
+	-> Review algorithms
+
+SCADA
+	-> server
+		-- serial
+		-- ethernet
+	-> data acquisition board
+		-- serial
+		-- ethernet
+	-> plant:clone()
+		-- use the clone insted change the original plant, so the View won't change the plant
+			-- after each update in plant (by the editor) inform each clone to update, so you can
+			edit the plant while the plant is executing, but the execute can NOT change the original plant
+	-> editor help: show the rendered automata in code editor help
+	-> View: alarm
+	-> Scada plant render: add scroll
+		--need all components send 'h' and 'w' (eg conveyor2)
+	-> View:Simulator : see the automata simulator in SCADA:PLant:Simulator
+	-> components:
+		-Button and integratiom
+		-Subtitle
+		-Alarm (sound??? -- default sound on/off) (put backgound in RED ???)
+
+MES
+
 
 Bugs: :(
     "Bugs? You must be kidding, there are no bugs in this software" --copy from pacman

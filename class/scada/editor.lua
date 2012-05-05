@@ -1,8 +1,8 @@
 ScadaEditor = letk.Class( function( self, gui, scada_plant, elements )
     Object.__super( self )
-    self.gui         = gui
-    self.scada_plant = scada_plant
-    self.elements    = elements
+    self.gui            = gui
+    self.scada_plant    = scada_plant
+    self.elements       = elements
 
     self:build_gui()
 
@@ -24,7 +24,6 @@ function ScadaEditor:build_gui()
         self.hbox                         = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
             self.scrolled                 = gtk.ScrolledWindow.new()
                 self.drawing_area         = gtk.DrawingArea.new( )
-            --~ self.treeview_properties      = Treeview.new( true )
             self.properties               = PropertyEditor.new( )
 
     --~ self.drawing_area:add_events( gdk.POINTER_MOTION_MASK ) --movimento do mouse
@@ -34,19 +33,16 @@ function ScadaEditor:build_gui()
     self.drawing_area:connect("button_press_event", self.drawing_area_press, self )
     self.drawing_area:connect('draw', self.drawing_area_expose, self )
 
-    --~ self.treeview_properties:add_column_text( "Property",100 )
-    --~ self.treeview_properties:add_column_text( "Value", 50, self.change_property, self )
-
     self.vbox:pack_start( self.toolbar, false, false, 0 )
     self.vbox:pack_start( self.hbox, true, true, 0 )
         self.hbox:pack_start( self.scrolled, true, true, 0 )
             self.scrolled:add_with_viewport(self.drawing_area)
         self.hbox:pack_start( self.properties:build( 128, 200 ), false, false, 0 )
+    
+    self.scrolled:set_shadow_type(gtk.SHADOW_ETCHED_IN)
 
     self:build_gui_components_list()
     self.properties:draw_interface()
-    
-    self:build_automaton_window()
 
     --save
     self.img_act_save = gtk.Image.new_from_file( './images/icons/save.png' )
@@ -61,10 +57,10 @@ function ScadaEditor:build_gui()
     self.toolbar:insert( self.btn_act_saveas, -1 )
 
     --png
-    self.img_act_png = gtk.Image.new_from_file( './images/icons/png.png' )
-    self.btn_act_png = gtk.ToolButton.new( self.img_act_png, "PNG" )
-    self.btn_act_png:connect( 'clicked', self.set_act_png, self )
-    self.toolbar:insert( self.btn_act_png, -1 )
+    --~ self.img_act_png = gtk.Image.new_from_file( './images/icons/png.png' )
+    --~ self.btn_act_png = gtk.ToolButton.new( self.img_act_png, "PNG" )
+    --~ self.btn_act_png:connect( 'clicked', self.set_act_png, self )
+    --~ self.toolbar:insert( self.btn_act_png, -1 )
 
     --edit
     self.img_act_edit = gtk.Image.new_from_file( './images/icons/edit.png' )
@@ -135,180 +131,19 @@ function ScadaEditor:build_gui_components_list()
     self.components_list = {}
     local count_itens = 0
     for name, component in pairs( ScadaComponent ) do
-        self.components_list[ #self.components_list + 1 ] = name
-        model:append( iter )
-        local pixbuf = gdk.Pixbuf.new_from_file( component.icon )
-        model:set( iter, 0 , component.caption, 1, pixbuf )
-        count_itens = count_itens + 1
+        if component.final_component then
+            self.components_list[ #self.components_list + 1 ] = name
+            model:append( iter )
+            local pixbuf = gdk.Pixbuf.new_from_file( component.icon )
+            model:set( iter, 0 , component.caption, 1, pixbuf )
+            count_itens = count_itens + 1
+        end
     end
     self.icon_view:set( 'columns', count_itens )
 
     self.vbox:pack_start( self.scrolled, false, false, 0 )
 
-    --~ self.icon_view:connect('item-activated', self.select_component, self )
     self.icon_view:connect('selection-changed', self.select_component, self )
-end
-
-function ScadaEditor:build_automaton_window()
-    self.AWgui = {}
-
-    self.AWgui.win                               = gtk.Window.new( gtk.WINDOW_TOPLEVEL )
-        self.AWgui.vbox                          = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
-            self.AWgui.hbox                      = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
-            
-                self.AWgui.treeview_automata     = Treeview.new( true )
-                
-                self.AWgui.vbox_g                = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
-                    self.AWgui.label_g           = gtk.Label.new_with_mnemonic( "G" )
-                    self.AWgui.hbox_g_btn        = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
-                        self.AWgui.btn_g_add     = gtk.Button.new_from_stock('gtk-add')
-                        self.AWgui.btn_g_rm      = gtk.Button.new_from_stock('gtk-delete')
-                    self.AWgui.treeview_g        = Treeview.new( true )
-                    
-                self.AWgui.vbox_e                = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
-                    self.AWgui.label_e           = gtk.Label.new_with_mnemonic( "E" )
-                    self.AWgui.hbox_e_btn        = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
-                        self.AWgui.btn_e_add     = gtk.Button.new_from_stock('gtk-add')
-                        self.AWgui.btn_e_rm      = gtk.Button.new_from_stock('gtk-delete')
-                    self.AWgui.treeview_e       = Treeview.new( true )
-                    
-                self.AWgui.vbox_k                = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
-                    self.AWgui.label_k           = gtk.Label.new_with_mnemonic( "K" )
-                    self.AWgui.hbox_k_btn        = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
-                        self.AWgui.btn_k_add     = gtk.Button.new_from_stock('gtk-add')
-                        self.AWgui.btn_k_rm      = gtk.Button.new_from_stock('gtk-delete')
-                    self.AWgui.treeview_k        = Treeview.new( true )
-                    
-                self.AWgui.vbox_s                = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
-                    self.AWgui.label_s           = gtk.Label.new_with_mnemonic( "S" )
-                    self.AWgui.hbox_s_btn        = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
-                        self.AWgui.btn_s_add     = gtk.Button.new_from_stock('gtk-add')
-                        self.AWgui.btn_s_rm      = gtk.Button.new_from_stock('gtk-delete')
-                    self.AWgui.treeview_s        = Treeview.new( true )
-                    
-        self.AWgui.hbox_btn                      = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
-            self.AWgui.btn_close                 = gtk.Button.new_with_label("Close")
-            
-    self.AWgui.treeview_automata:add_column_text( "Automaton",120 )
-    self.AWgui.treeview_g:add_column_text( "Automaton",120 )
-    self.AWgui.treeview_e:add_column_text( "Automaton",120 )
-    self.AWgui.treeview_k:add_column_text( "Automaton",120 )
-    self.AWgui.treeview_s:add_column_text( "Automaton",120 )
-    
-    self.AWgui.win:set("title", "nadzoru::SCADA - Automaton selector", "width-request", 600,
-        "height-request", 500, "window-position", gtk.WIN_POS_CENTER,
-        "icon-name", "gtk-about", "deletable", false)
-            
-    self.AWgui.win:add( self.AWgui.vbox )
-        self.AWgui.vbox:pack_start( self.AWgui.hbox, true, true, 0 )
-            self.AWgui.hbox:pack_start( self.AWgui.treeview_automata:build{width = 120}, true, true, 0 )
-            
-            self.AWgui.hbox:pack_start( self.AWgui.vbox_g, true, true, 0 )
-                self.AWgui.vbox_g:pack_start( self.AWgui.label_g, false, false, 0 )
-                self.AWgui.vbox_g:pack_start( self.AWgui.hbox_g_btn, false, false, 0 )
-                    self.AWgui.hbox_g_btn:pack_start( self.AWgui.btn_g_add, true, true, 0 )
-                    self.AWgui.hbox_g_btn:pack_start( self.AWgui.btn_g_rm, true, true, 0 )
-                self.AWgui.vbox_g:pack_start( self.AWgui.treeview_g:build(), true, true, 0 )
-            
-            self.AWgui.hbox:pack_start( self.AWgui.vbox_e, true, true, 0 )
-                self.AWgui.vbox_e:pack_start( self.AWgui.label_e, false, false, 0 )
-                self.AWgui.vbox_e:pack_start( self.AWgui.hbox_e_btn, false, false, 0 )
-                    self.AWgui.hbox_e_btn:pack_start( self.AWgui.btn_e_add, true, true, 0 )
-                    self.AWgui.hbox_e_btn:pack_start( self.AWgui.btn_e_rm, true, true, 0 )
-                self.AWgui.vbox_e:pack_start( self.AWgui.treeview_e:build(), true, true, 0 )
-            
-            self.AWgui.hbox:pack_start( self.AWgui.vbox_k, true, true, 0 )
-                self.AWgui.vbox_k:pack_start( self.AWgui.label_k, false, false, 0 )
-                self.AWgui.vbox_k:pack_start( self.AWgui.hbox_k_btn, false, false, 0 )
-                    self.AWgui.hbox_k_btn:pack_start( self.AWgui.btn_k_add, true, true, 0 )
-                    self.AWgui.hbox_k_btn:pack_start( self.AWgui.btn_k_rm, true, true, 0 )
-                self.AWgui.vbox_k:pack_start( self.AWgui.treeview_k:build(), true, true, 0 )
-                
-            self.AWgui.hbox:pack_start( self.AWgui.vbox_s, true, true, 0 )
-                self.AWgui.vbox_s:pack_start( self.AWgui.label_s, false, false, 0 )
-                self.AWgui.vbox_s:pack_start( self.AWgui.hbox_s_btn, false, false, 0 )
-                    self.AWgui.hbox_s_btn:pack_start( self.AWgui.btn_s_add, true, true, 0 )
-                    self.AWgui.hbox_s_btn:pack_start( self.AWgui.btn_s_rm, true, true, 0 )
-                self.AWgui.vbox_s:pack_start( self.AWgui.treeview_s:build(), true, true, 0 )
-                
-        self.AWgui.vbox:pack_start( self.AWgui.hbox_btn, false, false, 0 )
-            self.AWgui.hbox_btn:pack_start( self.AWgui.btn_close, true, true, 0 )
-            
-            
-        local function AWgui_close()
-            self.scada_plant:load_automata( self.elements )
-            self:update_properties()
-            self.AWgui.win:hide()
-        end
-        self.AWgui.btn_close:connect('clicked', AWgui_close) 
-        
-        local function AWgui_add( opt )
-            local positions = self.AWgui.treeview_automata:get_selected()
-            for k,v in ipairs( positions ) do
-                self.scada_plant.automata[ opt ][ self.AWgui.automata.all[v] ] = true
-            end
-            self:update_automaton_window()
-        end
-        self.AWgui.btn_g_add:connect('clicked', AWgui_add, 'g') 
-        self.AWgui.btn_e_add:connect('clicked', AWgui_add, 'e') 
-        self.AWgui.btn_k_add:connect('clicked', AWgui_add, 'k') 
-        self.AWgui.btn_s_add:connect('clicked', AWgui_add, 's') 
-        
-        local function AWgui_rm( opt )
-            local positions = self.AWgui['treeview_' .. opt]:get_selected()
-            for k,v in ipairs( positions ) do
-                self.scada_plant.automata[ opt ][ self.AWgui.automata[ opt ][v] ] = nil
-            end
-            self:update_automaton_window()
-        end
-        self.AWgui.btn_g_rm:connect('clicked', AWgui_rm, 'g') 
-        self.AWgui.btn_e_rm:connect('clicked', AWgui_rm, 'e') 
-        self.AWgui.btn_k_rm:connect('clicked', AWgui_rm, 'k') 
-        self.AWgui.btn_s_rm:connect('clicked', AWgui_rm, 's') 
-end
-
-function ScadaEditor:start_automaton_window()
-    if not self.AWgui then return end
-    self.AWgui.treeview_automata:clear_data()
-    
-    self.AWgui.automata = {
-        all = {},
-    }
-    
-    for k, v in self.elements:ipairs() do
-        if v.__TYPE == 'automaton' then
-            self.AWgui.automata.all[#self.AWgui.automata.all + 1] = v:get( 'file_name' )
-        end
-    end
-    table.sort( self.AWgui.automata.all )
-    for k,v in ipairs( self.AWgui.automata.all ) do
-        self.AWgui.treeview_automata:add_row{ v }
-    end
-    self.AWgui.treeview_automata:update()
-end
-
-function ScadaEditor:update_automaton_window()
-    if not self.AWgui then return end
-    self.AWgui.treeview_g:clear_data()
-    self.AWgui.treeview_e:clear_data()
-    self.AWgui.treeview_k:clear_data()
-    self.AWgui.treeview_s:clear_data()
-
-    self.AWgui.automata.g = {}
-    self.AWgui.automata.e = {}
-    self.AWgui.automata.k = {}
-    self.AWgui.automata.s = {}
-    
-    for kp, p in ipairs{'g','e','k','s'} do
-        for v, s in pairs( self.scada_plant.automata[p] ) do
-            self.AWgui.automata[p][#self.AWgui.automata[p] + 1] = v
-        end
-        table.sort( self.AWgui.automata[p] )
-        for k,v in ipairs( self.AWgui.automata[p] ) do
-            self.AWgui['treeview_' .. p]:add_row{ v }
-        end
-        self.AWgui['treeview_' .. p]:update()
-    end
 end
 
 function ScadaEditor:drawing_area_move_motion( event )
@@ -389,7 +224,8 @@ end
 function ScadaEditor:drawing_area_expose( cr )
     cr = cairo.Context.wrap(cr)
     cr:scale( self.scale_values[ self.scale ], self.scale_values[ self.scale ] )
-    self.scada_plant:render( cr )
+    local x,y = self.scada_plant:render( cr )
+    self.drawing_area:set_size_request( (x+32)*self.scale_values[ self.scale ], (y+32)*self.scale_values[ self.scale ] )
 end
 
 function ScadaEditor:update_render()
@@ -402,32 +238,49 @@ local function make_help( self )
     --Automaton
     local a     = { caption = "Automata", value = 'dfa_sim_list'}
     local all_a = {}
-    for type_a, list_a in pairs(self.scada_plant.automata) do
-        for name, value in pairs( list_a ) do
-            all_a[ name ] = true
-        end
+    if self.scada_plant.automata_group_name and not self.scada_plant.automata_group then
+        self.scada_plant:load_automata_group( self.elements )
     end
     
-    for name, value in pairs( all_a ) do
-        local new_value = string.format('dfa_sim_list[\'%s\']', name)
-        local new_a     = { caption = name, value = new_value }
-        for k_cmd, cmd in ipairs{
-                {'get_current_state'             ,'get_current_state()'              }, 
-                {'get_current_state_info'        ,'get_current_state()'              }, 
-                {'get_current_state_events_info' ,'get_current_state()'              }, 
-                {'change_state'                  ,'get_current_state( state_index )' }, 
-            } 
-        do
-            table.insert(new_a, { caption = cmd[1], value = new_value .. ':' .. cmd[2] } )
+    if self.scada_plant.automata_group then
+        self.scada_plant.automata_group:load_automata( self.elements )
+        for type_a, list_a in pairs( self.scada_plant.automata_group.automata_file ) do
+            for name, value in pairs( list_a ) do
+                all_a[ name ] = true
+            end
         end
-        table.insert( new_a, { caption = "Events" } )
-        for k_event, event in self.scada_plant.automata_object[ name ].events:ipairs() do
-            table.insert( new_a[#new_a], { caption =  event.name, value = string.format( '\'%s\'', event.name) } )
+    
+    
+        for name, value in pairs( all_a ) do
+            local new_value = string.format('dfa_sim_list[\'%s\']', name)
+            local new_a     = { caption = name, value = new_value }
+            for k_cmd, cmd in ipairs{
+                    {'get_current_state'             ,'get_current_state()'               }, 
+                    {'get_current_state_info'        ,'get_current_state_info()'          }, 
+                    {'get_current_state_events_info' ,'get_current_state_events_info()'   }, 
+                    {'change_state'                  ,'change_state( state_index )'       }, 
+                    {'get_event_options'             ,'get_event_options( event_index )'  }, 
+                    {'event_evolve'                  ,'event_evolve( event_index )'       }, 
+                } 
+            do
+                table.insert(new_a, { caption = cmd[1], value = new_value .. ':' .. cmd[2] } )
+            end
+            table.insert( new_a, { caption = "Events" } )
+            if self.scada_plant.automata_group.automata_object and self.scada_plant.automata_group.automata_object[ name ] then
+                for k_event, event in self.scada_plant.automata_group.automata_object[ name ].events:ipairs() do
+                    table.insert( new_a[#new_a], { caption =  event.name, value = string.format( '\'%s\'', event.name) } )
+                end
+            end
+            table.insert( new_a, { caption = "States" } )
+            if self.scada_plant.automata_group.automata_object and self.scada_plant.automata_group.automata_object[ name ] then
+                for k_state, state in self.scada_plant.automata_group.automata_object[ name ].states:ipairs() do
+                    table.insert( new_a[#new_a], { caption =  state.name, value = string.format( '%i', k_state ) } )
+                end
+            end
+            
+            table.insert(a, new_a)
         end
-        
-        table.insert(a, new_a)
     end
-        
     table.insert(h, a)
     
     --Component
@@ -473,6 +326,8 @@ function ScadaEditor:update_properties()
                     self.properties:add_row_combobox( prop_name, prop.caption, self.selected_component:get_property( prop_name ), prop.values )
                 elseif prop.type == 'color' then
                     self.properties:add_row_color( prop_name, prop.caption, self.selected_component:get_property( prop_name ) )
+                elseif prop.type == 'boolean' then
+                    self.properties:add_row_checkbox( prop_name, prop.caption, self.selected_component:get_property( prop_name ) )
                 elseif prop.type == 'code' then
                     --Isolar em uma função local get_help( self , ... )
                     local options = {}
@@ -572,9 +427,26 @@ function ScadaEditor:set_act_delete()
 end
 
 function ScadaEditor:set_act_automaton()
-    self:start_automaton_window()
-    self:update_automaton_window()
-    self.AWgui.win:show_all()
+    Selector.new({
+        title = "Automata Group",
+        success_fn = function( results, numresult )
+            if results and results[1] then
+                self.scada_plant:add_automata_group( results[1] )
+                self:update_properties()
+            end
+        end,
+    })
+    :add_combobox{
+        list = self.elements,
+        text_fn  = function( a )
+            return a:get( 'file_name' )
+        end,
+        filter_fn = function( v )
+            return v.__TYPE == 'automatagroup'
+        end,
+        text = "Automata Group:"
+    }
+    :run()
 end
 
 function ScadaEditor:set_act_zoom_out()
