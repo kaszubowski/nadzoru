@@ -40,7 +40,7 @@ end
 --********************************************************************--
 Devices['pic18f'] = letk.Class( Devices['base'] )
 
-Devices['pic18f'].template_file       = 'pic18f.c'
+Devices['pic18f'].template_file       = 'pic18f_serial.c'
 Devices['pic18f'].RANDOM_PSEUDOFIX    = 1
 Devices['pic18f'].RANDOM_PSEUDOAD     = 2
 Devices['pic18f'].RANDOM_AD           = 3
@@ -51,10 +51,15 @@ Devices['pic18f'].CHOICE_LOCAL        = 4
 Devices['pic18f'].CHOICE_LOCALRANDOM  = 5
 Devices['pic18f'].INPUT_TIMER         = 1
 Devices['pic18f'].INPUT_MULTIPLEXED   = 2
+Devices['pic18f'].INPUT_RS232         = 3
+Devices['pic18f'].OUTPUT_NORMAL       = 1 --User define functions
+Devices['pic18f'].OUTPUT_RS232        = 2 --RS232 handler
+Devices['pic18f'].OUTPUT_NORMAL_RS232 = 3 --User define functions and RS232
 Devices['pic18f'].CCS                 = 1
 Devices['pic18f'].SDCC                = 2
 
-Devices['pic18f'].sdcc_1H    = '0x06'
+--~ Devices['pic18f'].sdcc_1H    = '0x06' -- HL + PLL
+Devices['pic18f'].sdcc_1H    = '0x02'
 Devices['pic18f'].sdcc_2L    = '0x1e'
 Devices['pic18f'].sdcc_2H    = '0x1e'
 Devices['pic18f'].sdcc_3H    = '0x01'
@@ -91,6 +96,14 @@ Devices['pic18f']:set_option('input_fn', {
     type    = 'choice',
     { Devices['pic18f'].INPUT_TIMER       , "Timer Interruption"                },
     { Devices['pic18f'].INPUT_MULTIPLEXED , "Multiplexed External Interruption" },
+    { Devices['pic18f'].INPUT_RS232       , "RS232 with Interrupt" },
+})
+Devices['pic18f']:set_option('output_fn', {
+    caption = "Output",
+    type    = 'choice',
+    { Devices['pic18f'].OUTPUT_NORMAL , "Normal (User Handler)" },
+    { Devices['pic18f'].OUTPUT_RS232  , "RS232" },
+    { Devices['pic18f'].OUTPUT_NORMAL_RS232  , "Normal and RS232" },
 })
 Devices['pic18f']:set_option('compiler', {
     caption = "Compiler",
@@ -129,7 +142,7 @@ Devices['pic18f4620'].clock        = 20000000
 Devices['pic18f4620'].display      = true
 Devices['pic18f4620'].name         = 'PIC18F4620'
 Devices['pic18f4620'].include_ccs  = '18F4620.h'
-Devices['pic18f4620'].include_sdcc = {'delay.h','pic18f4620.h'}
+Devices['pic18f4620'].include_sdcc = {'pic18f4620.h'}
 Devices['pic18f4620'].fuses        = 'NOMCLR,EC_IO,H4,NOWDT,NOPROTECT,NOLVP,NODEBUG'
 
 -- PIC18F4550
@@ -138,7 +151,7 @@ Devices['pic18f4550'].clock        = 20000000
 Devices['pic18f4550'].display      = true
 Devices['pic18f4550'].name         = 'PIC18F4550'
 Devices['pic18f4550'].include_ccs  = '18F4550.h'
-Devices['pic18f4550'].include_sdcc = {'delay.h','pic18f4550.h'}
+Devices['pic18f4550'].include_sdcc = {'pic18f4550.h'}
 Devices['pic18f4550'].fuses        = 'NOMCLR,EC_IO,H4,NOWDT,NOPROTECT,NOLVP,NODEBUG'
 
 return Devices

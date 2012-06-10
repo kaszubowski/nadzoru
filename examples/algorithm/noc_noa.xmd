@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<model version="2.1" type="FSA" id="Untitled">
+<data>
+	<state id="1">
+		<properties>
+			<initial />
+			<marked />
+		</properties>
+		<name>1</name>
+	</state>
+	<state id="2">
+		<properties/>
+		<name>2</name>
+	</state>
+	<state id="3">
+		<properties/>
+		<name>3</name>
+	</state>
+	<state id="4">
+		<properties/>
+		<name>4</name>
+	</state>
+	<state id="5">
+		<properties/>
+		<name>5</name>
+	</state>
+	<state id="6">
+		<properties/>
+		<name>6</name>
+	</state>
+	<event id="1">
+		<properties>
+			<controllable />
+			<observable />
+		</properties>
+		<name>a</name>
+	</event>
+	<event id="2">
+		<properties>
+			<controllable />
+			<observable />
+		</properties>
+		<name>b</name>
+	</event>
+	<event id="3">
+		<properties>
+			<controllable />
+			<observable />
+		</properties>
+		<name>c</name>
+	</event>
+	<transition id="4" source="1" target="2" event="1">
+	</transition>
+	<transition id="5" source="2" target="1" event="2">
+	</transition>
+	<transition id="6" source="2" target="3" event="1">
+	</transition>
+	<transition id="8" source="4" target="1" event="1">
+	</transition>
+	<transition id="10" source="4" target="2" event="3">
+	</transition>
+	<transition id="12" source="5" target="3" event="3">
+	</transition>
+</data>
+<meta tag="layout" version="2.1">
+	<font size="12.0"/>
+	<layout uniformnodes="false"/>
+	<state id="1">
+		<circle r="18.0" x="321.0" y="218.0" />
+		<arrow x="36.0" y="0.0" />
+	</state>
+	<state id="2">
+		<circle r="18.0" x="490.0" y="219.0" />
+		<arrow x="1.0" y="0.0" />
+	</state>
+	<state id="3">
+		<circle r="18.0" x="616.0" y="215.0" />
+		<arrow x="1.0" y="0.0" />
+	</state>
+	<state id="4">
+		<circle r="18.0" x="318.0" y="351.0" />
+		<arrow x="1.0" y="0.0" />
+	</state>
+	<state id="5">
+		<circle r="18.0" x="484.0" y="344.0" />
+		<arrow x="1.0" y="0.0" />
+	</state>
+	<state id="6">
+		<circle r="18.0" x="614.0" y="337.0" />
+		<arrow x="1.0" y="0.0" />
+	</state>
+	<transition id="4">
+		<bezier x1="321.0" y1="218.0" x2="490.0" y2="219.0" ctrlx1="369.9527587890625" ctrly1="190.12200927734375" ctrlx2="441.38055419921875" ctrly2="190.54466247558594" />
+		<label x="5.0" y="5.0" />
+	</transition>
+	<transition id="5">
+		<bezier x1="490.0" y1="219.0" x2="321.0" y2="218.0" ctrlx1="441.0472412109375" ctrly1="246.87799072265625" ctrlx2="369.61944580078125" ctrly2="246.45533752441406" />
+		<label x="5.0" y="5.0" />
+	</transition>
+	<transition id="6">
+		<bezier x1="490.0" y1="219.0" x2="616.0" y2="215.0" ctrlx1="532.0" ctrly1="217.6666717529297" ctrlx2="574.0" ctrly2="216.3333282470703" />
+		<label x="5.0" y="5.0" />
+	</transition>
+	<transition id="8">
+		<bezier x1="318.0" y1="351.0" x2="321.0" y2="218.0" ctrlx1="319.0" ctrly1="306.6666564941406" ctrlx2="320.0" ctrly2="262.3333435058594" />
+		<label x="5.0" y="5.0" />
+	</transition>
+	<transition id="10">
+		<bezier x1="318.0" y1="351.0" x2="490.0" y2="219.0" ctrlx1="375.3333435058594" ctrly1="307.0" ctrlx2="432.6666564941406" ctrly2="263.0" />
+		<label x="5.0" y="5.0" />
+	</transition>
+	<transition id="12">
+		<bezier x1="484.0" y1="344.0" x2="616.0" y2="215.0" ctrlx1="528.0" ctrly1="301.0" ctrlx2="572.0" ctrly2="258.0" />
+		<label x="5.0" y="5.0" />
+	</transition>
+</meta>
+</model>

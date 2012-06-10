@@ -171,6 +171,56 @@ function Controller:element_add( new_element )
     self.elements:append( new_element )
 end
 
+local space_things = {
+    ['xmd'] = { class = Automaton     , fn = 'IDES_import' },
+    ['nza'] = { class = Automaton     , fn = 'load_file'   },
+    ['nag'] = { class = AutomataGroup , fn = 'load_file'   },
+    ['nsp'] = { class = ScadaPlant    , fn = 'load_file', elements = true },
+}
+
+function Controller:save_workspace( file_name )
+    local data = {}
+    for k, e in self.elements:ipairs() do
+        local file_type   = e:get('file_type')
+        local full_file_name = e:get('full_file_name')
+        data[#data + 1] = {
+            file_type      = file_type,
+            full_file_name = full_file_name,
+        }
+    end
+    
+    local f, err = io.open( file_name, 'w' )
+    if f then
+        f:write( letk.serialize(data) )
+        f:close()
+        gtk.InfoDialog.showInfo( "Workspace saved!" )
+    else
+        gtk.InfoDialog.showInfo( "ERROR saving Workspace: " .. (err or '') )
+    end
+end
+
+function Controller:load_workspace( file_name )
+     local file = io.open( file_name, 'r')
+    if file then
+        local s    = file:read('*a')
+        local data = loadstring('return ' .. s)()
+        if data then
+            for k, e in ipairs( data ) do
+                if e.file_type and space_things[ e.file_type ] then
+                    local ElementClass = space_things[ e.file_type ].class
+                    local new_element  = ElementClass.new()
+                    if space_things[ e.file_type ].elements then
+                        new_element[space_things[ e.file_type ].fn ]( e.full_file_name, self.elements  )
+                    else
+                        new_element[space_things[ e.file_type ].fn ]( e.full_file_name )
+                    end
+                    self:element_add( new_element )
+                end
+            end
+        end
+    end
+end
+
 ------------------------------------------------------------------------
 --                           CALLBACKS                                --
 ------------------------------------------------------------------------
@@ -811,9 +861,10 @@ function Controller.scada_plant_server( data )
      Selector.new({
         title = "Open Server",
         success_fn = function( results, numresult )
-            local plant = results[1]
-            if plant then
-                ScadaView.new( data.gui, plant, data.param.elements )
+            local automata_group = results[1]
+            local event_map_file = results[2]
+            if automata_group and event_map_file then
+                ScadaServer.new( data.gui, automata_group, event_map_file, data.param.elements )
             end
         end,
     })

@@ -96,6 +96,18 @@ function Simulator:get_current_state_events_info()
     return events
 end
 
+function Simulator:get_current_state_controllable_events()
+    local state_index, node = self:get_current_state()
+    local events            = {}
+    for event_index, event in self.automaton.events:ipairs() do
+        if event.controllable then
+            events[#events +1] = event
+        end
+    end
+    
+    return events
+end
+
 function Simulator:change_state( state_index )
     state_index = tonumber( state_index )
     if not state_index then return false end

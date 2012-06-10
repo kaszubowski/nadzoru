@@ -2,18 +2,36 @@ require'redis'
 
 --lua -i fake_server.lua [ip] [port] [namespace] [database]
 
-conn = Redis.connect{
-    host = arg[1] or 'localhost',
-    port = arg[2] or 6379,
+param = {
+    host      = 'localhost',
+    port      = '6379',
+    namespace = 'NadzoruScada',
+    database  = '0',
+    device    = '/dev/ttyUSB0',
 }
-conn:select( tonumber(arg[4]) or 0 )
+
+for i = 1,#arg,2 do
+    param[ arg[i] ] = arg[2]
+end
+
+conn = Redis.connect{
+    host = param.host,
+    port = param.port,
+}
+conn:select( tonumber( param.database ) )
 
 function exec( ev )
-    conn:lpush( (arg[3] or 'NadzoruScada') .. '_EVENTS', ev)
+    conn:lpush( param.namespace .. '_EVENTS', ev)
 end
 
 function clear( ev )
-    conn:del( (arg[3] or 'NadzoruScada') .. '_EVENTS' )
+    conn:del( param.namespace .. '_EVENTS' )
+end
+
+local fdevice = io.open( param.device, 'a+' )
+function dev( n )
+    fdevice:write( string.char( n ) )
+    fdevice:flush()
 end
 
 

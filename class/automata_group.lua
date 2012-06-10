@@ -6,6 +6,7 @@ AutomataGroup = letk.Class( function( self )
         e = {},
         k = {},
         s = {},
+        x = {}
     }
     self.automata_object = nil
     self:set('file_name', '*new automata group' )
@@ -22,7 +23,8 @@ function AutomataGroup:load_automata( element_list )
                 self.automata_file.g[ file_nm ] or
                 self.automata_file.e[ file_nm ] or
                 self.automata_file.k[ file_nm ] or
-                self.automata_file.s[ file_nm ]
+                self.automata_file.s[ file_nm ] or
+                self.automata_file.x[ file_nm ]
             ) then
                 self.automata_object[ file_nm ] = v
             end
@@ -169,6 +171,13 @@ function AutomataGroupEditor:build_gui()
                         self.AWgui.btn_s_rm      = gtk.Button.new_from_stock('gtk-delete')
                     self.AWgui.treeview_s        = Treeview.new( true )
                     
+                self.AWgui.vbox_x                = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
+                    self.AWgui.label_x           = gtk.Label.new_with_mnemonic( "Exclusive AFD" )
+                    self.AWgui.hbox_x_btn        = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
+                        self.AWgui.btn_x_add     = gtk.Button.new_from_stock('gtk-add')
+                        self.AWgui.btn_x_rm      = gtk.Button.new_from_stock('gtk-delete')
+                    self.AWgui.treeview_x        = Treeview.new( true )
+                    
         self.AWgui.hbox_btn                      = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
             self.AWgui.btn_refresh               = gtk.Button.new_with_label("Refresh Automata")
             self.AWgui.btn_save                  = gtk.Button.new_with_label("Save")
@@ -179,6 +188,7 @@ function AutomataGroupEditor:build_gui()
     self.AWgui.treeview_e:add_column_text( "Automaton",120 )
     self.AWgui.treeview_k:add_column_text( "Automaton",120 )
     self.AWgui.treeview_s:add_column_text( "Automaton",120 )
+    self.AWgui.treeview_x:add_column_text( "Automaton",120 )
             
     self.AWgui.vbox:pack_start( self.AWgui.hbox, true, true, 0 )
         self.AWgui.hbox:pack_start( self.AWgui.treeview_automata:build{width = 120}, true, true, 0 )
@@ -210,6 +220,13 @@ function AutomataGroupEditor:build_gui()
                 self.AWgui.hbox_s_btn:pack_start( self.AWgui.btn_s_add, true, true, 0 )
                 self.AWgui.hbox_s_btn:pack_start( self.AWgui.btn_s_rm, true, true, 0 )
             self.AWgui.vbox_s:pack_start( self.AWgui.treeview_s:build(), true, true, 0 )
+            
+        self.AWgui.hbox:pack_start( self.AWgui.vbox_x, true, true, 0 )
+            self.AWgui.vbox_x:pack_start( self.AWgui.label_x, false, false, 0 )
+            self.AWgui.vbox_x:pack_start( self.AWgui.hbox_x_btn, false, false, 0 )
+                self.AWgui.hbox_x_btn:pack_start( self.AWgui.btn_x_add, true, true, 0 )
+                self.AWgui.hbox_x_btn:pack_start( self.AWgui.btn_x_rm, true, true, 0 )
+            self.AWgui.vbox_x:pack_start( self.AWgui.treeview_x:build(), true, true, 0 )
                 
     self.AWgui.vbox:pack_start( self.AWgui.hbox_btn, false, false, 0 )
         self.AWgui.hbox_btn:pack_start( self.AWgui.btn_refresh, true, true, 0 )
@@ -227,6 +244,7 @@ function AutomataGroupEditor:build_gui()
         self.AWgui.btn_e_add:connect('clicked', AWgui_add, 'e') 
         self.AWgui.btn_k_add:connect('clicked', AWgui_add, 'k') 
         self.AWgui.btn_s_add:connect('clicked', AWgui_add, 's') 
+        self.AWgui.btn_x_add:connect('clicked', AWgui_add, 'x') 
         
         self.AWgui.btn_refresh:connect('clicked', self.start_automaton_window, self) 
         
@@ -244,6 +262,7 @@ function AutomataGroupEditor:build_gui()
         self.AWgui.btn_e_rm:connect('clicked', AWgui_rm, 'e') 
         self.AWgui.btn_k_rm:connect('clicked', AWgui_rm, 'k') 
         self.AWgui.btn_s_rm:connect('clicked', AWgui_rm, 's') 
+        self.AWgui.btn_x_rm:connect('clicked', AWgui_rm, 'x') 
         
         self.gui:add_tab( self.AWgui.vbox, "edit " .. (self.automata_group:get('file_name') or "-x-") )
 end
@@ -274,13 +293,15 @@ function AutomataGroupEditor:update_automaton_window()
     self.AWgui.treeview_e:clear_data()
     self.AWgui.treeview_k:clear_data()
     self.AWgui.treeview_s:clear_data()
+    self.AWgui.treeview_x:clear_data()
 
     self.AWgui.automata.g = {}
     self.AWgui.automata.e = {}
     self.AWgui.automata.k = {}
     self.AWgui.automata.s = {}
+    self.AWgui.automata.x = {}
     
-    for kp, p in ipairs{'g','e','k','s'} do
+    for kp, p in ipairs{'g','e','k','s','x'} do
         for v, s in pairs( self.automata_group.automata_file[p] ) do
             self.AWgui.automata[p][#self.AWgui.automata[p] + 1] = v
         end

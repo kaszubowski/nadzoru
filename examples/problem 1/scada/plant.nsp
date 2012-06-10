@@ -1,0 +1,148 @@
+{
+["components"] = {
+[1] = {
+["name"] = "Conveyor2",
+["properties"] = {
+["track"] = "sss",
+["x"] = 163,
+["movement"] = 0,
+["conveyor_width"] = 32,
+["orientation"] = 3,
+["y"] = 311,
+["state"] = 1}},
+[2] = {
+["name"] = "Conveyor2",
+["properties"] = {
+["state"] = 0,
+["x"] = 35,
+["movement"] = 0,
+["onupdate"] = "function onupdate( self, event, dfa_sim_list )\
+    if event == 'e1_lig' then\
+        self:set_property( 'state', 1 )\
+    elseif event == 'e1_des' then\
+        self:set_property( 'state', 0 )\
+    end\
+end\
+",
+["itens"] = 0,
+["y"] = 275,
+["track"] = "sss"}},
+[3] = {
+["name"] = "Sensor",
+["properties"] = {
+["active_color"] = "#0F0",
+["x"] = 178,
+["y"] = 254,
+["active"] = 0,
+["orientation"] = 2,
+["onupdate"] = "function onupdate( self, event, dfa_sim_list )\
+    if event == 's_c1' then\
+        self:set_property( 'active', 1 )\
+        self:set_property( 'active_color', '#F00' )\
+    elseif event == 's_c2' then\
+        self:set_property( 'active', 1 )\
+        self:set_property( 'active_color', '#0F0' )\
+    elseif event == 's_c3' then\
+        self:set_property( 'active', 1 )\
+        self:set_property( 'active_color', '#00F' )\
+    elseif event == 's_des' then\
+        self:set_property( 'active', 0 )\
+    end\
+end\
+",
+["h"] = 32,
+["deactive_color"] = "#ffffffffffff"}},
+[4] = {
+["name"] = "GenericMachine",
+["properties"] = {
+["y"] = 303,
+["x"] = 264,
+["statuscolor"] = "#000",
+["caption"] = "Robot",
+["color"] = "#bbba67e71111",
+["onupdate"] = "function onupdate( self, event, dfa_sim_list )\
+    if event == 'r_c1b1' then\
+        self:set_property( 'statuscolor', '#F00' )\
+    elseif event == 'r_c2b1' or event == 'r_c2b2' then\
+        self:set_property( 'statuscolor', '#0F0' )\
+    elseif event == 'r_c3b3' then\
+        self:set_property( 'statuscolor', '#00F' )\
+    elseif event == 'r_c1e2' or event == 'r_c2e2' or event == 'r_c3e2' then\
+        self:set_property( 'statuscolor', '#FF0' )\
+    elseif event == 'r_okc1b1' or event == 'r_okc2b1' or event == 'r_okc2b2' or event == 'r_okc3b3' or event == 'r_oke2' then\
+        self:set_property( 'statuscolor', '#000' )\
+    end\
+end\
+"}},
+[5] = {
+["name"] = "Buffer",
+["properties"] = {
+["onupdate"] = "function onupdate( self, event, dfa_sim_list )\
+    if event == 'r_okc1b1' then\
+        self:set_property( 'itens', 1 )\
+        self:set_property( 'color', '#F00' )\
+    elseif  event == 'r_okc2b1'  then\
+        self:set_property( 'itens', 1 )\
+        self:set_property( 'color', '#0F0' )\
+    elseif event == 'm1_ini_c_c1' or event == 'm1_ini_c_c2' then\
+        self:set_property( 'itens', 0 )\
+        self:set_property( 'color', '#AAA' )\
+    end\
+end\
+",
+["h"] = 32,
+["x"] = 237,
+["w"] = 32,
+["y"] = 246}},
+[6] = {
+["name"] = "Buffer",
+["properties"] = {
+["onupdate"] = "function onupdate( self, event, dfa_sim_list )\
+    if event == 'r_okc2b2' then\
+        self:set_property( 'itens', 1 )\
+        self:set_property( 'color', '#0F0' )\
+    elseif event =='m1_ini_b' then\
+        self:set_property( 'itens', 0 )\
+        self:set_property( 'color', '#AAA' )\
+    end\
+end\
+",
+["h"] = 32,
+["x"] = 276,
+["w"] = 32,
+["y"] = 246}},
+[7] = {
+["name"] = "Buffer",
+["properties"] = {
+["onupdate"] = "function onupdate( self, event, dfa_sim_list )\
+    if event == 'r_okc3b3' then\
+        self:set_property( 'itens', 1 )\
+        self:set_property( 'color', '#00F' )\
+    elseif event == 'm1_ini_a' then\
+        self:set_property( 'itens', 0 )\
+        self:set_property( 'color', '#AAA' )\
+    end\
+end\
+",
+["h"] = 32,
+["x"] = 316,
+["w"] = 32,
+["y"] = 246}},
+[8] = {
+["name"] = "GenericMachine",
+["properties"] = {
+["y"] = 182,
+["x"] = 259,
+["statuscolor"] = "#ffffffffffff",
+["w"] = 64,
+["onupdate"] = "function onupdate( self, event, dfa_sim_list )\
+    if event == 'm1_ini_b' or event == 'm1_ini_c_c2' then\
+        self:set_property( 'statuscolor', '#FF0' )\
+    elseif event == 'm1_ini_a' or event == 'm1_ini_c_c1' then\
+        self:set_property( 'statuscolor', '#F00' )\
+    elseif event == 'm1_fim' then\
+        self:set_property( 'statuscolor', '#000' )\
+    end\
+end\
+"}}},
+["automata_group_name"] = "automata_group.nag"}

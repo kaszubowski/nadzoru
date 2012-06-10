@@ -62,7 +62,7 @@ void delay_us({{int}} us){
 {% end %}
 
 {% if use_lcd and compiler == SDCC %}
-#include "lcd.c"
+#include "libs/lcd.c"
 char frmlcd[32];
 void printlcd(const char *s, int line){
     //lcd_home();

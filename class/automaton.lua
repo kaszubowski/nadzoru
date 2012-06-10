@@ -575,6 +575,7 @@ function Automaton:load_file( file_name )
             self:set( 'full_file_name', file_name )
             self:set( 'file_name', select( 3, file_name:find( '.-([^/^\\]*)$' ) ) )
         end
+        file:close()
     end
 end
 

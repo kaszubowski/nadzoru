@@ -295,7 +295,7 @@ end
 
 function ScadaComponent.Base:tick()
     if self:get_property( 'state' ) == 1 then
-        local m = self:get_property( 'movement' )
+        local m = self:get_property( 'movement' ) or 0
         m = m + 1
         if m > 3 then
             m = 0

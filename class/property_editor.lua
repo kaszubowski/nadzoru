@@ -137,6 +137,14 @@ local function color_callback( data )
     end
 end
 
+local function link_callback( data )
+    if not data.self.enable_callback then return end
+    local link_gui = {}
+    
+    --TODO
+    
+end
+
 local function code_callback( data )
     if not data.self.enable_callback then return end
     
@@ -301,6 +309,10 @@ function PropertyEditor:draw_interface()
             row.button = gtk.Button.new_with_label('...')
             row.button:connect( 'clicked', code_callback, { row = row, self = self })
             self.hboxs[#self.hboxs]:pack_start( row.button, true, true, 0 )
+        elseif row.type == 'link' then
+            row.button = gtk.Button.new_with_label('...')
+            row.button:connect( 'clicked', link_callback, { row = row, self = self })
+            self.hboxs[#self.hboxs]:pack_start( row.button, true, true, 0 )
         end
         self.vbox:pack_start( self.hboxs[#self.hboxs], false, false, 0 )
     end
@@ -377,6 +389,18 @@ function PropertyEditor:add_row_code( name, caption, default, options, callback,
     self.rows[ name ] = {
         name     = name,
         type     = 'code',
+        caption  = caption,
+        value    = default or '',
+        options  = options or {},
+        callback = callback,
+        param    = param,
+    }
+end
+
+function PropertyEditor:add_row_link( name, caption, default, options, callback, param )
+    self.rows[ name ] = {
+        name     = name,
+        type     = 'link',
         caption  = caption,
         value    = default or '',
         options  = options or {},

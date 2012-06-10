@@ -1,11 +1,23 @@
-ScadaView = letk.Class( function( self, gui, scada_plant, elements )
+ScadaServer = letk.Class( function( self, gui, automata_group, event_map_file, elements )
     Object.__super( self )
-    self.gui         = gui
-    self.scada_plant = scada_plant
-    self.elements    = elements
+    self.gui            = gui
+    self.automata_group = automata_group
+    self.elements       = elements
+    self.event_map      = {}
+    
+    local file = io.open( event_map_file, 'r')
+    if file then
+        local s    = file:read('*a')
+        local data = loadstring('return ' .. s)()
+        for event_id, event_name in ipairs( data ) do
+            self.event_map[ tonumber(event_id) ]  = event_name
+            self.event_map[ event_name]           = tonumber(event_id)
+        end
+    end
     
     self.server_config    = nil
     self.redis_connection = nil
+    self.device_file      = nil
     self.run              = nil
 
     self:build_gui()
@@ -13,22 +25,11 @@ ScadaView = letk.Class( function( self, gui, scada_plant, elements )
     self.scale = 13
 end, Object )
 
-ScadaView.scale_values = ScadaEditor.scale_values
-
-function ScadaView:build_gui()
+function ScadaServer:build_gui()
      self.vbox                           = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
         self.toolbar                     = gtk.Toolbar.new()
-        self.scrolled                    = gtk.ScrolledWindow.new()
-            self.drawing_area            = gtk.DrawingArea.new( )
             
     self.vbox:pack_start( self.toolbar, false, false, 0 )
-    self.vbox:pack_start( self.scrolled, true, true, 0 )
-        self.scrolled:add_with_viewport(self.drawing_area)
-            
-    self.drawing_area:add_events( gdk.BUTTON_PRESS_MASK )
-    self.drawing_area:connect("button_press_event", self.drawing_area_press, self )
-    self.drawing_area:connect('draw', self.drawing_area_expose, self )
-    
     
     self:build_server_config_window()
     
@@ -39,15 +40,15 @@ function ScadaView:build_gui()
     self.toolbar:insert( self.btn_act_cfgcon, -1 )
     
     --connect/disconnect
-    self.img_act_connect = gtk.Image.new_from_file( './images/icons/disconnect.png' )
-    self.btn_act_connect    = gtk.ToolButton.new( self.img_act_connect, "Config Connection" )
+    self.img_act_connect    = gtk.Image.new_from_file( './images/icons/disconnect.png' )
+    self.btn_act_connect    = gtk.ToolButton.new( self.img_act_connect, "Connect" )
     self.btn_act_connect:connect( 'clicked', self.set_act_connect, self )
     self.toolbar:insert( self.btn_act_connect, -1 )
 
-    self.gui:add_tab( self.vbox, "view " .. (self.scada_plant:get('file_name') or "-x-") )
+    self.gui:add_tab( self.vbox, "SERVER" )
 end
 
-function ScadaView:build_server_config_window()
+function ScadaServer:build_server_config_window()
     self.SCWgui = {}
     self.SCWgui.win                               = gtk.Window.new( gtk.WINDOW_TOPLEVEL )
         self.SCWgui.vbox                          = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
@@ -63,6 +64,9 @@ function ScadaView:build_server_config_window()
             self.SCWgui.hbox_namespace            = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
                 self.SCWgui.label_namespace       = gtk.Label.new_with_mnemonic( "Namespace:" )
                 self.SCWgui.entry_namespace       = gtk.Entry.new()
+            self.SCWgui.hbox_device               = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
+                self.SCWgui.label_device          = gtk.Label.new_with_mnemonic( "Device:" )
+                self.SCWgui.entry_device          = gtk.Entry.new()
             self.SCWgui.hbox_btn                  = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
                 self.SCWgui.btn_test              = gtk.Button.new_with_label("Test")
                 self.SCWgui.btn_cancel            = gtk.Button.new_with_label("Cancel")
@@ -81,6 +85,9 @@ function ScadaView:build_server_config_window()
         self.SCWgui.vbox:pack_start( self.SCWgui.hbox_namespace, true, true, 0 )
             self.SCWgui.hbox_namespace:pack_start( self.SCWgui.label_namespace, true, true, 0 )
             self.SCWgui.hbox_namespace:pack_start( self.SCWgui.entry_namespace, true, true, 0 )
+        self.SCWgui.vbox:pack_start( self.SCWgui.hbox_device, true, true, 0 )
+            self.SCWgui.hbox_device:pack_start( self.SCWgui.label_device, true, true, 0 )
+            self.SCWgui.hbox_device:pack_start( self.SCWgui.entry_device, true, true, 0 )
         self.SCWgui.vbox:pack_start( self.SCWgui.hbox_btn, false, false, 0 )
             self.SCWgui.hbox_btn:pack_start( self.SCWgui.btn_test, true, true, 0 )
             self.SCWgui.hbox_btn:pack_start( self.SCWgui.btn_cancel, true, true, 0 )
@@ -93,6 +100,7 @@ function ScadaView:build_server_config_window()
     self.SCWgui.entry_ip:set_text( 'localhost' )
     self.SCWgui.entry_port:set_text( '6379' )
     self.SCWgui.entry_namespace:set_text( 'NadzoruScada' )
+    self.SCWgui.entry_device:set_text( '/dev/ttyUSB0' )
         
         
     function redis_test()
@@ -107,13 +115,12 @@ function ScadaView:build_server_config_window()
             local status_db = pcall( connection.select, connection, database )
             if status_db then
                 local info = connection:info()
-                local msg  = "Connection OK:\n"
                 --~ for k,v in pairs( info ) do
                     --~ if type( v ) == 'string' then
                         --~ msg = msg .. '\n' .. k .. ' = ' .. v
                     --~ end
                 --~ end
-                gtk.InfoDialog.showInfo( msg )
+                gtk.InfoDialog.showInfo( "Connection to redis OK" )
             else
                 gtk.InfoDialog.showInfo( "Invalid Database: " .. tostring( database ) )
             end
@@ -123,6 +130,15 @@ function ScadaView:build_server_config_window()
         end
     end
     self.SCWgui.btn_test:connect( 'clicked', redis_test )
+    
+    function device_test()
+        local f, err = io.open( self.SCWgui.entry_device:get_text(), 'r+' )
+        if f then
+            gtk.InfoDialog.showInfo( "Connection to device OK" )
+        else
+            gtk.InfoDialog.showInfo( "Connection to device Error:\n\n" .. err )
+        end
+    end
     
     function redis_cancel()
         self.SCWgui.win:hide()
@@ -137,6 +153,7 @@ function ScadaView:build_server_config_window()
             },
             namespace          = self.SCWgui.entry_namespace:get_text(),
             database           = self.SCWgui.spin_database:get_value(),
+            device             = self.SCWgui.entry_device:get_text(),
         }
         redis_cancel()
     end
@@ -150,34 +167,14 @@ function ScadaView:build_server_config_window()
     self.SCWgui.entry_namespace:set( 'width-request', 150 )
 end
 
-function ScadaView:drawing_area_expose( cr )
-    cr = cairo.Context.wrap(cr)
-    cr:scale( self.scale_values[ self.scale ], self.scale_values[ self.scale ] )
-    local x, y = self.scada_plant:render( cr )
-    self.drawing_area:set_size_request( (x+32)*self.scale_values[ self.scale ], (y+32)*self.scale_values[ self.scale ] )
-end
-
-function ScadaView:drawing_area_press( event )
-    local stats, button_press = gdk.Event.get_button( event )
-
-    if button_press == 1 then
-    
-    end
-end
-
-function ScadaView:check_plant( )
-    if not self.scada_plant then return false, "No plant" end
-    if not self.scada_plant.automata_group_name then return false, "Plant do not have automata group" end
-    if not self.scada_plant.automata_group then
-        self.scada_plant:load_automata_group( self.elements )
-    end
-    if not self.scada_plant.automata_group then return false, "Automata group can not be loaded" end
-    self.scada_plant.automata_group:load_automata( self.elements )
-    if not self.scada_plant.automata_group:check_automata() then return false, "All automata from automa group can not be loaded" end
+function ScadaServer:check_automata_group( )
+    if not self.automata_group then return false, "Automata group can not be loaded" end
+    self.automata_group:load_automata( self.elements )
+    if not self.automata_group:check_automata() then return false, "All automata from automa group can not be loaded" end
     return true
 end
 
-function ScadaView:redis_connect()
+function ScadaServer:redis_connect()
     if not self.server_config or not self.server_config.params then
         return false, "Connection not configured" 
     end
@@ -196,106 +193,87 @@ function ScadaView:redis_connect()
     end
 end
 
-function ScadaView:set_act_cfgcon()
+function ScadaServer:set_act_cfgcon()
     self.SCWgui.win:show_all()
 end
 
-function ScadaView:set_act_connect()
+function ScadaServer:set_act_connect()
     if not self.run then
-        local status_plant, err_plant = self:check_plant( )
+        if not self.server_config then
+            gtk.InfoDialog.showInfo( "Not Configured!" )
+            return 
+        end
+        local status_plant, err_plant = self:check_automata_group( )
         if status_plant then
             local status_connection, err_connection = self:redis_connect()
-            if status_connection then
+            local device_err
+            self.device_file, device_err = io.open( self.server_config.device, 'a+')
+            if status_connection and self.device_file then
                 self.img_act_connect:set_from_file('./images/icons/connect.png')
                 self:run_init()
                 glib.timeout_add(glib.PRIORITY_DEFAULT, 1000, self.run_callback, self) --config time?
-                glib.timeout_add(glib.PRIORITY_DEFAULT, 300, self.tick_callback, self) --config time?
             else
-                gtk.InfoDialog.showInfo( "Connection error:\n\n" .. err_connection )
+                gtk.InfoDialog.showInfo( "Connection error:\n\n" .. (err_connection or '') .. (device_err or '') )
             end
         else
             gtk.InfoDialog.showInfo( "Plant load fail:\n\n" .. err_plant )
         end
     else
-        self.run = nil
         self.img_act_connect:set_from_file('./images/icons/disconnect.png')
+        self.run = nil
     end
 end
 
-function ScadaView:run_init()
-    local base_env = {
-        print    = print,
-        table    = table,
-        string   = string,
-        math     = math,
-        tonumber = tonumber,
-        tostring = tostring,
-        select   = select,
-        pairs    = pairs,
-        ipairs   = ipairs,
-        type     = type,
-    }
+function ScadaServer:run_init()
     self.run = {
-        components_env = {},
         simulators     = {},
     }
-    local functions = { 'onupdate' }
-    for k, component in self.scada_plant.component:ipairs() do
-        local code = {}
-        self.run.components_env[ k ] = {}
-        setmetatable( self.run.components_env[ k ], { __index = base_env } )
-        self.run.components_env[ k ].component = component
         
-        for k_fn, fn_name in ipairs( functions ) do 
-            local code_fn = component:get_property( fn_name )
-            if type( code_fn ) == 'string' then
-                local chunk = loadstring( code_fn )
-                if chunk then
-                    setfenv( chunk, self.run.components_env[ k ] )
-                    chunk()
-                end
-            end
-        end
-        
-        for automaton_name, automaton in pairs( self.scada_plant.automata_group.automata_object ) do
-            self.run.simulators[ automaton_name ] = Simulator.new( automaton )
-        end
+    for automaton_name, const in pairs( self.automata_group.automata_file.x ) do
+        local automaton = self.automata_group.automata_object[ automaton_name ]
+        self.run.simulators[ automaton_name ] = Simulator.new( automaton )
     end
     
     self.run.event_position = 1
 end
 
-function ScadaView:run_callback()
+function ScadaServer:run_callback()
     if not self.run then return false end
-    local event_name = true 
-    while event_name do
-        event_name = self.redis_connection:lindex( self.server_config.namespace .. '_EVENTS', self.run.event_position * -1 )
+    
+    --input
+    local input = self.device_file:read('*a')
+    for i = 1, #input do
+        local event_name = self.event_map[ input:byte( i ) + 1 ] --Serial get [0,n-1], Lua use [1,n]
         if event_name then
-            for automaton_name, automaton in pairs( self.scada_plant.automata_group.automata_object ) do
-                if self.run.simulators[ automaton_name ]:event_exists( event_name ) then
-                    self.run.simulators[ automaton_name ]:event_evolve( event_name )
+            self.redis_connection:lpush( self.server_config.namespace .. '_EVENTS', event_name )        
+            for automaton_name, automaton in pairs( self.run.simulators ) do
+                if automaton:event_exists( event_name ) then
+                    automaton:event_evolve( event_name )
                 end
             end
-            
-            for k, enviroment in ipairs( self.run.components_env ) do
-                if enviroment.onupdate then
-                    enviroment.onupdate( enviroment.component, event_name, self.run.simulators ) --TODO pcall
-                end
-            end
-            self.run.event_position = self.run.event_position + 1
         end
     end
-
-    self.drawing_area:queue_draw()
-    return self.run and true or false
-end
-
-function ScadaView:tick_callback()
-    if not self.run then return false end
-    for k, enviroment in ipairs( self.run.components_env ) do
-        enviroment.component:tick()
+    
+    --Evolve controlable events from X (TODO) calc disable
+    for automaton_name, automaton in pairs( self.run.simulators ) do
+        local events = automaton:get_current_state_controllable_events()
+        if #events > 0 then
+            local id = math.random( 1, #events )
+            local event_name = events[id].name
+            automaton:event_evolve( event_name )
+            self.redis_connection:lpush( self.server_config.namespace .. '_EVENTS', event_name )
+            
+            local event_id   = self.event_map[ event_name ]
+            if event_id then
+                self.device_file:write( string.char( event_id - 1) )
+                self.device_file:flush()
+            end
+        end
     end
+    
+    --Custom user Event generation
 
-    self.drawing_area:queue_draw()
+    
     return self.run and true or false
 end
+ 
