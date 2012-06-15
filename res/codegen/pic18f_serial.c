@@ -112,13 +112,6 @@ void make_transition( {{char}} event ){
         sprintf( lcdbuf, "Event %i", event+1 );
         lcd_home();lcd_puts( lcdbuf );
     {% end %}
-    
-    {% if compiler == SDCC and ( output_fn == OUTPUT_RS232 or output_fn == OUTPUT_NORMAL_RS232 ) %}
-        //~ printf("%c", event+1 ); //Send by RS 232 (IN PIC we use 0 to 254, IN PC 1 to 255)
-        //~ if you want to send a char be carefull because you need disable all special char's in PC
-        //~ like:  ~( ICANON | ECHO | ISIG |IEXTEN ); --There is more but I don't know.
-        printf("%i\n", event+1);
-    {% end %}
 }
 {% endwith %}
 
@@ -423,6 +416,12 @@ void main(){
             make_transition( event );
             {% if (compiler == SDCC and output_fn ~= OUTPUT_RS232) or  compiler == CCS %}
                 callback( event );
+            {% end %}
+            {% if compiler == SDCC and ( output_fn == OUTPUT_RS232 or output_fn == OUTPUT_NORMAL_RS232 ) %}
+                //~ printf("%c", event+1 ); //Send by RS 232 (IN PIC we use 0 to 254, IN PC 1 to 255)
+                //~ if you want to send a char be carefull because you need disable all special char's in PC
+                //~ like:  ~( ICANON | ECHO | ISIG |IEXTEN ); --There is more but I don't know.
+                printf("%i\n", event+1);
             {% end %}
         }
         delay_ms(100);

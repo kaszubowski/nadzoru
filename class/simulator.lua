@@ -100,9 +100,40 @@ function Simulator:get_current_state_controllable_events()
     local state_index, node = self:get_current_state()
     local events            = {}
     for event_index, event in self.automaton.events:ipairs() do
+        if node.event_target[ event ] then
+            events[#events +1] = event
+        end
+    end
+    
+    return events
+end
+
+function Simulator:get_controllable_events()
+    local events            = {}
+    for event_index, event in self.automaton.events:ipairs() do
         if event.controllable then
             events[#events +1] = event
         end
+    end
+    
+    return events
+end
+
+function Simulator:get_non_controllable_events()
+    local events            = {}
+    for event_index, event in self.automaton.events:ipairs() do
+        if not event.controllable then
+            events[#events +1] = event
+        end
+    end
+    
+    return events
+end
+
+function Simulator:get_events()
+    local events            = {}
+    for event_index, event in self.automaton.events:ipairs() do
+        events[#events +1] = event
     end
     
     return events
@@ -119,10 +150,15 @@ end
 
 function Simulator:get_event_options( event_index )
     local t_ev_id = type( event_index )
-    if  t_ev_id == 'string' or t_ev_id == 'table' then
+    local state_index, node = self:get_current_state()
+    
+    if  t_ev_id == 'table' then
         event_index = self.event_map[ event_index ] 
+    elseif  t_ev_id == 'string' then
+        event_index = self.event_name_map[ event_index ] 
     end
     event_index = tonumber( event_index )
+    
     if not event_index then return false end
     
     if self.state_event_map[ state_index ][  event_index ] then

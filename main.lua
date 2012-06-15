@@ -82,7 +82,7 @@ function Controller:build()
 
     -- ** Menu Itens ** --
     self.gui:append_menu('automata', "_Automata")
-    self.gui:append_menu('scada', "_SCADA")
+    self.gui:append_menu('scada_mes', "_SCADA/MES")
 
     -- ** Actions * --
 
@@ -117,11 +117,11 @@ function Controller:build()
     --self.gui:add_action('simulateplant', "Automaton Simulate _Plant", "Simulate the Plant in a OpenGL render", nil, self.simulate_plant, self)
 
     --SCADA
-    self.gui:add_action('scada_plant_new'   , "_New Plant", "Create a New SCADA Plant", nil, self.create_new_scada_plant, self)
-    self.gui:add_action('scada_plant_load'   , "_Load Plant", "Load a SCADA Plant", nil, self.load_scada_plant, self)
-    self.gui:add_action('scada_plant_edit'  , "Edit Plant", "Edit a SCADA Plant", nil, self.scada_plant_edit, self)
-    self.gui:add_action('scada_plant_view'  , "View", "SCADA View Interface", nil, self.scada_plant_view, self)
-    self.gui:add_action('scada_plant_server', "Server", "SCADA Server", nil, self.scada_plant_server, self)
+    self.gui:add_action('scada_plant_new'   , "_New SCADA Plant", "Create a New SCADA Plant", nil, self.create_new_scada_plant, self)
+    self.gui:add_action('scada_plant_load'   , "_Load SCADA Plant", "Load a SCADA Plant", nil, self.load_scada_plant, self)
+    self.gui:add_action('scada_plant_edit'  , "Edit SCADA Plant", "Edit a SCADA Plant", nil, self.scada_plant_edit, self)
+    self.gui:add_action('scada_plant_view'  , "SCADA View", "SCADA View Interface", nil, self.scada_plant_view, self)
+    self.gui:add_action('scada_mes_server', "SCADA/MES Server", "SCADA/MES Server", nil, self.scada_mes_server, self)
 
     -- ** Menu-Action Link ** --
     --File
@@ -155,11 +155,11 @@ function Controller:build()
     self.gui:append_menu_item('automata', 'simulategraphviz')
 
     --SCADA
-    self.gui:append_menu_item('scada', 'scada_plant_new')
-    self.gui:append_menu_item('scada', 'scada_plant_load')
-    self.gui:append_menu_item('scada', 'scada_plant_edit')
-    self.gui:append_menu_item('scada', 'scada_plant_view')
-    self.gui:append_menu_item('scada', 'scada_plant_server')
+    self.gui:append_menu_item('scada_mes', 'scada_plant_new')
+    self.gui:append_menu_item('scada_mes', 'scada_plant_load')
+    self.gui:append_menu_item('scada_mes', 'scada_plant_edit')
+    self.gui:append_menu_item('scada_mes', 'scada_plant_view')
+    self.gui:append_menu_item('scada_mes', 'scada_mes_server')
 
 end
 
@@ -857,7 +857,7 @@ function Controller.scada_plant_view( data )
     :run()
 end
 
-function Controller.scada_plant_server( data )
+function Controller.scada_mes_server( data )
      Selector.new({
         title = "Open Server",
         success_fn = function( results, numresult )

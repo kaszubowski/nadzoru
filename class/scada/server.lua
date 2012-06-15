@@ -1,3 +1,5 @@
+require 'letk.linuxserial'
+
 ScadaServer = letk.Class( function( self, gui, automata_group, event_map_file, elements )
     Object.__super( self )
     self.gui            = gui
@@ -28,8 +30,10 @@ end, Object )
 function ScadaServer:build_gui()
      self.vbox                           = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
         self.toolbar                     = gtk.Toolbar.new()
+        self.hbox                           = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
             
     self.vbox:pack_start( self.toolbar, false, false, 0 )
+    self.vbox:pack_start( self.hbox, true, true, 0 )
     
     self:build_server_config_window()
     
@@ -44,7 +48,31 @@ function ScadaServer:build_gui()
     self.btn_act_connect    = gtk.ToolButton.new( self.img_act_connect, "Connect" )
     self.btn_act_connect:connect( 'clicked', self.set_act_connect, self )
     self.toolbar:insert( self.btn_act_connect, -1 )
-
+    
+    --MES load
+    self.img_act_mes    = gtk.Image.new_from_file( './images/icons/mes.png' )
+    self.btn_act_mes    = gtk.ToolButton.new( self.img_act_mes, "Mes" )
+    self.btn_act_mes:connect( 'clicked', self.set_act_mes, self )
+    self.toolbar:insert( self.btn_act_mes, -1 )
+    
+    --MES:
+    self.vbox_mes1 = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
+        self.cbx_info = gtk.ComboBoxText.new()
+        self.btn_info = gtk.Button.new_with_mnemonic ("Execute")
+    self.vbox_mes2 = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
+        self.mes_treeview      = Treeview.new()
+            :add_column_text("Information",400)
+            :add_column_text("Value",90)
+        
+    self.hbox:pack_start( self.vbox_mes1, false, false, 0 )
+        self.vbox_mes1:pack_start( self.cbx_info, false, false, 0 )
+        self.vbox_mes1:pack_start( self.btn_info, false, false, 0 )
+    self.hbox:pack_start( self.vbox_mes2, true, true, 0 )
+        self.vbox_mes2:pack_start( self.mes_treeview:build(), true, true, 0 )
+        
+    self.btn_info:connect( 'clicked', self.set_act_execute_event, self )
+    
+    --ADD tab
     self.gui:add_tab( self.vbox, "SERVER" )
 end
 
@@ -132,12 +160,12 @@ function ScadaServer:build_server_config_window()
     self.SCWgui.btn_test:connect( 'clicked', redis_test )
     
     function device_test()
-        local f, err = io.open( self.SCWgui.entry_device:get_text(), 'r+' )
-        if f then
-            gtk.InfoDialog.showInfo( "Connection to device OK" )
-        else
-            gtk.InfoDialog.showInfo( "Connection to device Error:\n\n" .. err )
-        end
+        --~ local f, err = io.open( self.SCWgui.entry_device:get_text(), 'r+' )
+        --~ if f then
+            --~ gtk.InfoDialog.showInfo( "Connection to device OK" )
+        --~ else
+            --~ gtk.InfoDialog.showInfo( "Connection to device Error:\n\n" .. err )
+        --~ end
     end
     
     function redis_cancel()
@@ -207,11 +235,15 @@ function ScadaServer:set_act_connect()
         if status_plant then
             local status_connection, err_connection = self:redis_connect()
             local device_err
-            self.device_file, device_err = io.open( self.server_config.device, 'a+')
+            --~ self.device_file, device_err = io.open( self.server_config.device, 'a+')
+            self.device_file = serial.open( self.server_config.device )
             if status_connection and self.device_file then
                 self.img_act_connect:set_from_file('./images/icons/connect.png')
                 self:run_init()
-                glib.timeout_add(glib.PRIORITY_DEFAULT, 1000, self.run_callback, self) --config time?
+                glib.timeout_add(glib.PRIORITY_DEFAULT, 300, self.run_callback, self) --config time?
+                self.redis_connection:del( self.server_config.namespace .. '_EVENTS_TO_SERIAL' ) 
+                --~ self.redis_connection:del( self.server_config.namespace .. '_EVENTS_ID_FROM_SERIAL' ) 
+                self.redis_connection:del( self.server_config.namespace .. '_EVENTS_NAME_TO_APP' ) 
             else
                 gtk.InfoDialog.showInfo( "Connection error:\n\n" .. (err_connection or '') .. (device_err or '') )
             end
@@ -220,60 +252,237 @@ function ScadaServer:set_act_connect()
         end
     else
         self.img_act_connect:set_from_file('./images/icons/disconnect.png')
-        self.run = nil
+        self.cbx_info:remove_all()
+        self.run      = nil
+        self.mes_data = {}
     end
+end
+
+function ScadaServer:set_act_execute_event()
+    local event_name =  self.cbx_info:get_active_text()
+    self:execute_event( event_name, true )
+end
+
+function ScadaServer:execute_event( event_name, toSerial )
+    --Application
+    self.redis_connection:lpush( self.server_config.namespace .. '_EVENTS_NAME_TO_APP', event_name ) 
+    --Update Server AFD's
+    for automaton_name, automaton in pairs( self.run.simulators ) do
+        if automaton:event_exists( event_name ) then
+            automaton:event_evolve( event_name )
+        end
+    end
+    --Serial:
+    if toSerial then
+        local event_id = tonumber( self.event_map[event_name] ) 
+        if event_id then
+            self.device_file:writeByte( event_id )
+        end
+    end
+    
+    self:update_mes_data( event_name )
 end
 
 function ScadaServer:run_init()
     self.run = {
         simulators     = {},
+        to_serial      = 1,
     }
         
+    local x_events = {}
     for automaton_name, const in pairs( self.automata_group.automata_file.x ) do
         local automaton = self.automata_group.automata_object[ automaton_name ]
         self.run.simulators[ automaton_name ] = Simulator.new( automaton )
+        for k_ev, ev in ipairs( self.run.simulators[ automaton_name ]:get_non_controllable_events() ) do
+            x_events[ ev.name ] = true
+        end
+    end
+    self.cbx_info:remove_all()
+    for ev_name, _const in pairs( x_events ) do
+        self.cbx_info:append_text( ev_name )
     end
     
     self.run.event_position = 1
 end
 
+function ScadaServer:run_exclusive_automata()
+    --Evolve controlable events from X (TODO) calc disable
+    
+    function disable_and_run_controllable()
+        local eventsList = {}
+        for automaton_name, automaton in pairs( self.run.simulators ) do
+            for k_ev, ev in ipairs( automaton:get_controllable_events() ) do
+                eventsList[ ev.name ] = true
+            end
+        end
+        for automaton_name, automaton in pairs( self.run.simulators ) do
+            local controllable_events_all       = {}
+            for k_ev, ev in ipairs( automaton:get_controllable_events() ) do
+                controllable_events_all[ ev.name ] = true
+            end
+            for k_ev, ev in ipairs( automaton:get_current_state_controllable_events() ) do
+                controllable_events_all[ ev.name ] = nil
+            end
+            for ev_name, _disable in pairs( controllable_events_all ) do
+                eventsList[ ev_name ] = nil
+            end
+        end
+        local i_eventsList = {}
+        for ev_name, _disable in pairs( eventsList ) do
+            i_eventsList[#i_eventsList + 1] = ev_name
+        end
+        if #i_eventsList > 0 then
+            local selected_event = i_eventsList[ math.random(1,#i_eventsList) ]
+            return true, selected_event
+        end
+        return false
+    end
+    
+    local status, event_name = disable_and_run_controllable()
+    if not status then
+        return
+    end
+    
+    self:execute_event( event_name, true )
+end
+
+function ScadaServer:update_mes_data( event_name )
+    if self.mes_data then
+        local current_time = os.time()
+        self.mes_treeview:clear_data()
+        for k_mes, mes_env in ipairs( self.mes_data ) do
+            if mes_env.update then
+                mes_env.event_name    = event_name
+                mes_env.current_time  = current_time
+                mes_env.automata      = self.run and self.run.simulators 
+                mes_env.update()
+                if mes_env.reference then
+                    self.mes_data.references[ mes_env.reference ] = mes_env.value
+                end
+                self.mes_treeview:add_row{ mes_env.name, mes_env.value  }
+            end
+        end
+        self.mes_treeview:update()
+    end
+end
+
 function ScadaServer:run_callback()
     if not self.run then return false end
     
-    --input
-    local input = self.device_file:read('*a')
-    for i = 1, #input do
-        local event_name = self.event_map[ input:byte( i ) + 1 ] --Serial get [0,n-1], Lua use [1,n]
-        if event_name then
-            self.redis_connection:lpush( self.server_config.namespace .. '_EVENTS', event_name )        
-            for automaton_name, automaton in pairs( self.run.simulators ) do
-                if automaton:event_exists( event_name ) then
-                    automaton:event_evolve( event_name )
+    local function getEvents()
+        local receiveBuffer = {}
+        local eventsList    = {}
+        repeat
+            local data = self.device_file:readByte()
+            if data ~= nil then
+                if data == 10 or data == 13 then --\n or \r
+                    eventsList[ #eventsList + 1 ] = tonumber( table.concat( receiveBuffer ) )
+                    receiveBuffer = {}
+                else
+                    receiveBuffer[#receiveBuffer + 1] = string.char( data )
                 end
             end
-        end
+        until not data
+        
+        return eventsList
     end
     
-    --Evolve controlable events from X (TODO) calc disable
-    for automaton_name, automaton in pairs( self.run.simulators ) do
-        local events = automaton:get_current_state_controllable_events()
-        if #events > 0 then
-            local id = math.random( 1, #events )
-            local event_name = events[id].name
-            automaton:event_evolve( event_name )
-            self.redis_connection:lpush( self.server_config.namespace .. '_EVENTS', event_name )
-            
-            local event_id   = self.event_map[ event_name ]
-            if event_id then
-                self.device_file:write( string.char( event_id - 1) )
-                self.device_file:flush()
-            end
+    --to_serial (redis -> serial)
+    local event_name = true 
+    while event_name do
+        event_name = self.redis_connection:lindex( self.server_config.namespace .. '_EVENTS_TO_SERIAL', self.run.event_position * -1 )
+        if event_name then
+            self.run.event_position = self.run.event_position + 1
+            self:execute_event( event_name, true )
         end
     end
+    --from_serial (serial -> redis)
+    local input        = getEvents()
+    for k, v in ipairs(input) do
+        local event_name = self.event_map[ v ]
+        if event_name then
+            self:execute_event( event_name, false )
+        end
+    end  
     
-    --Custom user Event generation
-
+    self:run_exclusive_automata()
     
     return self.run and true or false
 end
  
+ 
+function ScadaServer:set_act_mes()
+    self.mes_data = { references = {} }
+    
+     local dialog = gtk.FileChooserDialog.new(
+        "Select the file", nil, gtk.FILE_CHOOSER_ACTION_OPEN,
+        "gtk-cancel", gtk.RESPONSE_CANCEL,
+        "gtk-ok", gtk.RESPONSE_OK
+    )
+    local filter = gtk.FileFilter.new()
+    filter:add_pattern("*.lua")
+    filter:set_name("MES especification")
+    dialog:add_filter(filter)
+    local response = dialog:run()
+    dialog:hide()
+    local filenames = dialog:get_filenames()
+    if not (response == gtk.RESPONSE_OK or filenames) then
+        print('Canceled')
+        return
+    end
+    local file_mes, err1  = io.open(filenames[1], 'r')
+    if not file_mes then
+        print( "Error open file", err1 )
+        return
+    end
+    local chunk, err2 = loadstring( 'return ' .. file_mes:read('*a') )
+    if not chunk then
+        print( "Error reading file", err2 )
+    end
+    local data = chunk()
+    
+    local env_base = {
+        assert = assert, next     = next    , pcall    = pcall,
+        string = string, math     = math    , table    = table,
+        ipairs = ipairs, pairs    = pairs   , select   = select,
+        print  = print , rawequal = rawequal, rawget   = rawget,
+        rawset = rawset, tonumber = tonumber, tostring = tostring,
+        type   = type  , unpack   = unpack  , 
+    }
+    
+    function env_base.getReference( name )
+        return self.mes_data.references[ name ]
+    end
+    
+    local env_MT = {
+        __index = function( t, k )
+            return env_base[k]
+        end,
+    }
+    
+    
+    for k_prop, prop in ipairs( data ) do
+        self.mes_data[ k_prop ] = {
+            value     = 0,
+            name      = prop.name,
+            reference = prop.reference,
+        }
+        
+        setmetatable( self.mes_data[ k_prop ], env_MT )
+        
+        local f, err3 = loadstring( prop.script )
+        if f then
+            setfenv( f, self.mes_data[ k_prop ] )
+            f()
+            if self.mes_data[ k_prop ].init then
+                self.mes_data[ k_prop ].current_time = os.time()
+                self.mes_data[ k_prop ].init()
+            end
+            self.mes_treeview:add_row{ self.mes_data[ k_prop ].name, self.mes_data[ k_prop ].value  }
+        else
+            print('Invalid script IN:', prop.name, err3)
+        end        
+    end
+    self.mes_treeview:update()
+    
+end

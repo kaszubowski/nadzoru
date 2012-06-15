@@ -189,3 +189,7 @@ end
 function ScadaComponent.Base:tick()
 
 end
+
+function ScadaComponent.Base:click()
+
+end

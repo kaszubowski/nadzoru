@@ -161,7 +161,16 @@ function ScadaView:drawing_area_press( event )
     local stats, button_press = gdk.Event.get_button( event )
 
     if button_press == 1 then
-    
+        if self.last_drawing_area_lock then return end
+        self.last_drawing_area_lock = true
+
+        glib.timeout_add(glib.PRIORITY_DEFAULT, 100, function( self )
+            self.last_drawing_area_lock = nil
+        end, self )
+        
+        local _, x, y                      = gdk.Event.get_coords( event )
+        local selected_component, position = self.scada_plant:get_selected( x, y )
+        selected_component:click()
     end
 end
 
@@ -269,7 +278,7 @@ function ScadaView:run_callback()
     if not self.run then return false end
     local event_name = true 
     while event_name do
-        event_name = self.redis_connection:lindex( self.server_config.namespace .. '_EVENTS', self.run.event_position * -1 )
+        event_name = self.redis_connection:lindex( self.server_config.namespace .. '_EVENTS_NAME_TO_APP', self.run.event_position * -1 )
         if event_name then
             for automaton_name, automaton in pairs( self.scada_plant.automata_group.automata_object ) do
                 if self.run.simulators[ automaton_name ]:event_exists( event_name ) then
