@@ -52,15 +52,15 @@ require('class.treeview')
 require('class.selector')
 require('class.property_editor')
 
-require('class.automaton')
+require('class.des.automaton')
 require('class.automata_group')
 require('class.code_gen.init')
 require('class.gui')
 require('class.simulator')
 require('class.graphviz_simulator')
 require('class.plant_simulator')
-require('class.automaton_render')
-require('class.automaton_editor')
+require('class.des.automaton_render')
+require('class.des.automaton_editor')
 require('class.scada.init')
 
 local CodeGenDevices = require 'res.codegen.devices.main'
