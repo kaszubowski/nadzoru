@@ -10,6 +10,7 @@ CodeGen = letk.Class( function( self, options )
     self.event_map      = options.event_map
     self.event_map_file = options.event_map_file
     self.device         = Devices[ self.device_id ].new()
+    self.custom_code    = {}
 
     local num_automata = self.automata:len()
     if num_automata == 0 then return end
@@ -100,6 +101,10 @@ function CodeGen:build_gui( gui )
                 end,
                 text = opt.caption,
             }
+        elseif opt.type == 'checkbox' then
+            self.gui.selector:add_checkbox{
+                text = opt.caption,
+            }
         elseif opt.type == 'spin' then
 
         end
@@ -165,6 +170,34 @@ function CodeGen:build_gui( gui )
         self.gui.code_output_vbox:pack_start( self.gui.code_output_scroll, true, true, 0 )
 
     self.gui.code_output_buffer:connect('changed', CodeGen.change_code_output, self )
+    
+        --** Source View - Custom **--
+    self.gui.code_custom_hbox    = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
+        self.gui.code_custom_vbox    = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
+
+    self.gui.code_custom_treeview = Treeview.new()
+        :add_column_text("Place",100)
+        :bind_onclick(CodeGen.change_place_custom, self)
+
+    self.gui.code_custom_label = gtk.Label.new_with_mnemonic( '---' )
+
+    self.gui.code_custom_view     = gtk.SourceView.new()
+    self.gui.code_custom_buffer   = self.gui.code_custom_view:get('buffer')
+    self.gui.code_custom_manager  = gtk.source_language_manager_get_default()
+    self.gui.code_custom_lang     = self.gui.code_custom_manager:get_language('c') --TODO language is a param from Device
+    self.gui.code_custom_scroll   = gtk.ScrolledWindow.new()
+    self.gui.code_custom_view:set('show-line-numbers', true, 'highlight-current-line', true, 'auto-indent', true)
+    self.gui.code_custom_scroll:set('hscrollbar-policy', gtk.POLICY_AUTOMATIC, 'vscrollbar-policy', gtk.POLICY_AUTOMATIC)
+    self.gui.code_custom_scroll:add(self.gui.code_custom_view)
+    self.gui.code_custom_buffer:set('language', self.gui.code_custom_lang)
+
+    self.gui.note:insert_page( self.gui.code_custom_hbox, gtk.Label.new("Custom code"), -1)
+    self.gui.code_custom_hbox:pack_start( self.gui.code_custom_treeview:build{width = 150}, false, false, 0 )
+    self.gui.code_custom_hbox:pack_start( self.gui.code_custom_vbox, true, true, 0 )
+        self.gui.code_custom_vbox:pack_start( self.gui.code_custom_label, false, false, 0 )
+        self.gui.code_custom_vbox:pack_start( self.gui.code_custom_scroll, true, true, 0 )
+
+    self.gui.code_custom_buffer:connect('changed', CodeGen.change_code_custom, self )
 
     -- Source View - All --
 
@@ -193,6 +226,7 @@ function CodeGen:update_treeviews()
 
     self.gui.code_input_treeview:clear_all()
     self.gui.code_output_treeview:clear_all()
+    self.gui.code_custom_treeview:clear_all()
 
     for k_ev, ev_nm in ipairs( in_ev ) do
         self.gui.code_input_treeview:add_row{ ev_nm }
@@ -200,15 +234,20 @@ function CodeGen:update_treeviews()
     for k_ev, ev_nm in ipairs( out_ev ) do
         self.gui.code_output_treeview:add_row{ ev_nm }
     end
+    for k_cc, cc in ipairs( self.device.custom_code or {} ) do
+        self.gui.code_custom_treeview:add_row{ cc }
+    end
 
     self.gui.code_input_treeview:update()
     self.gui.code_output_treeview:update()
+    self.gui.code_custom_treeview:update()
 
     self.gui.code_input_label:set_text( '---' )
     self.gui.code_output_label:set_text( '---' )
+    self.gui.code_custom_label:set_text( '---' )
 end
 
-function CodeGen:change_event_input( )
+function CodeGen:change_event_input()
     self.selected_event_input = self.gui.code_input_treeview:get_selected(1)
     if self.selected_event_input then
         self.gui.code_input_label:set_text( self.selected_event_input )
@@ -216,7 +255,7 @@ function CodeGen:change_event_input( )
     end
 end
 
-function CodeGen:change_event_output(  )
+function CodeGen:change_event_output()
     self.selected_event_output = self.gui.code_output_treeview:get_selected(1)
     if self.selected_event_output then
         self.gui.code_output_label:set_text( self.selected_event_output )
@@ -224,15 +263,30 @@ function CodeGen:change_event_output(  )
     end
 end
 
-function CodeGen:change_code_input(  )
+function CodeGen:change_place_custom()
+    self.selected_custom_code = self.gui.code_custom_treeview:get_selected(1)
+    if self.selected_custom_code then
+        self.gui.code_custom_label:set_text( self.selected_custom_code )
+        self.gui.code_custom_buffer:set( 'text',  self.custom_code[ self.selected_custom_code  ] or '' )
+    end
+end
+
+function CodeGen:change_code_input()
+    if not self.selected_event_input and not self.event_code[ self.selected_event_input ] then return end
     self.event_code[ self.selected_event_input ].input = self.gui.code_input_buffer:get( 'text' )
 end
 
-function CodeGen:change_code_output(  )
+function CodeGen:change_code_output()
+    if not self.selected_event_output and not self.event_code[ self.selected_event_output ] then return end
     self.event_code[ self.selected_event_output ].output = self.gui.code_output_buffer:get( 'text' )
 end
 
-function CodeGen:save_project(  )
+function CodeGen:change_code_custom()
+    if not self.selected_custom_code then return end
+    self.custom_code[ self.selected_custom_code ] = self.gui.code_custom_buffer:get( 'text' )
+end
+
+function CodeGen:save_project()
      local dialog = gtk.FileChooserDialog.new(
         "Save AS", nil,gtk.FILE_CHOOSER_ACTION_SAVE,
         "gtk-cancel", gtk.RESPONSE_CANCEL,
@@ -246,23 +300,31 @@ function CodeGen:save_project(  )
     dialog:hide()
     local names = dialog:get_filenames()
     if response == gtk.RESPONSE_OK and names and names[1] then
+        if not names[1]:match( '%.ncp$' ) then
+            names[1] = names[1] .. '.ncp'
+        end
         local file = io.open( names[1], 'w')
         if file then
-            local data_event_code = {}
+            local data       = {}
+            data.events      = {}
+            data.custom_code = {}
             for nm_ev, prop in pairs( self.event_code ) do
-                data_event_code[ nm_ev ] = {
+                data.events [ nm_ev ] = {
                     input        = prop.input,
                     output       = prop.output,
                     controllable = prop.controllable
                 }
             end
-            file:write( letk.serialize( data_event_code ) )
+            for nm_cc, cc in pairs( self.custom_code ) do
+                data.custom_code[ nm_cc ] = cc
+            end
+            file:write( letk.serialize( data ) )
             file:close()
         end
     end
 end
 
-function CodeGen:load_project(  )
+function CodeGen:load_project()
      local dialog = gtk.FileChooserDialog.new(
         "Save AS", nil,gtk.FILE_CHOOSER_ACTION_SAVE,
         "gtk-cancel", gtk.RESPONSE_CANCEL,
@@ -278,9 +340,9 @@ function CodeGen:load_project(  )
     if response == gtk.RESPONSE_OK and names and names[1] then
         local file = io.open( names[1], 'r')
         if file then
-            local s               = file:read('*a')
-            local data_event_code = loadstring('return ' .. s)()
-            for nm_ev, prop in pairs( data_event_code ) do
+            local s    = file:read('*a')
+            local data = loadstring('return ' .. s)()
+            for nm_ev, prop in pairs( data.events ) do
                 if not self.event_code[ nm_ev ] then
                     self.event_code[ nm_ev ] = {
                         source = "Project",
@@ -289,6 +351,9 @@ function CodeGen:load_project(  )
                 self.event_code[ nm_ev ].input        = prop.input
                 self.event_code[ nm_ev ].output       = prop.output
                 self.event_code[ nm_ev ].controllable = self.event_code[ nm_ev ].controllable or prop.controllable
+            end
+            for nm_cc, cc in pairs( data.custom_code ) do
+                self.custom_code[ nm_cc ] = cc
             end
             self:update_treeviews()
         end
@@ -315,12 +380,15 @@ function CodeGen.generate( results, numresults, selector, self )
     for i, opt in ipairs( Devices[ self.device_id ].options ) do
         if opt.type == 'choice' then
             self[ opt.var ] = results[ i ][ 1 ]
+        elseif opt.type == 'checkbox' then
+            self[ opt.var ] = results[ i ]
         end
     end
 
     local Context = letk.Context.new()
     Context:push( self )
     Context:push( self.device )
+    Context:push( self.custom_code )
     local Template = letk.Template.new( './res/codegen/' .. self.device.template_file )
     local code = Template( Context )
 

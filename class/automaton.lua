@@ -32,7 +32,6 @@ Automaton.__TYPE = 'automaton'
 --                         Private utils                              --
 ------------------------------------------------------------------------
 function remove_states_fn( A, fn )
-
         local removed_states = A.states:iremove( fn )
         --remove in/out transition to/from bad states
         local transitions_to_remove = {}

@@ -3,7 +3,6 @@ local Devices = {}
 Devices['base'] = letk.Class( Object )
 
 local function init_options( self, t )
-    --for _, parent in ipairs( t.__parents ) do
     for i = #t.__parents, 1, -1 do
         local parent = t.__parents[i]
         init_options( self, parent )
@@ -40,7 +39,7 @@ end
 --********************************************************************--
 Devices['pic18f'] = letk.Class( Devices['base'] )
 
-Devices['pic18f'].template_file       = 'pic18f_serial.c'
+Devices['pic18f'].template_file       = 'pic18f.c'
 Devices['pic18f'].RANDOM_PSEUDOFIX    = 1
 Devices['pic18f'].RANDOM_PSEUDOAD     = 2
 Devices['pic18f'].RANDOM_AD           = 3
@@ -153,5 +152,37 @@ Devices['pic18f4550'].name         = 'PIC18F4550'
 Devices['pic18f4550'].include_ccs  = '18F4550.h'
 Devices['pic18f4550'].include_sdcc = {'pic18f4550.h'}
 Devices['pic18f4550'].fuses        = 'NOMCLR,EC_IO,H4,NOWDT,NOPROTECT,NOLVP,NODEBUG'
+
+--********************************************************************--
+--**                             Kilobot Atmega                     **--
+--********************************************************************--
+Devices['kilobotAtmega328'] = letk.Class( Devices['base'] )
+
+Devices['kilobotAtmega328'].template_file        = 'kilobotAtmega328V3.c'
+Devices['kilobotAtmega328'].RANDOM_PSEUDOFIX     = 1
+Devices['kilobotAtmega328'].RANDOM_PSEUDOVOLTAGE = 2
+Devices['kilobotAtmega328'].CHOICE_RANDOM        = 1
+Devices['kilobotAtmega328'].INPUT_CYCLE          = 1
+Devices['kilobotAtmega328'].INPUT_TIMER          = 2
+Devices['kilobotAtmega328'].AMR                  = 1
+
+Devices['kilobotAtmega328'].display      = true
+Devices['kilobotAtmega328'].name         = "Kilobot (Atmega328)"
+Devices['kilobotAtmega328'].custom_code  = {'code_global','code_init','code_message','code_clear','code_update'}
+
+Devices['kilobotAtmega328']:set_option('random_fn', {
+    caption = "Random Type",
+    type    = 'choice',
+    { Devices['kilobotAtmega328'].RANDOM_PSEUDOFIX      , "Seed Fixed"    },
+    { Devices['kilobotAtmega328'].RANDOM_PSEUDOVOLTAGE  , "Seed Voltage" },
+})
+Devices['kilobotAtmega328']:set_option('extra_numNeighbor', {
+    caption = "FW: Count Neighbors",
+    type    = 'checkbox',
+})
+Devices['kilobotAtmega328']:set_option('extra_rgb', {
+    caption = "FW: RGB",
+    type    = 'checkbox',
+})
 
 return Devices

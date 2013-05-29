@@ -1,4 +1,4 @@
-#!/usr/bin/lua
+#!/usr/bin/lua5.1
 --[[
     This file is part of nadzoru.
 
@@ -87,19 +87,17 @@ function Controller:build()
     -- ** Actions * --
 
     --File
-    self.gui:add_action('tab_close_current'   , "_Close Current Tab", "Close CurrentTab", nil, function()
+    self.gui:add_action('tab_close_current'   , "_Close Current Tab", "Close CurrentTab", 'gtk-close', function()
         self.gui:remove_current_tab()
     end)
 
     --Automata
-    self.gui:add_action('automata_new'        , "_New Automaton", "Create a New Automaton", nil, self.create_new_automaton, self)
-    self.gui:add_action('automata_open'       , "_Open Automaton", "Open a New Automaton", nil, self.open_automaton, self)
-    self.gui:add_action('automata_import_ides', "_Import IDES Automaton", "Import a IDES (.xmd) automaton file", nil, self.import_ides, self)
-    self.gui:add_action('automata_group_new'  , "_New Automata Group", "Create a New Automata Group", nil, self.automata_group_new, self)
-    self.gui:add_action('automata_group_load'  , "_Load Automata Group", "Load an Automata Group", nil, self.automata_group_load, self)
-    self.gui:add_action('automata_group_edit'  , "_Edit Automata Group", "Edit an Automata Group", nil, self.automata_group_edit, self)
-    self.gui:add_action('automaton_edit', "Edit Automaton", "Edit automaton struct", nil, self.automaton_edit, self)
-    self.gui:add_action('code_gen_dfa', "DFA - Code Generator", "Deterministic Finite Automata - Code Generate", nil, self.code_gen_dfa, self)
+    self.gui:add_action('automata_new'        , "_New", "Create a New Automaton", 'gtk-open', self.create_new_automaton, self)
+    self.gui:add_action('automata_open'       , "_Open", "Open a New Automaton", 'gtk-new', self.open_automaton, self)
+    self.gui:add_action('automata_import_ides', "_IDES", "Import a IDES (.xmd) automaton file", 'gtk-convert', self.import_ides, self)
+    self.gui:add_action('automaton_edit', "Edit Automaton", "Edit automaton struct", 'gtk-edit', self.automaton_edit, self)
+    self.gui:add_action('code_gen_dfa', "DFA - Code Generator", "Deterministic Finite Automata - Code Generate", 'gtk-execute', self.code_gen_dfa, self)
+    
     self.gui:add_action('operations_accessible', "_Accessible", "Calcule the accessible automata", nil, self.operations_accessible, self)
     self.gui:add_action('operations_coaccessible', "_Coaccessible", "Calcule the coaccessible automata", nil, self.operations_coaccessible, self)
     self.gui:add_action('operations_trim', "_Trim", "Calcule the trim automata", nil, self.operations_trim, self)
@@ -117,6 +115,9 @@ function Controller:build()
     --self.gui:add_action('simulateplant', "Automaton Simulate _Plant", "Simulate the Plant in a OpenGL render", nil, self.simulate_plant, self)
 
     --SCADA
+    self.gui:add_action('automata_group_new'  , "_New", "Create a New Automata Group", nil, self.automata_group_new, self)
+    self.gui:add_action('automata_group_load'  , "_Load ", "Load an Automata Group", nil, self.automata_group_load, self)
+    self.gui:add_action('automata_group_edit'  , "_Edit", "Edit an Automata Group", nil, self.automata_group_edit, self)
     self.gui:add_action('scada_plant_new'   , "_New SCADA Plant", "Create a New SCADA Plant", nil, self.create_new_scada_plant, self)
     self.gui:add_action('scada_plant_load'   , "_Load SCADA Plant", "Load a SCADA Plant", nil, self.load_scada_plant, self)
     self.gui:add_action('scada_plant_edit'  , "Edit SCADA Plant", "Edit a SCADA Plant", nil, self.scada_plant_edit, self)
@@ -132,29 +133,30 @@ function Controller:build()
     --Automaton Operations
     self.gui:append_menu_item('automata','automata_new')
     self.gui:append_menu_item('automata','automata_open')
-    self.gui:append_menu_item('automata','automata_import_ides')
-    self.gui:append_menu_separator('automata')
-    self.gui:append_menu_item('automata','automata_group_new')
-    self.gui:append_menu_item('automata','automata_group_load')
-    self.gui:append_menu_item('automata','automata_group_edit')
+    self.gui:append_sub_menu('automata','import', "Import")
+        self.gui:append_menu_item('import','automata_import_ides')
     self.gui:append_menu_separator('automata')
     self.gui:append_menu_item('automata','automaton_edit')
     self.gui:append_menu_item('automata','code_gen_dfa')
     self.gui:append_sub_menu('automata','operations', "Operations")
-    self.gui:append_menu_item('operations','operations_accessible')
-    self.gui:append_menu_item('operations','operations_coaccessible')
-    self.gui:append_menu_item('operations','operations_trim')
-    self.gui:append_menu_item('operations','operations_join_no_coaccessible')
-    self.gui:append_menu_item('operations','operations_selfloop')
-    self.gui:append_menu_item('operations','operations_synchronization')
-    self.gui:append_menu_item('operations','operations_product')
-    self.gui:append_menu_item('operations','operations_supc')
-    self.gui:append_menu_item('operations','operations_check_choice_problem')
-    self.gui:append_menu_item('operations','operations_check_avalanche_effect')
-    self.gui:append_menu_item('operations','operations_check_inexact_synchronization')
+        self.gui:append_menu_item('operations','operations_accessible')
+        self.gui:append_menu_item('operations','operations_coaccessible')
+        self.gui:append_menu_item('operations','operations_trim')
+        self.gui:append_menu_item('operations','operations_join_no_coaccessible')
+        self.gui:append_menu_item('operations','operations_selfloop')
+        self.gui:append_menu_item('operations','operations_synchronization')
+        self.gui:append_menu_item('operations','operations_product')
+        self.gui:append_menu_item('operations','operations_supc')
+        self.gui:append_menu_item('operations','operations_check_choice_problem')
+        self.gui:append_menu_item('operations','operations_check_avalanche_effect')
+        self.gui:append_menu_item('operations','operations_check_inexact_synchronization')
     self.gui:append_menu_item('automata', 'simulategraphviz')
 
     --SCADA
+    self.gui:append_sub_menu('scada_mes','automata_group', "Automata Group")
+        self.gui:append_menu_item('automata_group','automata_group_new')
+        self.gui:append_menu_item('automata_group','automata_group_load')
+        self.gui:append_menu_item('automata_group','automata_group_edit')
     self.gui:append_menu_item('scada_mes', 'scada_plant_new')
     self.gui:append_menu_item('scada_mes', 'scada_plant_load')
     self.gui:append_menu_item('scada_mes', 'scada_plant_edit')
@@ -356,7 +358,7 @@ function Controller.code_gen_dfa( data )
     local devices_list = {}
     for id, device in pairs(CodeGenDevices) do
         if device.display then
-            devices_list[#devices_list + 1] = { id , device.name }
+            devices_list[#devices_list + 1] = { id , device.name or id }
         end
     end
 
