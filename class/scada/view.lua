@@ -23,7 +23,7 @@ function ScadaView:build_gui()
             
     self.vbox:pack_start( self.toolbar, false, false, 0 )
     self.vbox:pack_start( self.scrolled, true, true, 0 )
-        self.scrolled:add_with_viewport(self.drawing_area)
+        self.scrolled:add(self.drawing_area)
             
     self.drawing_area:add_events( gdk.BUTTON_PRESS_MASK )
     self.drawing_area:connect("button_press_event", self.drawing_area_press, self )

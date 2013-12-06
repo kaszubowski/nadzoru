@@ -15,7 +15,7 @@ function PropertyEditor:build( label_w, value_w)
     self.value_w    = value_w or 200
     self.scrolled:set( 'width-request', self.label_w  + self.value_w + 5 )
 
-    self.scrolled:add_with_viewport( self.vbox )
+    self.scrolled:add( self.vbox )
     self.scrolled:set_shadow_type(gtk.SHADOW_ETCHED_IN)
     --~ self.scrolled:set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
     

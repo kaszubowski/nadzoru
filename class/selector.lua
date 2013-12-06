@@ -272,7 +272,7 @@ function Selector:add_file( options )
         local label_info = gtk.Label.new_with_mnemonic( options.text )
         local button     = gtk.Button.new( )
             local hbox_btn  = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
-                local btn_img   = gtk.Image.new_from_stock( 'gtk-file', gtk.ICON_SIZE_BUTTON )
+                local btn_img   = gtk.Image.new_from_icon_name( 'gtk-file', gtk.ICON_SIZE_BUTTON )
                 local btn_label = gtk.Label.new_with_mnemonic( "..." )
 
     local dialog = gtk.FileChooserDialog.new(

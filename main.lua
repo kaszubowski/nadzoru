@@ -15,8 +15,10 @@
     You should have received a copy of the GNU Lesser General Public License
     along with nadzoru.  If not, see <http://www.gnu.org/licenses/>.
 
-    Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
+    Copyright (C) 2011-2012 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
+    Copyright (C) 2013 Yuri Kaszubowski Lopes
 --]]
+
 --External Libs
 LibLoad = {}
 local function safeload( libs, id, required, msg )
@@ -77,92 +79,53 @@ end, Object )
 
 function Controller:build()
     -----------------------------------
-    --          MENU/ACTIONS         --
+    --          MENU         --
     -----------------------------------
 
-    -- ** Menu Itens ** --
-    self.gui:append_menu('automata', "_Automata")
-    self.gui:append_menu('scada_mes', "_SCADA/MES")
-
-    -- ** Actions * --
-
     --File
-    self.gui:add_action('tab_close_current'   , "_Close Current Tab", "Close CurrentTab", 'gtk-close', function()
+    self.gui:prepend_menu_separator('file')
+    self.gui:prepend_menu_item('file'   , "Close Current Tab", "Close CurrentTab", 'gtk-close', function()
         self.gui:remove_current_tab()
     end)
 
     --Automata
-    self.gui:add_action('automata_new'        , "_New", "Create a New Automaton", 'gtk-open', self.create_new_automaton, self)
-    self.gui:add_action('automata_open'       , "_Open", "Open a New Automaton", 'gtk-new', self.open_automaton, self)
-    self.gui:add_action('automata_import_ides', "_IDES", "Import a IDES (.xmd) automaton file", 'gtk-convert', self.import_ides, self)
-    self.gui:add_action('automaton_edit', "Edit Automaton", "Edit automaton struct", 'gtk-edit', self.automaton_edit, self)
-    self.gui:add_action('code_gen_dfa', "DFA - Code Generator", "Deterministic Finite Automata - Code Generate", 'gtk-execute', self.code_gen_dfa, self)
+    self.gui:append_menu('automata', "Automata")
     
-    self.gui:add_action('operations_accessible', "_Accessible", "Calcule the accessible automata", nil, self.operations_accessible, self)
-    self.gui:add_action('operations_coaccessible', "_Coaccessible", "Calcule the coaccessible automata", nil, self.operations_coaccessible, self)
-    self.gui:add_action('operations_trim', "_Trim", "Calcule the trim automata", nil, self.operations_trim, self)
-    self.gui:add_action('operations_join_no_coaccessible', "_Join Coaccessible", "Join Coaccessible States", nil, self.operations_join_no_coaccessible, self)
-    self.gui:add_action('operations_selfloop', "_SelfLoop", "Self Loop in a automaton with a set of other automata events", nil, self.operations_selfloop, self)
-    self.gui:add_action('operations_synchronization', "_Synchronization", "Synchronization of two or more automatons", nil, self.operations_synchronization, self)
-    self.gui:add_action('operations_product', "_Product", "Calculate the Product of two or more automatons", nil, self.operations_product, self)
-    self.gui:add_action('operations_supc', "_SupC", "Calculate the operations_supc", nil, self.operations_supc, self)
-    self.gui:add_action('operations_check_choice_problem', "_Check Choice Problem", "Check if states have the choice problem", nil, self.operations_check_choice_problem, self)
-    self.gui:add_action('operations_check_avalanche_effect', "_Check Avalanche Effect", "Check if states have the avalanche effect", nil, self.operations_check_avalanche_effect, self)
-    self.gui:add_action('operations_check_inexact_synchronization', "_Check Inexact Synchronization", "Check Inexact Synchronization", nil, self.operations_check_inexact_synchronization, self)
-
-    --Simulate
-    self.gui:add_action('simulategraphviz', "Automaton Simulate _Graphviz", "Simulate Automata in a Graphviz render", nil, self.simulate_graphviz, self)
-    --self.gui:add_action('simulateplant', "Automaton Simulate _Plant", "Simulate the Plant in a OpenGL render", nil, self.simulate_plant, self)
-
-    --SCADA
-    self.gui:add_action('automata_group_new'  , "_New", "Create a New Automata Group", nil, self.automata_group_new, self)
-    self.gui:add_action('automata_group_load'  , "_Load ", "Load an Automata Group", nil, self.automata_group_load, self)
-    self.gui:add_action('automata_group_edit'  , "_Edit", "Edit an Automata Group", nil, self.automata_group_edit, self)
-    self.gui:add_action('scada_plant_new'   , "_New SCADA Plant", "Create a New SCADA Plant", nil, self.create_new_scada_plant, self)
-    self.gui:add_action('scada_plant_load'   , "_Load SCADA Plant", "Load a SCADA Plant", nil, self.load_scada_plant, self)
-    self.gui:add_action('scada_plant_edit'  , "Edit SCADA Plant", "Edit a SCADA Plant", nil, self.scada_plant_edit, self)
-    self.gui:add_action('scada_plant_view'  , "SCADA View", "SCADA View Interface", nil, self.scada_plant_view, self)
-    self.gui:add_action('scada_mes_server', "SCADA/MES Server", "SCADA/MES Server", nil, self.scada_mes_server, self)
-
-    -- ** Menu-Action Link ** --
-    --File
-    self.gui:prepend_menu_separator('file')
-    self.gui:prepend_menu_item('file','tab_close_current')
-    
-
-    --Automaton Operations
-    self.gui:append_menu_item('automata','automata_new')
-    self.gui:append_menu_item('automata','automata_open')
+    self.gui:append_menu_item('automata', "New" , "Create a New Automaton", 'gtk-open', self.create_new_automaton, self)
+    self.gui:append_menu_item('automata', "Open", "Open a New Automaton"  , 'gtk-new' , self.open_automaton, self)
     self.gui:append_sub_menu('automata','import', "Import")
-        self.gui:append_menu_item('import','automata_import_ides')
+        self.gui:append_menu_item('import', "IDES", "Import a IDES (.xmd) automaton file", 'gtk-convert', self.import_ides, self)
     self.gui:append_menu_separator('automata')
-    self.gui:append_menu_item('automata','automaton_edit')
-    self.gui:append_menu_item('automata','code_gen_dfa')
+    self.gui:append_menu_item('automata', "Edit Automaton", "Edit automaton struct", 'gtk-edit', self.automaton_edit, self)
+    self.gui:append_menu_item('automata', "DFA - Code Generator", "Deterministic Finite Automata - Code Generate", 'gtk-execute', self.code_gen_dfa, self)
     self.gui:append_sub_menu('automata','operations', "Operations")
-        self.gui:append_menu_item('operations','operations_accessible')
-        self.gui:append_menu_item('operations','operations_coaccessible')
-        self.gui:append_menu_item('operations','operations_trim')
-        self.gui:append_menu_item('operations','operations_join_no_coaccessible')
-        self.gui:append_menu_item('operations','operations_selfloop')
-        self.gui:append_menu_item('operations','operations_synchronization')
-        self.gui:append_menu_item('operations','operations_product')
-        self.gui:append_menu_item('operations','operations_supc')
-        self.gui:append_menu_item('operations','operations_check_choice_problem')
-        self.gui:append_menu_item('operations','operations_check_avalanche_effect')
-        self.gui:append_menu_item('operations','operations_check_inexact_synchronization')
-    self.gui:append_menu_item('automata', 'simulategraphviz')
+        self.gui:append_menu_item('operations', "Accessible", "Calcule the accessible automata", nil, self.operations_accessible, self)
+        self.gui:append_menu_item('operations', "Coaccessible", "Calcule the coaccessible automata", nil, self.operations_coaccessible, self)
+        self.gui:append_menu_item('operations', "Trim", "Calcule the trim automata", nil, self.operations_trim, self)
+        self.gui:append_menu_item('operations', "Join Coaccessible", "Join Coaccessible States", nil, self.operations_join_no_coaccessible, self)
+        self.gui:append_menu_item('operations', "SelfLoop", "Self Loop in a automaton with a set of other automata events", nil, self.operations_selfloop, self)
+        self.gui:append_menu_item('operations', "Synchronization", "Synchronization of two or more automatons", nil, self.operations_synchronization, self)
+        self.gui:append_menu_item('operations', "Product", "Calculate the Product of two or more automatons", nil, self.operations_product, self)
+        self.gui:append_menu_item('operations', "SupC", "Calculate the operations_supc", nil, self.operations_supc, self)
+        self.gui:append_menu_item('operations', "Check Choice Problem", "Check if states have the choice problem", nil, self.operations_check_choice_problem, self)
+        self.gui:append_menu_item('operations', "Check Avalanche Effect", "Check if states have the avalanche effect", nil, self.operations_check_avalanche_effect, self)
+        self.gui:append_menu_item('operations', "Check Inexact Synchronization", "Check Inexact Synchronization", nil, self.operations_check_inexact_synchronization, self)
+    self.gui:append_menu_separator('automata')
+    self.gui:append_menu_item('automata', "Automaton Simulate _Graphviz", "Simulate Automata in a Graphviz render", nil, self.simulate_graphviz, self)
 
-    --SCADA
+    --SCADA/MES
+    self.gui:append_menu('scada_mes', "SCADA/MES")
+    
     self.gui:append_sub_menu('scada_mes','automata_group', "Automata Group")
-        self.gui:append_menu_item('automata_group','automata_group_new')
-        self.gui:append_menu_item('automata_group','automata_group_load')
-        self.gui:append_menu_item('automata_group','automata_group_edit')
-    self.gui:append_menu_item('scada_mes', 'scada_plant_new')
-    self.gui:append_menu_item('scada_mes', 'scada_plant_load')
-    self.gui:append_menu_item('scada_mes', 'scada_plant_edit')
-    self.gui:append_menu_item('scada_mes', 'scada_plant_view')
-    self.gui:append_menu_item('scada_mes', 'scada_mes_server')
-
+        self.gui:append_menu_item('automata_group', "New", "Create a New Automata Group", nil, self.automata_group_new, self)
+        self.gui:append_menu_item('automata_group', "Load ", "Load an Automata Group", nil, self.automata_group_load, self)
+        self.gui:append_menu_item('automata_group', "Edit", "Edit an Automata Group", nil, self.automata_group_edit, self)
+    self.gui:append_sub_menu('scada_mes','scada_plant', "SCADA Plant")
+        self.gui:append_menu_item('scada_plant', "New", "Create a New SCADA Plant", nil, self.create_new_scada_plant, self)
+        self.gui:append_menu_item('scada_plant', "Load", "Load a SCADA Plant", nil, self.load_scada_plant, self)
+        self.gui:append_menu_item('scada_plant', "Edit", "Edit a SCADA Plant", nil, self.scada_plant_edit, self)
+    self.gui:append_menu_item('scada_mes'       , "SCADA View", "SCADA View Interface", nil, self.scada_plant_view, self)
+    self.gui:append_menu_item('scada_mes'       , "SCADA/MES Server", "SCADA/MES Server", nil, self.scada_mes_server, self)
 end
 
 function Controller:exec()

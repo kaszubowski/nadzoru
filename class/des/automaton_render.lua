@@ -7,7 +7,7 @@ AutomatonRender = letk.Class( function( self, automaton )
     self.scrolled          = gtk.ScrolledWindow.new()
         self.drawing_area  = gtk.DrawingArea.new( )
 
-    self.scrolled:add_with_viewport(self.drawing_area)
+    self.scrolled:add(self.drawing_area)
 
     self.drawing_area:connect('draw', self.drawing_area_expose, self )
 

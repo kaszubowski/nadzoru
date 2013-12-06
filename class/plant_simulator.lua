@@ -10,7 +10,7 @@ PlantSimulator = letk.Class( function( self, gui, simulator )
 
     self.vbox:pack_start(self.hbox, true, true, 0)
         self.hbox:pack_start(self.scrolled, true, true, 0)
-            self.scrolled:add_with_viewport(self.drawing_area)
+            self.scrolled:add(self.drawing_area)
 
     gui:add_tab( self.vbox, 'PS ' .. (self.automaton:get('file_name') or '-x-' ) )
 

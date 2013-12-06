@@ -10,8 +10,8 @@ AutomatonEditor = letk.Class( function( self, gui, automaton )
             self.render, self.scrolled, self.drawing_area = AutomatonRender.new( automaton )
             self.vbox2             = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
                 self.treeview_events      = Treeview.new( true )
-                self.btn_add_event        = gtk.Button.new_from_stock( 'gtk-add' )
-                self.btn_delete_event     = gtk.Button.new_from_stock( 'gtk-delete' )
+                self.btn_add_event        = gtk.Button.new_from_icon_name ( 'gtk-add' )
+                self.btn_delete_event     = gtk.Button.new_from_icon_name ( 'gtk-delete' )
 
 
     --~ self.drawing_area:add_events( gdk.POINTER_MOTION_MASK ) --movimento do mouse

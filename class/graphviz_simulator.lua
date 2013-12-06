@@ -169,7 +169,7 @@ GraphvizSimulator = letk.Class( function( self, gui, automaton )
         self.cbx_info:set('active', 0)
     end
 
-    self.scrolled:add_with_viewport(self.drawing_area)
+    self.scrolled:add(self.drawing_area)
     self.sb_statejump:set_digits( 0 )
     self.sb_draw_deep:set_digits( 0 )
 

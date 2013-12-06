@@ -36,7 +36,7 @@ function ScadaEditor:build_gui()
     self.vbox:pack_start( self.toolbar, false, false, 0 )
     self.vbox:pack_start( self.hbox, true, true, 0 )
         self.hbox:pack_start( self.scrolled, true, true, 0 )
-            self.scrolled:add_with_viewport(self.drawing_area)
+            self.scrolled:add(self.drawing_area)
         self.hbox:pack_start( self.properties:build( 128, 200 ), false, false, 0 )
     
     self.scrolled:set_shadow_type(gtk.SHADOW_ETCHED_IN)

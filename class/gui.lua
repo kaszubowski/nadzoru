@@ -14,8 +14,10 @@
     You should have received a copy of the GNU Lesser General Public License
     along with nadzoru.  If not, see <http://www.gnu.org/licenses/>.
 
-    Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
+    Copyright (C) 2011-2012 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
+    Copyright (C) 2013 Yuri Kaszubowski Lopes
 --]]
+
 Gui = letk.Class( function( self )
     self.note         = gtk.Notebook.new()
     self.tab          = letk.List.new()
@@ -24,34 +26,19 @@ Gui = letk.Class( function( self )
     self.vbox         = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
 
     self.menubar      = gtk.MenuBar.new()
-    --self.toolbar      = gtk.Toolbar.new()
-    --self.hbox         = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
-    --self.statusbar    = gtk.Statusbar.new()
 
-    --self.context      = self.statusbar:get_context_id("default")
-    --self.statusbar:push(self.context, "Statusbar message")
-
-    self.actions   = {}
+    --~ self.actions   = {}
     self.menu      = {}
     self.menu_item = {}
 
-    --Actions
-    self:add_action('quit', nil, "Quit nadzoru", 'gtk-quit', gtk.main_quit )
-    self:add_action('remove_current_tab', "Remove Tab", "Remove The Active Tab", 'gtk-delete', function( data ) data.gui:remove_current_tab() end, self )
-
-    --ToolBar
-    --~ self:add_toolbar('quit')
-    --~ self:add_toolbar('remove_current_tab')
-
     --Menu
     self:append_menu('file', "_File")
-    self:append_menu_item('file', 'quit')
+    self:append_menu_item('file', "Quit nadzoru", "Quit nadzoru", 'gtk-quit', gtk.main_quit )
+    self:append_menu_item('file', "Remove Tab", "Remove The Active Tab", 'gtk-delete', function( data ) data.gui:remove_current_tab() end, self )
 
     --** Packing it! (vbox) **--
     self.vbox:pack_start(self.menubar, false, false, 0)
-    --self.vbox:pack_start(self.toolbar, false, false, 0)
     self.vbox:pack_start(self.note   , true, true, 0)
-    --self.vbox:pack_start(self.statusbar, false, false, 0)
     self.window:add(self.vbox)
 
     --** window defines **--
@@ -66,11 +53,6 @@ end, Object )
 
 function Gui:run()
     self.window:show_all()
-end
-
-function Gui:add_action(name, caption, hint, icon, callback, param)
-    self.actions[name] = gtk.Action.new( name, caption, hint, icon)
-    self.actions[name]:connect("activate", callback, { gui = self, param = param })
 end
 
 function Gui:append_menu( name, caption )
@@ -136,30 +118,15 @@ function Gui:remove_menu( menu )
     self.menu_item[name] = nil
 end
 
-function Gui:append_menu_item( menu_name, action_name, ...  )
+function Gui:append_menu_item( menu_name, caption, hint, icon, callback, param, ... )
     local menu_item
-
-    if type( action_name ) == 'string' then
-        menu_item = self.actions[action_name]:create_menu_item()
-    elseif type( action_name ) == 'table' then
-        if action_name.type and action_name.type == 'check' then
-            menu_item = gtk.CheckMenuItem.new_with_label( action_name.caption or '?' )
-            menu_item:connect("activate", action_name.fn, { gui = self, param = action_name.param })
-        elseif action_name.type and action_name.type == 'radio' then
-            local ra = gtk.RadioAction.new( '', action_name.caption or '?' )
-            if self.menu_item[menu_name].radioaction then
-                ra:set( 'group', self.menu_item[menu_name].radioaction )
-            end
-            self.menu_item[menu_name].radioaction = ra
-            menu_item = ra:create_menu_item()
-            ra:connect("toggled", action_name.fn, { gui = self, param = action_name.param })
-        else
-            menu_item = gtk.MenuItem.new_with_label( action_name.caption or '?' )
-            menu_item:connect("activate", action_name.fn, { gui = self, param = action_name.param })
-        end
+    if not icon then
+        menu_item = gtk.MenuItem.new_with_label( caption )
     else
-        return
+        menu_item = gtk.MenuItem.new_with_label( caption ) --TODO
     end
+    menu_item:connect('activate', callback, { gui = self, param = param } )
+    
     if self.menu[menu_name] then
         self.menu[menu_name]:append ( menu_item )
         self.menu_item[menu_name][ #self.menu_item[menu_name] +1] = menu_item
@@ -172,31 +139,20 @@ function Gui:append_menu_item( menu_name, action_name, ...  )
     return menu_item
 end
 
-function Gui:prepend_menu_item( menu_name, action_name, ...  )
+function Gui:prepend_menu_item( menu_name, caption, hint, icon, callback, param, ... )
     local menu_item
-
-    if type( action_name ) == 'string' then
-        menu_item = self.actions[action_name]:create_menu_item()
-    elseif type( action_name ) == 'table' then
-        if action_name.type and action_name.type == 'check' then
-            menu_item = gtk.CheckMenuItem.new_with_label( action_name.caption or '?' )
-        elseif action_name.type and action_name.type == 'radio' then
-            local ra = gtk.RadioAction.new( '', "Automaton" )
-            if self.menu_item[menu_name].radioaction then
-                ra:set( 'group', self.menu_item[menu_name].radioaction )
-            end
-            self.menu_item[menu_name].radioaction = ra
-            menu_item = ra:create_menu_item()
-        else
-            menu_item = gtk.MenuItem.new_with_label( action_name.caption or '?' )
-        end
-        menu_item:connect("activate", action_name.fn, { gui = self, param = action_name.param })
+    if not icon then
+        menu_item = gtk.MenuItem.new_with_label( caption )
     else
-        return
+        menu_item = gtk.MenuItem.new_with_label( caption ) --TODO
     end
-    self.menu[menu_name]:prepend ( menu_item )
-    self.menu_item[menu_name][ #self.menu_item[menu_name] +1] = menu_item
-    self.window:show_all()
+    menu_item:connect('activate', callback, { gui = self, param = param } )
+    
+    if self.menu[menu_name] then
+        self.menu[menu_name]:prepend ( menu_item )
+        self.menu_item[menu_name][ #self.menu_item[menu_name] +1] = menu_item
+        self.window:show_all()
+    end
     if (...) then
         return menu_item, self:prepend_menu_item( menu_name, ... )
     end
@@ -218,14 +174,6 @@ function Gui:remove_menu_item( menu_name, menu_item )
         self.menu_item[menu_name][pos] = self.menu_item[menu_name][last]
     end
 end
-
---~ function Gui:add_toolbar( action_name, ... )
-    --~ self.toolbar:add( self.actions[action_name]:create_tool_item() )
-    --~ self.window:show_all()
-    --~ if (...) then
-        --~ self:add_toolbar( ... )
-    --~ end
---~ end
 
 function Gui:add_tab( widget, title, destroy_callback, param )
     local note =  self.note:insert_page( widget, gtk.Label.new(title), -1)
