@@ -120,9 +120,9 @@ end
 local function color_callback( data )
     if not data.self.enable_callback then return end
     local ok
-    local color = gdk.color_parse( '#ffffff' )
-    data.row.color:get_color( color )
-    local color_str = gdk.color_to_string(color)
+    
+    local color = data.row.color:get( 'color' )
+    local color_str = gdk.Color.to_string( color )
 
     if data.row.callback then
         ok = data.row.callback( data.row.param, data.row.value, color_str )

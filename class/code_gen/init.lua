@@ -6,7 +6,7 @@ CodeGen = letk.Class( function( self, options )
     options             = options or {}
     self.automata       = options.automata
     self.device_id      = options.device_id
-    self.file_name      = options.file_name
+    self.path_name      = options.path_name
     self.event_map      = options.event_map
     self.event_map_file = options.event_map_file
     self.device         = Devices[ self.device_id ].new()
@@ -92,21 +92,23 @@ function CodeGen:build_gui( gui )
         success_fn_param = self,
     }, true)
 
-    for _, opt in ipairs( Devices[ self.device_id ].options ) do
-        if opt.type == 'choice' then
-            self.gui.selector:add_combobox{
-                list = letk.List.new_from_table( opt ),
-                text_fn  = function( a )
-                    return a[2]
-                end,
-                text = opt.caption,
-            }
-        elseif opt.type == 'checkbox' then
-            self.gui.selector:add_checkbox{
-                text = opt.caption,
-            }
-        elseif opt.type == 'spin' then
+    if Devices[ self.device_id ].options then
+        for _, opt in ipairs( Devices[ self.device_id ].options ) do
+            if opt.type == 'choice' then
+                self.gui.selector:add_combobox{
+                    list = letk.List.new_from_table( opt ),
+                    text_fn  = function( a )
+                        return a[2]
+                    end,
+                    text = opt.caption,
+                }
+            elseif opt.type == 'checkbox' then
+                self.gui.selector:add_checkbox{
+                    text = opt.caption,
+                }
+            elseif opt.type == 'spin' then
 
+            end
         end
     end
     self.gui.hbox:pack_start( self.gui.selector_vbox, false, false, 0 )
@@ -377,24 +379,35 @@ function CodeGen:generate_event_map()
 end
 
 function CodeGen.generate( results, numresults, selector, self )
-    for i, opt in ipairs( Devices[ self.device_id ].options ) do
-        if opt.type == 'choice' then
-            self[ opt.var ] = results[ i ][ 1 ]
-        elseif opt.type == 'checkbox' then
-            self[ opt.var ] = results[ i ]
+    -- Context --
+    if Devices[ self.device_id ].options then
+        for i, opt in ipairs( Devices[ self.device_id ].options ) do
+            if opt.type == 'choice' then
+                self[ opt.var ] = results[ i ][ 1 ]
+            elseif opt.type == 'checkbox' then
+                self[ opt.var ] = results[ i ]
+            end
         end
     end
-
     local Context = letk.Context.new()
     Context:push( self )
     Context:push( self.device )
-    Context:push( self.custom_code )
-    local Template = letk.Template.new( './res/codegen/' .. self.device.template_file )
-    local code = Template( Context )
+    if self.custom_code then
+        Context:push( self.custom_code )
+    end
+    
+    -- Template --
+    if self.device.template_file then
+        local tmpls = type( self.device.template_file ) == 'table' and self.device.template_file or { self.device.template_file }
+        for _, tmpl in ipairs( tmpls ) do
+            local Template = letk.Template.new( './res/codegen/templates/' .. tmpl )
+            local code = Template( Context )
 
-    local file = io.open( self.file_name, "w")
-    file:write( code )
-    file:close()
+            local file = io.open( self.path_name .. '/'  .. tmpl, "w")
+            file:write( code )
+            file:close()
+        end
+    end
     
     self:generate_event_map()
 end

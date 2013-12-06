@@ -368,16 +368,16 @@ function Controller.code_gen_dfa( data )
         title = 'nadzoru',
         success_fn = function( results, numresult )
             local automata       = results[1]
-            local file_name      = results[2]
+            local path_name      = results[2]
             local device_id      = results[3] and results[3][1]
             local event_map      = results[4]
             local event_map_file = results[5]
-            if #automata > 0 and #file_name > 0 and device_id then
+            if #automata > 0 and #path_name > 0 and device_id then
                 local lautomata = letk.List.new_from_table( automata )
                 local cg = CodeGen.new{ 
                     automata       = lautomata, 
                     device_id      = device_id, 
-                    file_name      = file_name,
+                    path_name      = path_name,
                     event_map      = event_map,
                     event_map_file = event_map_file
                 }
@@ -398,9 +398,9 @@ function Controller.code_gen_dfa( data )
         text = "Automaton:"
     }
     :add_file{
-        text = "Code File:",
-        filter = 'c',
-        filter_name = "C Code",
+        text   = "Code Folder:",
+        title = "Code Folder",
+        method = gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER,
     }
     :add_combobox{
         list = letk.List.new_from_table( devices_list ),
@@ -414,6 +414,7 @@ function Controller.code_gen_dfa( data )
     }
     :add_file{
         text = "Event Map File:",
+        title = "Event Map File",
         filter = 'nem',
         filter_name = "Nadzoru Event Map",
     }

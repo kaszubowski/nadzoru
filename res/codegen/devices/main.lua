@@ -34,7 +34,7 @@ Devices['base'].set_option = function( self, name, option )
     return self
 end
 
---********************************************************************--
+--*********************************++*********************************--
 --**                             PIC18F                             **--
 --********************************************************************--
 Devices['pic18f'] = letk.Class( Devices['base'] )
@@ -153,12 +153,12 @@ Devices['pic18f4550'].include_ccs  = '18F4550.h'
 Devices['pic18f4550'].include_sdcc = {'pic18f4550.h'}
 Devices['pic18f4550'].fuses        = 'NOMCLR,EC_IO,H4,NOWDT,NOPROTECT,NOLVP,NODEBUG'
 
---********************************************************************--
---**                             Kilobot Atmega                     **--
+--*********************************++*********************************--
+--**                         Kilobot Atmega                         **--
 --********************************************************************--
 Devices['kilobotAtmega328'] = letk.Class( Devices['base'] )
 
-Devices['kilobotAtmega328'].template_file        = 'kilobotAtmega328V3.c'
+Devices['kilobotAtmega328'].template_file        = 'kilobotAtmega328.c'
 Devices['kilobotAtmega328'].RANDOM_PSEUDOFIX     = 1
 Devices['kilobotAtmega328'].RANDOM_PSEUDOVOLTAGE = 2
 Devices['kilobotAtmega328'].CHOICE_RANDOM        = 1
@@ -184,5 +184,16 @@ Devices['kilobotAtmega328']:set_option('extra_rgb', {
     caption = "FW: RGB",
     type    = 'checkbox',
 })
+
+--*********************************++*********************************--
+--**                           GenericMic                           **--
+--********************************************************************--
+Devices['GenericMic'] = letk.Class( Devices['base'] )
+
+Devices['GenericMic'].template_file = { 'generic_mic.h', 'generic_mic.c'}
+
+Devices['GenericMic'].display      = true
+Devices['GenericMic'].name         = "Generic Mic"
+--Devices['GenericMic'].custom_code  = {'code_global','code_init','code_clear','code_update'}
 
 return Devices

@@ -263,6 +263,8 @@ end
 function Selector:add_file( options )
      options = table.complete( options or {}, {
         text        = 'input',
+        method      = gtk.FILE_CHOOSER_ACTION_SAVE,
+        title       = "...",
         filter      = nil,
         filter_name = nil,
     })
@@ -274,15 +276,19 @@ function Selector:add_file( options )
                 local btn_label = gtk.Label.new_with_mnemonic( "..." )
 
     local dialog = gtk.FileChooserDialog.new(
-        "Create the file", self.window,gtk.FILE_CHOOSER_ACTION_SAVE,
+        options.title, 
+        self.window,
+        options.method,
         'gtk-cancel', gtk.RESPONSE_CANCEL,
         'gtk-ok', gtk.RESPONSE_OK
     )
-    if options.filter then
+    
+    local useFilter = options.filter and ( options.method == gtk.FILE_CHOOSER_ACTION_OPEN or options.method == gtk.FILE_CHOOSER_ACTION_SAVE ) 
+    if useFilter then
         local filter = gtk.FileFilter.new()
         filter:add_pattern('*.' .. options.filter)
         filter:set_name( options.filter_name or options.filter )
-        dialog:add_filter(filter)
+        dialog:add_filter( filter )
     end
     local file = ''
     if not self.single_box then
@@ -302,7 +308,7 @@ function Selector:add_file( options )
         dialog:hide()
         local names = dialog:get_filenames()
         if response == gtk.RESPONSE_OK and names and names[1] then
-            if options.filter then
+            if useFilter then
                 if not names[1]:match( '%.' .. options.filter .. '$' ) then
                     names[1] = names[1] .. '.' .. options.filter
                 end
