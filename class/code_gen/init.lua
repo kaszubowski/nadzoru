@@ -67,6 +67,14 @@ end
 ------------------------------------------------------------------------
 --                               GUI                                  --
 ------------------------------------------------------------------------
+local function eval_option( opt, self )
+    if type( opt ) == 'function' then
+        return opt( self )
+    else
+        return opt
+    end
+end
+
 function CodeGen:build_gui( gui )
     self.gui              = {}
     self.gui.vbox         = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
@@ -91,12 +99,24 @@ function CodeGen:build_gui( gui )
         success_fn       = self.generate,
         success_fn_param = self,
     }, true)
+    
+    --DEBUG start
+    for k_dev, dev in pairs( Devices ) do
+        print( k_dev, dev )
+        if Devices[ self.device_id ].options then
+            print("    Options:",dev.options)
+            for num_opt, opt in ipairs( dev.options ) do
+                print("    ", num_opt, opt.var, opt.caption, opt.type)
+            end
+        end
+    end
+    --DEBUG end
 
     if Devices[ self.device_id ].options then
         for _, opt in ipairs( Devices[ self.device_id ].options ) do
             if opt.type == 'choice' then
                 self.gui.selector:add_combobox{
-                    list = letk.List.new_from_table( opt ),
+                    list     = letk.List.new_from_table( opt ),
                     text_fn  = function( a )
                         return a[2]
                     end,
@@ -107,7 +127,19 @@ function CodeGen:build_gui( gui )
                     text = opt.caption,
                 }
             elseif opt.type == 'spin' then
-
+                self.gui.selector:add_spin{
+                    text = opt.caption,
+                    min_value = eval_option( opt.min_value, self ),
+                    max_value = eval_option( opt.max_value, self ),
+                    step      = eval_option( opt.step, self ),
+                    digits    = eval_option( opt.digits, self ),
+                }
+            elseif opt.type == 'file' then
+                self.gui.selector:add_file{
+                    text   = opt.caption,
+                    title  = opt.title,
+                    method = opt.method,
+                }
             end
         end
     end
@@ -380,16 +412,21 @@ end
 
 function CodeGen.generate( results, numresults, selector, self )
     -- Context --
+    local options = {}
     if Devices[ self.device_id ].options then
         for i, opt in ipairs( Devices[ self.device_id ].options ) do
             if opt.type == 'choice' then
-                self[ opt.var ] = results[ i ][ 1 ]
-            elseif opt.type == 'checkbox' then
-                self[ opt.var ] = results[ i ]
+                --~ self[ opt.var ] = results[ i ][ 1 ]
+                options[ opt.var ] = results[ i ][ 1 ]
+            --~ elseif opt.type == 'checkbox' then
+            else
+                --~ self[ opt.var ] = results[ i ]
+                options[ opt.var ] = results[ i ]
             end
         end
     end
     local Context = letk.Context.new()
+    Context:push( options )
     Context:push( self )
     Context:push( self.device )
     if self.custom_code then
@@ -403,7 +440,7 @@ function CodeGen.generate( results, numresults, selector, self )
             local Template = letk.Template.new( './res/codegen/templates/' .. tmpl )
             local code = Template( Context )
 
-            local file = io.open( self.path_name .. '/'  .. tmpl, "w")
+            local file = io.open( options.pathname .. '/'  .. tmpl, "w")
             file:write( code )
             file:close()
         end

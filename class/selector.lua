@@ -327,7 +327,35 @@ function Selector:add_file( options )
 end
 
 function Selector:add_spin( options )
+     options = table.complete( options or {}, {
+        text        = 'input',
+        min_value = 0,
+        max_value = 100,
+        step      = 1,
+        digits    = 0,
+    })
+   
+   local vbox_spin      = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
+        local label_spin = gtk.Label.new_with_mnemonic( options.text )
+        local spinbutton = gtk.SpinButton.new_with_range( options.min_value, options.max_value, options.step )
+   
+    spinbutton:set_digits( options.digits )
+    
+    if not self.single_box then
+        self.single_box = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
+        self.hbox_main:pack_start( self.single_box , true, true, 0 )
+        self.num_columns = self.num_columns + 1
+    end
+    
+    self.single_box:pack_start( vbox_spin , false, false, 0 )
+        vbox_spin:pack_start( label_spin , false, false, 0 )
+        vbox_spin:pack_start( spinbutton , false, false, 0 )
+    
+    self.result[#self.result + 1] = function()
+        return spinbutton:get_value()
+    end
 
+    return self
 end
 
 function Selector:run()

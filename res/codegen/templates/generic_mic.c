@@ -84,9 +84,9 @@ unsigned char get_active_controllable_events( unsigned char *events ){
     /* Check disabled events for all supervisors */
     for(i=0; i<NUM_SUPERVISORS; i++){
         unsigned long int position;
-        unsigned char ev_disable[23], k;
+        unsigned char ev_disable[NUM_EVENTS], k;
         unsigned char num_transitions;
-        for(k=0; k<23;k++){
+        for(k=0; k<NUM_EVENTS;k++){
          ev_disable[k] = 1;
         }
         for( j=0; j<NUM_EVENTS; j++ ){

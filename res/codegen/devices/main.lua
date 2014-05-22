@@ -2,27 +2,34 @@ local Devices = {}
 
 Devices['base'] = letk.Class( Object )
 
-local function init_options( self, t )
-    for i = #t.__parents, 1, -1 do
-        local parent = t.__parents[i]
-        init_options( self, parent )
+--~ local function init_options( self, t )
+    --~ for i = #t.__parents, 1, -1 do
+        --~ local parent = t.__parents[i]
+        --~ --init_options( self, parent ) --just copy parent
+        --~ if parent.options then
+            --~ for i, option in ipairs( parent.options ) do
+                --~ self:set_option( option.var, option )
+            --~ end
+        --~ end
+    --~ end
+--~ end
+
+Devices['base'].init_options = function ( self )
+    self.options = {}
+    for i = #self.__parents, 1, -1 do
+        local parent = self.__parents[i]
         if parent.options then
             for i, option in ipairs( parent.options ) do
                 self:set_option( option.var, option )
             end
         end
     end
-end
-
-Devices['base'].init_options = function ( self )
-    self.options = self.options or {}
-    init_options( self, self )
 
     return self
 end
 
 Devices['base'].set_option = function( self, name, option )
-    self.options                      = self.options or {}
+    assert( rawget( self, 'options' ), "Device must have its own options table --> make sure that you called init_options()" )
     if not self.options[ name ] then
         self.options[ #self.options + 1 ]    = option
         self.options[ name ]                 = #self.options
@@ -34,10 +41,18 @@ Devices['base'].set_option = function( self, name, option )
     return self
 end
 
+Devices['base']:init_options()
+Devices['base']:set_option('pathname', {
+    caption = "Path",
+    type    = 'file',
+    method  = gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER,
+    title   = "Output path",
+})
+
 --*********************************++*********************************--
 --**                             PIC18F                             **--
 --********************************************************************--
-Devices['pic18f'] = letk.Class( Devices['base'] )
+Devices['pic18f'] = letk.Class( Devices['base'] ):init_options()
 
 Devices['pic18f'].template_file       = 'pic18f.c'
 Devices['pic18f'].RANDOM_PSEUDOFIX    = 1
@@ -156,7 +171,7 @@ Devices['pic18f4550'].fuses        = 'NOMCLR,EC_IO,H4,NOWDT,NOPROTECT,NOLVP,NODE
 --*********************************++*********************************--
 --**                         Kilobot Atmega                         **--
 --********************************************************************--
-Devices['kilobotAtmega328'] = letk.Class( Devices['base'] )
+Devices['kilobotAtmega328'] = letk.Class( Devices['base'] ):init_options()
 
 Devices['kilobotAtmega328'].template_file        = 'kilobotAtmega328.c'
 Devices['kilobotAtmega328'].RANDOM_PSEUDOFIX     = 1
@@ -188,12 +203,35 @@ Devices['kilobotAtmega328']:set_option('extra_rgb', {
 --*********************************++*********************************--
 --**                           GenericMic                           **--
 --********************************************************************--
-Devices['GenericMic'] = letk.Class( Devices['base'] )
+Devices['GenericMic'] = letk.Class( Devices['base'] ):init_options()
 
 Devices['GenericMic'].template_file = { 'generic_mic.h', 'generic_mic.c'}
 
 Devices['GenericMic'].display      = true
-Devices['GenericMic'].name         = "Generic Mic"
---Devices['GenericMic'].custom_code  = {'code_global','code_init','code_clear','code_update'}
+Devices['GenericMic'].name         = "Generic Mic."
+
+
+--*********************************++*********************************--
+--**                     GenericMic Distributed                     **--
+--********************************************************************--
+Devices['GenericMicDistributed'] = letk.Class( Devices['base'] ):init_options()
+
+Devices['GenericMicDistributed'].template_file = { 'generic_mic_distributed.h', 'generic_mic_distributed.c'}
+
+Devices['GenericMicDistributed'].display      = true
+Devices['GenericMicDistributed'].name         = "Generic Mic. Distributed"
+
+Devices['GenericMicDistributed']:set_option('sup_start', {
+    caption   = "Sup. Range start",
+    type      = 'spin',
+    min_value = 0,
+    max_value = function( codeGen ) return codeGen.automata:len()-1 end,
+})
+Devices['GenericMicDistributed']:set_option('sup_end', {
+    caption = "Sup. Range end",
+    type    = 'spin',
+    min_value = 0,
+    max_value = function( codeGen ) return codeGen.automata:len()-1 end,
+})
 
 return Devices

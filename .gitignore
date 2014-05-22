@@ -10,3 +10,4 @@
 *.log
 *.vim
 *.~*
+res/codegen/libs/*
