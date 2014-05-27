@@ -1,0 +1,34 @@
+1.) Install: 
+
+    1.1 From your package manager (Pacman, apt-get, ...)
+        gtk 3.10+
+        lua 5.1
+        luarocks (for lua 5.1)
+
+    1.2 From source (git repositories)
+        letk ( https://gitorious.org/letk )
+            require lpeg from luarocks
+        lgob ( https://bitbucket.org/lucashnegri/lgob )
+
+    1.3 From luarocks
+
+        luarocks-5.1 install <PACKAGE>
+
+        lpeg
+        lxp (Optional to load IDES3 files)
+        redis (Optional to MES/SCADA client-server)
+        
+2.) Functions:
+
+2.1) Load IDES3 files: stable
+
+2.2) Edit/visualise Automata: stable
+
+2.3) SCT template based code generator: stable/in development (templates may have specific states)
+    2.3.1) PICs: stable
+    2.3.2) Generic: stable
+    2.3.3) Distributed Generic: in development
+
+2.4) Automata operations: unstable/in development
+
+2.5) SCADA plant editor/MES: stable/in development
