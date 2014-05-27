@@ -21,11 +21,15 @@
 
 --External Libs
 LibLoad = {}
-local function safeload( libs, id, required, msg )
+local function safeload( libs, id, required, msg, var )
     local function safeload_call()
         libs = type(libs) == 'table' and libs or { libs }
         for _, lib in ipairs( libs ) do
-            require( lib )
+            if var then
+                _G[ var ] = require( lib )
+            else
+                require( lib )
+            end
         end
     end
     LibLoad[id], LibLoad[id .. '_info'] = pcall( safeload_call )
@@ -43,7 +47,7 @@ end
 
 safeload('letk', 'letk', true, [[You need install 'letk' to run this software]])
 safeload({'lgob.gdk','lgob.gtk','lgob.cairo','lgob.gtksourceview'}, 'gtk', true, [[You need install 'lgob' to run this software, you can found 'lgob' at http://oproj.tuxfamily.org]])
-safeload('lxp', 'lxp', false, [[no library 'lxp' to manipulate xml format]])
+safeload('lxp', 'lxp', false, [[no library 'lxp' to manipulate xml format]], 'lxp')
 safeload('redis', 'redis', false, [[no library 'redis' (redis-lua)]])
 
 --Utils
