@@ -8,5 +8,6 @@
 {% end %}
 
 void SCT_init();
+void SCT_reset();
 void SCT_add_callback( unsigned char event, void (*clbk)( void* ), unsigned char (*ci)( void* ), void* data );
 void SCT_run_step();

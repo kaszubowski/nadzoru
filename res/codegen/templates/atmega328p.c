@@ -1,4 +1,5 @@
 #include "generic_mic.h"
+#include <avr/pgmspace.h>
 
 {% with
     var_data         = {},
@@ -19,12 +20,11 @@
             {% end %}
         {% end %}
     {% end %}
-    const unsigned char     ev_controllable[{{ #events }}] = { {% for k_event, event in ipairs(events) %}{{ event.controllable and 1 or 0 }}{% notlast %},{% end %} };
-    const unsigned char     sup_events[{{ automata:len() }}][{{ #events }}] = { {% for k_automaton, automaton in automata:ipairs() %}{ {% for i = 1, #events %}{{ sup_events[k_automaton][i] and 1 or 0 }}{% notlast %},{% end %} }{% notlast %},{% end %} };
-    const unsigned long int       sup_init_state[{{ automata:len() }}]  = { {% for k_automaton, automaton in automata:ipairs() %}{{automaton.initial - 1}}{% notlast %},{% end %} };
+    unsigned char     ev_controllable[{{ #events }}] = { {% for k_event, event in ipairs(events) %}{{ event.controllable and 1 or 0 }}{% notlast %},{% end %} };
+    unsigned char     sup_events[{{ automata:len() }}][{{ #events }}] = { {% for k_automaton, automaton in automata:ipairs() %}{ {% for i = 1, #events %}{{ sup_events[k_automaton][i] and 1 or 0 }}{% notlast %},{% end %} }{% notlast %},{% end %} };
     unsigned long int       sup_current_state[{{ automata:len() }}]  = { {% for k_automaton, automaton in automata:ipairs() %}{{automaton.initial - 1}}{% notlast %},{% end %} };
-    const unsigned long int sup_data_pos[{{ automata:len() }}] = { {{ table.concat(var_data_pos, ',') }} };
-    const unsigned char     sup_data[ {{ #var_data }} ] = { {{ table.concat( var_data,',' ) }} };
+    unsigned long int sup_data_pos[{{ automata:len() }}] = { {{ table.concat(var_data_pos, ',') }} };
+    unsigned char     sup_data[ {{ #var_data }} ] PROGMEM = { {{ table.concat( var_data,',' ) }} };
 {% endwith %}
 
 typedef struct Scallback {
@@ -41,7 +41,7 @@ unsigned long int get_state_position( unsigned char supervisor, unsigned long in
     unsigned long int en;
     position = sup_data_pos[ supervisor ];
     for(s=0; s<state; s++){
-        en       = sup_data[position];
+        en       =  pgm_read_byte(&(sup_data[position]));
         position += en * 3 + 1;
     }
     return position;
@@ -55,11 +55,11 @@ void make_transition( unsigned char event ){
     for(i=0; i<NUM_SUPERVISORS; i++){
         if(sup_events[i][event]){
             position        = get_state_position(i, sup_current_state[i]);
-            num_transitions = sup_data[position];
+            num_transitions = pgm_read_byte( &(sup_data[position] ));
             position++;
             while(num_transitions--){
-                if(sup_data[position] == event){
-                    sup_current_state[i] = (sup_data[position + 1] * 256) + (sup_data[position + 2]);
+                if( pgm_read_byte(&(sup_data[position])) == event){
+                    sup_current_state[i] = ( pgm_read_byte(&(sup_data[position + 1])) * 256) + ( pgm_read_byte(&(sup_data[position + 2])) );
                     break;
                 }
                 position+=3;
@@ -99,10 +99,10 @@ unsigned char get_active_controllable_events( unsigned char *events ){
         }
         /*if supervisor have a transition with the event in the current state, it can't disable the event */
         position = get_state_position(i, sup_current_state[i]);
-        num_transitions = sup_data[position];
+        num_transitions = pgm_read_byte(&(sup_data[position]));
         position++;
         while(num_transitions--){
-            ev_disable[ sup_data[position] ] = 0;
+            ev_disable[ pgm_read_byte(&(sup_data[position])) ] = 0;
             position += 3;
         }
 
@@ -207,7 +207,7 @@ void SCT_init(){
 void SCT_reset(){
     int i;
     for(i=0; i<NUM_SUPERVISORS; i++){
-        sup_current_state[i] = sup_init_state[i];
+        sup_current_state[i] = 0;
     }
     for(i=0; i<NUM_EVENTS; i++){
         last_events[i] = 0;

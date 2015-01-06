@@ -67,7 +67,7 @@ require('class.graphviz_simulator')
 require('class.plant_simulator')
 require('class.des.automaton_render')
 require('class.des.automaton_editor')
-require('class.scada.init')
+--~ require('class.scada.init')
 
 local CodeGenDevices = require 'res.codegen.devices.main'
 
@@ -118,6 +118,7 @@ function Controller:build()
     self.gui:append_menu_item('automata', "Automaton Simulate _Graphviz", "Simulate Automata in a Graphviz render", nil, self.simulate_graphviz, self)
 
     --SCADA/MES
+    --[[
     self.gui:append_menu('scada_mes', "SCADA/MES")
     
     self.gui:append_sub_menu('scada_mes','automata_group', "Automata Group")
@@ -130,6 +131,7 @@ function Controller:build()
         self.gui:append_menu_item('scada_plant', "Edit", "Edit a SCADA Plant", nil, self.scada_plant_edit, self)
     self.gui:append_menu_item('scada_mes'       , "SCADA View", "SCADA View Interface", nil, self.scada_plant_view, self)
     self.gui:append_menu_item('scada_mes'       , "SCADA/MES Server", "SCADA/MES Server", nil, self.scada_mes_server, self)
+    ----]]
 end
 
 function Controller:exec()
@@ -144,7 +146,7 @@ local space_things = {
     ['xmd'] = { class = Automaton     , fn = 'IDES_import' },
     ['nza'] = { class = Automaton     , fn = 'load_file'   },
     ['nag'] = { class = AutomataGroup , fn = 'load_file'   },
-    ['nsp'] = { class = ScadaPlant    , fn = 'load_file', elements = true },
+    --~ ['nsp'] = { class = ScadaPlant    , fn = 'load_file', elements = true },
 }
 
 function Controller:save_workspace( file_name )
@@ -753,6 +755,7 @@ function Controller.automata_group_edit( data )
 end
 
 --- SCADA ---
+--[[
 
 function Controller.create_new_scada_plant( data )
     local new_scada_plant = ScadaPlant.new()
@@ -856,6 +859,8 @@ function Controller.scada_mes_server( data )
     }
     :run()
 end
+
+----]]
 
 ------------------------------------------------------------------------
 --                          Main Chuck                                --

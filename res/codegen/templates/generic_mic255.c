@@ -14,14 +14,12 @@
             {% set var_data[#var_data +1] = state.transitions_out:len() %}
             {% for k_transition, transition in state.transitions_out:ipairs() %}
                 {% set var_data[#var_data +1] = 'EV_' .. transition.event.name %}
-                {% set var_data[#var_data +1] = math.floor( var_state_map[ transition.target ] / 256 ) %}
-                {% set var_data[#var_data +1] = var_state_map[ transition.target ] % 256 %}
+                {% set var_data[#var_data +1] = var_state_map[ transition.target ] %}
             {% end %}
         {% end %}
     {% end %}
     const unsigned char     ev_controllable[{{ #events }}] = { {% for k_event, event in ipairs(events) %}{{ event.controllable and 1 or 0 }}{% notlast %},{% end %} };
     const unsigned char     sup_events[{{ automata:len() }}][{{ #events }}] = { {% for k_automaton, automaton in automata:ipairs() %}{ {% for i = 1, #events %}{{ sup_events[k_automaton][i] and 1 or 0 }}{% notlast %},{% end %} }{% notlast %},{% end %} };
-    const unsigned long int       sup_init_state[{{ automata:len() }}]  = { {% for k_automaton, automaton in automata:ipairs() %}{{automaton.initial - 1}}{% notlast %},{% end %} };
     unsigned long int       sup_current_state[{{ automata:len() }}]  = { {% for k_automaton, automaton in automata:ipairs() %}{{automaton.initial - 1}}{% notlast %},{% end %} };
     const unsigned long int sup_data_pos[{{ automata:len() }}] = { {{ table.concat(var_data_pos, ',') }} };
     const unsigned char     sup_data[ {{ #var_data }} ] = { {{ table.concat( var_data,',' ) }} };
@@ -42,7 +40,7 @@ unsigned long int get_state_position( unsigned char supervisor, unsigned long in
     position = sup_data_pos[ supervisor ];
     for(s=0; s<state; s++){
         en       = sup_data[position];
-        position += en * 3 + 1;
+        position += en * 2 + 1;
     }
     return position;
 }
@@ -59,10 +57,11 @@ void make_transition( unsigned char event ){
             position++;
             while(num_transitions--){
                 if(sup_data[position] == event){
-                    sup_current_state[i] = (sup_data[position + 1] * 256) + (sup_data[position + 2]);
+                    //~ sup_current_state[i] = (sup_data[position + 1] * 256) + (sup_data[position + 2]);
+                    sup_current_state[i] = sup_data[position + 1];
                     break;
                 }
-                position+=3;
+                position+=2;
             }
         }
     }
@@ -207,7 +206,7 @@ void SCT_init(){
 void SCT_reset(){
     int i;
     for(i=0; i<NUM_SUPERVISORS; i++){
-        sup_current_state[i] = sup_init_state[i];
+        sup_current_state[i] = 0;
     }
     for(i=0; i<NUM_EVENTS; i++){
         last_events[i] = 0;

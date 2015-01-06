@@ -210,6 +210,16 @@ Devices['GenericMic'].template_file = { 'generic_mic.h', 'generic_mic.c'}
 Devices['GenericMic'].display      = true
 Devices['GenericMic'].name         = "Generic Mic."
 
+--*********************************++*********************************--
+--**                           atmega328p                          **--
+--********************************************************************--
+Devices['atmega328p'] = letk.Class( Devices['base'] ):init_options()
+
+Devices['atmega328p'].template_file = { 'generic_mic.h', 'atmega328p.c'}
+
+Devices['atmega328p'].display      = true
+Devices['atmega328p'].name         = "AtMega 328p"
+
 
 --*********************************++*********************************--
 --**                     GenericMic Distributed                     **--
