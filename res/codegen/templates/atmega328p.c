@@ -22,7 +22,8 @@
     {% end %}
     unsigned char     ev_controllable[{{ #events }}] = { {% for k_event, event in ipairs(events) %}{{ event.controllable and 1 or 0 }}{% notlast %},{% end %} };
     unsigned char     sup_events[{{ automata:len() }}][{{ #events }}] = { {% for k_automaton, automaton in automata:ipairs() %}{ {% for i = 1, #events %}{{ sup_events[k_automaton][i] and 1 or 0 }}{% notlast %},{% end %} }{% notlast %},{% end %} };
-    unsigned long int       sup_current_state[{{ automata:len() }}]  = { {% for k_automaton, automaton in automata:ipairs() %}{{automaton.initial - 1}}{% notlast %},{% end %} };
+    unsigned long int sup_init_state[{{ automata:len() }}]     = { {% for k_automaton, automaton in automata:ipairs() %}{{automaton.initial - 1}}{% notlast %},{% end %} };
+    unsigned long int sup_current_state[{{ automata:len() }}]  = { {% for k_automaton, automaton in automata:ipairs() %}{{automaton.initial - 1}}{% notlast %},{% end %} };    
     unsigned long int sup_data_pos[{{ automata:len() }}] = { {{ table.concat(var_data_pos, ',') }} };
     unsigned char     sup_data[ {{ #var_data }} ] PROGMEM = { {{ table.concat( var_data,',' ) }} };
 {% endwith %}
@@ -207,7 +208,7 @@ void SCT_init(){
 void SCT_reset(){
     int i;
     for(i=0; i<NUM_SUPERVISORS; i++){
-        sup_current_state[i] = 0;
+        sup_current_state[i] = sup_init_state[i];
     }
     for(i=0; i<NUM_EVENTS; i++){
         last_events[i] = 0;
