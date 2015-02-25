@@ -1,3 +1,25 @@
+--[[
+    This file is part of nadzoru.
+
+    nadzoru is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    nadzoru is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with nadzoru.  If not, see <http://www.gnu.org/licenses/>.
+
+    Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
+--]]
+
+--[[
+module "ScadaComponent.Base"
+--]]
 ScadaComponent.Base = letk.Class( function( self )
     Object.__super( self )
 
@@ -19,6 +41,10 @@ local function copy_properties( self, t )
     end
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param properties TODO
 function ScadaComponent.Base:init_properties( properties )
     self.properties = {}
     copy_properties( self, self )
@@ -31,6 +57,10 @@ function ScadaComponent.Base:init_properties( properties )
     end
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param changes TODO
 function ScadaComponent.Base:change_properties( changes )
     changes = changes or {}
     for propertie, values in pairs( changes ) do
@@ -60,6 +90,12 @@ ScadaComponent.Base.final_component = false
 ScadaComponent.Base.caption         = "Base"
 ScadaComponent.Base.icon            = 'res/scada/images/base.png'
 
+---TODO
+--TODO
+--@param self TODO
+--@param cr TODO
+--@return TODO
+--@see ScadaComponent.Base:get_property
 function ScadaComponent.Base:render( cr )
     local image  = cairo.ImageSurface.create_from_png('res/scada/images/no_image.png')
     local ow, oh = image:get_width(), image:get_height()
@@ -84,6 +120,13 @@ function ScadaComponent.Base:render( cr )
     return x+w, y+h
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param x TODO
+--@param y TODO
+--@return TODO
+--@see ScadaComponent.Base:get_property
 function ScadaComponent.Base:is_selected( x, y )
     local px     = self:get_property( 'x' )
     local py     = self:get_property( 'y' )
@@ -95,6 +138,12 @@ function ScadaComponent.Base:is_selected( x, y )
     return false
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param key TODO
+--@param value TODO
+--@see ScadaComponent.Base:get_property
 function ScadaComponent.Base:set_property( key, value )
     if self.properties[ key ] then
         if self.properties[ key ].type == 'number' or self.properties[ key ].type == 'integer' then
@@ -129,12 +178,21 @@ function ScadaComponent.Base:set_property( key, value )
     end
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param key TODO
+--@return TODO
 function ScadaComponent.Base:get_property( key )
     if self.properties[ key ] then
         return self.properties_values[ key ] or self.properties[ key ].default
     end
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@return TODO
 function ScadaComponent.Base:dump()
     local component = {
         properties = {},
@@ -154,12 +212,22 @@ function ScadaComponent.Base:dump()
     return component
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param component TODO
+--@see ScadaComponent.Base:set_property
 function ScadaComponent.Base:charge( component )
     for k,v in pairs( component.properties ) do
         self:set_property( k, v )
     end
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param scolor TODO
+--@return TODO
 function ScadaComponent.Base:translate_color( scolor )
     local color  = {0,0,0}
     local cdigits = (#scolor - 1)/3
@@ -170,6 +238,16 @@ function ScadaComponent.Base:translate_color( scolor )
     return color
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param cr TODO
+--@param x TODO
+--@param y TODO
+--@param text TODO
+--@param font TODO
+--@param color TODO
+--@return TODO
 function ScadaComponent.Base:write_text(cr,x,y,text,font,color)
     color = color or { 0,0,0 }
     cr:select_font_face("sans", cairo.FONT_SLANT_OBLIQUE)
@@ -186,10 +264,16 @@ function ScadaComponent.Base:write_text(cr,x,y,text,font,color)
     return (txt_width/2), (txt_height/2), x -(txt_width/2), y + (txt_height/2)
 end
 
-function ScadaComponent.Base:tick()
+---TODO
+--Unfinished. TODO
+--@param self TODO
+function ScadaComponent.Base:tick() --Maybe it is abstract.
 
 end
 
-function ScadaComponent.Base:click()
+---TODO
+--Unfinished. TODO
+--@param self TODO
+function ScadaComponent.Base:click() --Maybe it is abstract.
 
 end

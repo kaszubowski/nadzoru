@@ -1,5 +1,27 @@
+--[[
+    This file is part of nadzoru.
+
+    nadzoru is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    nadzoru is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with nadzoru.  If not, see <http://www.gnu.org/licenses/>.
+
+    Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
+--]]
+
 require 'letk.linuxserial'
 
+--[[
+module "ScadaServer"
+--]]
 ScadaServer = letk.Class( function( self, gui, automata_group, event_map_file, elements )
     Object.__super( self )
     self.gui            = gui
@@ -27,6 +49,13 @@ ScadaServer = letk.Class( function( self, gui, automata_group, event_map_file, e
     self.scale = 13
 end, Object )
 
+---TODO
+--TODO
+--@param self TODO
+--@see ScadaServer:build_server_config_window
+--@see Treeview:add_column_text
+--@see Treeview:build
+--@see Gui:add_tab
 function ScadaServer:build_gui()
      self.vbox                           = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
         self.toolbar                     = gtk.Toolbar.new()
@@ -76,6 +105,9 @@ function ScadaServer:build_gui()
     self.gui:add_tab( self.vbox, "SERVER" )
 end
 
+---TODO
+--TODO
+--@param self TODO
 function ScadaServer:build_server_config_window()
     self.SCWgui = {}
     self.SCWgui.win                               = gtk.Window.new( gtk.WINDOW_TOPLEVEL )
@@ -195,13 +227,23 @@ function ScadaServer:build_server_config_window()
     self.SCWgui.entry_namespace:set( 'width-request', 150 )
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@return TODO
+--@see AutomataGroup:load_automata
+--@see AutomataGroup:check_automata
 function ScadaServer:check_automata_group( )
     if not self.automata_group then return false, "Automata group can not be loaded" end
     self.automata_group:load_automata( self.elements )
-    if not self.automata_group:check_automata() then return false, "All automata from automa group can not be loaded" end
+    if not self.automata_group:check_automata() then return false, "All automata from automata group can not be loaded" end
     return true
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@return TODO
 function ScadaServer:redis_connect()
     if not self.server_config or not self.server_config.params then
         return false, "Connection not configured" 
@@ -221,10 +263,19 @@ function ScadaServer:redis_connect()
     end
 end
 
+---TODO
+--TODO
+--@param self TODO
 function ScadaServer:set_act_cfgcon()
     self.SCWgui.win:show_all()
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@see ScadaServer:check_automata_group
+--@see ScadaServer:redis_connect
+--@see ScadaServer:run_init
 function ScadaServer:set_act_connect()
     if not self.run then
         if not self.server_config then
@@ -258,11 +309,23 @@ function ScadaServer:set_act_connect()
     end
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@see ScadaServer:execute_event
 function ScadaServer:set_act_execute_event()
     local event_name =  self.cbx_info:get_active_text()
     self:execute_event( event_name, true )
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param event_name TODO
+--@param toSerial TODO
+--@see Simulator:event_exists
+--@see Simulator:event_evolve
+--@see ScadaServer:update_mes_data
 function ScadaServer:execute_event( event_name, toSerial )
     --Application
     self.redis_connection:lpush( self.server_config.namespace .. '_EVENTS_NAME_TO_APP', event_name ) 
@@ -283,6 +346,10 @@ function ScadaServer:execute_event( event_name, toSerial )
     self:update_mes_data( event_name )
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@see Simulator:get_non_controllable_events
 function ScadaServer:run_init()
     self.run = {
         simulators     = {},
@@ -305,6 +372,12 @@ function ScadaServer:run_init()
     self.run.event_position = 1
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@see Simulator:get_controllable_events
+--@see Simulator:get_current_state_controllable_events
+--@see ScadaServer:execute_event
 function ScadaServer:run_exclusive_automata()
     --Evolve controlable events from X (TODO) calc disable
     
@@ -346,6 +419,13 @@ function ScadaServer:run_exclusive_automata()
     self:execute_event( event_name, true )
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param event_name TODO
+--@see Treeview:clear_data
+--@see Treeview:add_row
+--@see Treeview:update
 function ScadaServer:update_mes_data( event_name )
     if self.mes_data then
         local current_time = os.time()
@@ -366,6 +446,12 @@ function ScadaServer:update_mes_data( event_name )
     end
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@return TODO
+--@see ScadaServer:execute_event
+--@see ScadaServer:run_exclusive_automata
 function ScadaServer:run_callback()
     if not self.run then return false end
     
@@ -409,8 +495,12 @@ function ScadaServer:run_callback()
     
     return self.run and true or false
 end
- 
- 
+
+---TODO
+--TODO
+--@param self TODO
+--@see Treeview:add_row
+--@see Treeview:update
 function ScadaServer:set_act_mes()
     self.mes_data = { references = {} }
     

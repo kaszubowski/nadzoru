@@ -1,3 +1,5 @@
 .nza  : Nadzoru Automaton
-.xmd : IDES3 Automaton
+.xmd  : IDES3 Automaton
 .nsp  : Nadzoru Scada Plant 
+.nag  : Nadzoru Automata Group
+.nzw  : Nadzoru Worspace

@@ -1,3 +1,25 @@
+--[[
+    This file is part of nadzoru.
+
+    nadzoru is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    nadzoru is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with nadzoru.  If not, see <http://www.gnu.org/licenses/>.
+
+    Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
+--]]
+
+--[[
+module "ScadaComponent.Conveyor2"
+--]]
 ScadaComponent.Conveyor2 = letk.Class( function( self )
     ScadaComponent.Base.__super( self )
 end, ScadaComponent.Base )
@@ -10,7 +32,7 @@ ScadaComponent.Conveyor2:init_properties{
     ['color']           = { type = 'color'   , caption = "Color"          , default = '#8CC'    , private = false, },
     ['movement']        = { type = 'integer' , caption = "Movement"       , default = 0         , private = false, min = 0, max = 3},
     ['state']           = { type = 'integer' , caption = "State"          , default = 0         , private = false, min = 0, max = 1},
-    ['itens']           = { type = 'integer' , caption = "Itens"          , default = 0         , private = false, min = 0 },
+    ['items']           = { type = 'integer' , caption = "Items"          , default = 0         , private = false, min = 0 },
     ['h']               = false,
     ['w']               = false,
 }
@@ -30,7 +52,7 @@ local function get_properties_table( self )
         t        = self:get_property( 'track' ),
         color    = color,
         movement = self:get_property( 'movement' ),
-        itens    = self:get_property( 'itens' ),
+        items    = self:get_property( 'items' ),
     }
     t.max_x = t.px
     t.max_y = t.py
@@ -132,8 +154,8 @@ local function draw_straight( cr, prop, cmd )
     end
     
     --Item
-    if prop.itens > 0 then
-        prop.itens = prop.itens - 1
+    if prop.items > 0 then
+        prop.items = prop.items - 1
         cr:set_source_rgba( 0.5, 0.5, 0.5, 1 )
         cr:rectangle( prop.px  + diff + 4, prop.py + diff + 4, cw - 8, cw - 8)
         cr:fill()
@@ -236,6 +258,11 @@ local function draw_curve( cr, prop, cmd )
     cr:stroke()
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param cr TODO
+--@return TODO
 function ScadaComponent.Conveyor2:render( cr )
     local prop = get_properties_table( self )
     
@@ -254,6 +281,12 @@ function ScadaComponent.Conveyor2:render( cr )
     return prop.max_x + prop.tl, prop.max_y + prop.tl
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param x TODO
+--@param y TODO
+--@return TODO
 function ScadaComponent.Conveyor2:is_selected( x, y )
     local prop = get_properties_table( self )
     for i = 1,#prop.t do
@@ -293,7 +326,12 @@ function ScadaComponent.Conveyor2:is_selected( x, y )
     return false
 end
 
-function ScadaComponent.Base:tick()
+---TODO
+--TODO
+--@param self TODO
+--@see ScadaComponent.Base:get_property
+--@see ScadaComponent.Base:set_property
+function ScadaComponent.Conveyor2:tick()
     if self:get_property( 'state' ) == 1 then
         local m = self:get_property( 'movement' ) or 0
         m = m + 1

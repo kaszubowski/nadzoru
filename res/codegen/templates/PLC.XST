@@ -1,0 +1,529 @@
+{#
+IMPORTANT:
+There are two types of indentation in this file. Indentation with tabs is normal indentation that will also appear on generated codes.
+Indentation with spaces is special and won't appear on generated codes. Space indentation is used to indent lua commands and lua blocks.
+You can use search highlight (avaliable in editors like Gedit or Geany) and type "    " (without the quotation marks, four spaces) on the
+search to see the special indentation.
+#}
+
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<STExchangeFile>
+	<fileHeader company="{{company}}" product="{{product}}" dateTime="date_and_time#{{datetime}}" content="{{content}}" DTDVersion="41"></fileHeader>
+	<contentHeader name="{{project}}" version="0.0.000"></contentHeader>
+    
+    {% with var_data = {}, var_data_pos = {}, var_state_map = {}, var_state_address = {}, q_slot = 0, i_slot = 0, memory = 0, %}
+        
+    {% for k_automaton, automaton in automata:ipairs() %}
+        {# Memorize automaton position and create state map #}
+        {% set var_data_pos[k_automaton] = #var_data %}
+        {% for k_state, state in automaton.states:ipairs() %}
+            {% set var_state_map[ state ] = k_state %}
+        {% end %}
+        
+        {# Store automaton states and transitions in the vector #}
+        {% set var_state_address[automaton] = {} %}
+        {% for k_state, state in automaton.states:ipairs() %}
+            {% set var_data[#var_data +1] = state.transitions_out:len() %}
+            {% set var_state_address[automaton][k_state] = #var_data %}
+            {% for k_transition, transition in state.transitions_out:ipairs() %}
+                {% set var_data[#var_data +1] = transition.event.name %}
+                {% set var_data[#var_data +1] = var_state_map[ transition.target ] %}
+            {% end %}
+        {% end %}
+        
+        {# Replace states with addresses #}
+        {% for k_state, pos in ipairs(var_state_address[automaton]) %}
+            {% for i=1,var_data[pos] %}
+                {% set var_data[pos + 2*i] = var_state_address[automaton][ var_data[pos + 2*i] ] %}
+            {% end %}
+        {% end %}
+        
+    {% end %}
+    
+	<program>
+		<identProgram name="main" type="section" task="MAST"></identProgram>
+		<STSource>
+			(*clear buffer, executing all no controllable events*)
+			
+			input_change(); (* Get occurred uncontrollable events *)
+			input_buffer_check_empty();
+			while not input_buffer_check_empty_return do (* Consume all buffered events *)
+				input_buffer_get(ev_number:=ev_number, input_buffer:=input_buffer, input_buffer_qtt:=input_buffer_qtt, event:=event); (* Get next event in the buffer *)
+				make_transition(); (* Execute event in the automata *)
+				callback(); (* Execute event callback *)
+				input_buffer_check_empty();
+			end_while;
+			
+			get_next_controllable(); (* Choose next controllable event *)
+			
+			if get_next_controllable_return then
+				(*IMIO_IN_Instance (RACK:= RackNumber, SLOT:= SlotNumber, STATUS=>StatusReport)*)
+				(*input_change();*)
+				if input_buffer_check_empty_return then (*continue;  --Verify if some event occurred in the cycle*)
+					make_transition(); (* Execute event in the automata *)
+					callback(); (* Execute event callback *)
+				end_if;
+			end_if;
+			pic_rand(); (* Update random seed *)
+		</STSource>
+	</program>
+	
+	<program>
+		<identProgram name="input_change" type="SR" task="MAST"></identProgram>
+		<STSource>
+            {% for k_event, event in ipairs(events) %}
+                {% if not event.controllable %}
+                    {% if generate_list[1] == 2 %}
+			            if RE(EV_{{event.name}}) then
+				            input_buffer_add(event := {{k_event}}, input_buffer:=input_buffer,input_buffer_qtt:=input_buffer_qtt);
+			            end_if;
+                    {% elseif generate_list[1] == 3 %}
+			            if RE(EV_{{event.name}}) then
+				            input_buffer_add(event := {{k_event}}, input_buffer:=input_buffer,input_buffer_qtt:=input_buffer_qtt);
+			            end_if;
+                    {% else %}
+			            (*input_buffer_add(event := {{k_event}}, input_buffer:=input_buffer,input_buffer_qtt:=input_buffer_qtt);*)
+                    {% end %}
+			        {{ event_code[ event.name ] and event_code[ event.name ].input or '' }}
+                {% end %}
+            {% end %}
+		</STSource>
+	</program>
+	
+	<program>
+		<identProgram name="input_buffer_check_empty" type="SR" task="MAST"></identProgram>
+		<STSource>
+			input_buffer_check_empty_return := input_buffer_qtt = 0;
+		</STSource>
+	</program>
+	
+	<program>
+		<identProgram name="get_active_controllable_events" type="SR" task="MAST"></identProgram>
+		<STSource>
+			(* Disable all non controllable events *)
+			for i := 1 to ev_number do
+				if not ev_controllable[i] then
+					events[i] := 0;
+				end_if;
+			end_for;
+			
+			(* Check disabled events for all supervisors *)
+			for i:=1 to sup_number do
+				
+				for k:=1 to ev_number do
+				 ev_disable[k] := 1;
+				end_for;
+				
+				for j:=1 to ev_number do
+					(*if supervisor doesn't have this event, it can't disable the event*)
+					if not sup_events[i][j] then
+						ev_disable[j] := 0;
+					end_if;
+				end_for;
+				
+				(*if supervisor have a transition with the event in the current state, it can't disable the event *)
+				position := sup_current_state[i];
+				
+				num_transitions := sup_data[position];
+				position := position + 1;
+				
+				while num_transitions > 0 do
+					ev_disable[ sup_data[position] ] := 0;
+					position := position + 2{{ns}};
+					num_transitions := num_transitions -1;
+				end_while;
+				
+				(* Disable for current supervisor states *)
+				for j :=1 to ev_number do
+					if ev_disable[j] = 1 then
+						events[ j ] := 0;
+					end_if;
+				end_for;
+			end_for; 
+		</STSource>
+	</program>
+	
+	<program>
+		<identProgram name="get_next_controllable" type="SR" task="MAST"></identProgram>
+		<STSource>
+            {% for k_event, event in ipairs(events) %}
+			    events[ {{k_event}} ] := 1;
+            {% end %}
+			get_active_controllable_events();
+			count_actives := 0;
+			for l:=1 to ev_number do
+				if events[l] > 0 then
+					count_actives := count_actives + 1; (*count_actives*)
+				end_if;
+			end_for;
+			if count_actives > 1 then
+				lesser_dif_to_seed := ev_number;
+				for l := 1 to ev_number do
+					if events[l] > 0 then
+						dif_to_seed := seed - l;
+						dif_to_seed2 := ev_number - seed + l;
+						if dif_to_seed > dif_to_seed2 then
+							dif_to_seed := dif_to_seed2;
+						end_if;
+						if 0 > dif_to_seed then
+							dif_to_seed := - dif_to_seed;
+						end_if;
+						if lesser_dif_to_seed > dif_to_seed then
+							lesser_dif_to_seed := dif_to_seed;
+							random_pos := l;
+						end_if;
+					end_if;
+				end_for;
+				event := random_pos;
+				get_next_controllable_return:=1;
+			elsif count_actives = 1 then
+				for l:=1 to ev_number do
+					if events[l] > 0 then
+						event:=l;
+						get_next_controllable_return:=1;
+						exit;
+					end_if;
+				end_for;
+			else
+				get_next_controllable_return:=0;
+			end_if;
+		</STSource>
+	</program>
+	
+	<program>
+		<identProgram name="pic_rand" type="SR" task="MAST"></identProgram>
+		<STSource>
+			seed := seed + 1;
+			if seed > ev_number then
+				seed := 1;
+			end_if;
+		</STSource>
+	</program>
+	
+    {% for k_event, event in ipairs(events) %}
+	    <program>
+		    <identProgram name="callback_{{ event.name }}" type="SR" task="MAST"></identProgram>
+		    <STSource>
+			    {{ event_code[ event.name ] and event_code[ event.name ].output or ''  }}
+		    </STSource>
+	    </program>
+    {% end %}
+	
+	<program>
+		<identProgram name="callback" type="SR" task="MAST"></identProgram>
+		<STSource>
+			case event of
+                {% for k_event, event in ipairs(events) %}
+				    {{k_event}}: callback_{{ event.name }}();
+                {% end %}
+			end_case;
+		</STSource>
+	</program>
+	
+	<program>
+		<identProgram name="make_transition" type="SR" task="MAST"></identProgram>
+		<STSource>
+			for m:=1 to sup_number do
+				if sup_events[m][event] > 0 then
+					position := sup_current_state[m];
+					
+					num_transitions := sup_data[position];
+					position := position + 1;
+					
+					while num_transitions > 0 do
+						if sup_data[position] = event then
+							sup_current_state[m] := sup_data[position + 1];
+							exit;
+						end_if;
+						position := position + 2{{ns}};
+						num_transitions := num_transitions - 1;
+					end_while;
+				end_if;
+			end_for;
+		</STSource>
+	</program>
+	
+	<dataBlock>
+		
+		<variables name="dif_to_seed" typeName="INT"></variables>
+		
+		<variables name="dif_to_seed2" typeName="INT"></variables>
+		
+		<variables name="lesser_dif_to_seed" typeName="INT"></variables>
+		
+		<variables name="input_buffer_check_empty_return" typeName="BOOL"></variables>
+		
+		<variables name="input_buffer" typeName="ARRAY[1..{{ #events }}] OF INT"></variables>
+		
+		<variables name="input_buffer_qtt" typeName="INT">
+			<variableInit value="0"></variableInit>
+		</variables>
+		
+		<variables name="count_actives" typeName="INT">
+			<variableInit value="0"></variableInit>
+		</variables>
+		
+		<variables name="l" typeName="INT">
+			<variableInit value="0"></variableInit>
+		</variables>
+		
+		<variables name="random_pos" typeName="INT">
+			<variableInit value="0"></variableInit>
+		</variables>
+		
+		<variables name="k" typeName="INT">
+			<variableInit value="0"></variableInit>
+		</variables>
+		
+		<variables name="position" typeName="INT">
+			<variableInit value="1"></variableInit>
+		</variables>
+		
+		<variables name="ev_disable" typeName="ARRAY[1..{{ #events }}] OF INT"></variables>
+		
+		<variables name="num_transitions" typeName="INT">
+			<variableInit value="0"></variableInit>
+		</variables>
+		
+		<variables name="m" typeName="INT">
+			<variableInit value="0"></variableInit>
+		</variables>
+		
+		<variables name="i" typeName="INT">
+			<variableInit value="0"></variableInit>
+		</variables>
+		
+		<variables name="j" typeName="INT">
+			<variableInit value="0"></variableInit>
+		</variables>
+		
+		<variables name="input_change_return" typeName="INT">
+			<variableInit value="0"></variableInit>
+		</variables>
+		
+		<variables name="get_next_controllable_return" typeName="BOOL">
+			<variableInit value="0"></variableInit>
+		</variables>
+		
+		<variables name="buffer_event" typeName="ARRAY[1..{{ #events }}] OF INT"></variables>
+		
+		<variables name="events" typeName="ARRAY[1..{{ #events }}] OF INT">
+            {% for k_event, event in ipairs(events) %}
+			    <instanceElementDesc name="[{{k_event}}]">
+				    <value> 0 </value>
+			    </instanceElementDesc>
+            {% end %}
+		</variables>
+		
+		<variables name="seed" typeName="INT">
+			<variableInit value="0"></variableInit>
+		</variables>
+		
+        {# event #}
+		<variables name="event" typeName="INT"></variables>
+		<variables name="event_controllable" typeName="INT"></variables>
+		
+        {#Structs#}
+        {# events #}
+        
+        {% if generate_list[1] == 2 %}
+            {% for k_event, event in ipairs(events) %}
+                {% if event.controllable %}
+		            <variables name="EV_{{event.name}}" typeName="EBOOL" topologicalAddres="%Q0.{{output_module[1]}}.{{q_slot}}">
+			            <variableInit value="0"></variableInit>
+		            </variables>
+                    {% set q_slot = q_slot + 1 %}
+                    {% if q_slot > 32 %}
+		                <variables name="EV_{{event.name}}" typeName="EBOOL">
+			                <variableInit value="0"></variableInit>
+		                </variables>
+                    {% end %}
+                {% else %}
+		            <variables name="EV_{{event.name}}" typeName="EBOOL" topologicalAddres="%I0.{{input_module[1]}}.{{i_slot}}">
+			            <variableInit value="0"></variableInit>
+		            </variables>
+                    {% set i_slot = i_slot + 1 %}
+                    {% if i_slot > 32 %}
+		                <variables name="EV_{{event.name}}" typeName="EBOOL">
+			                <variableInit value="0"></variableInit>
+		                </variables>
+                    {% end %}
+                {% end %}
+            {% end %}
+        {% elseif generate_list[1] == 3 %}
+            {% for k_event, event in ipairs(events) %}
+		        <variables name="EV_{{event.name}}" typeName="EBOOL" topologicalAddres="%M{{mem_address[1]}} ">
+			        <variableInit value="0"></variableInit>
+		        </variables>
+                {% set mem_address[1] = 1 + mem_address[1] %}
+            {% end %}
+        {% else %}
+            {% for k_event, event in ipairs(events) %}
+		        <variables name="EV_{{event.name}}" typeName="EBOOL">
+			        <variableInit value="0"></variableInit>
+		        </variables>
+            {% end %}
+        {% end %}
+		<variables name="ev_number" typeName="INT" >
+			<variableInit value="{{ #events }}"></variableInit>
+		</variables>
+		
+		<variables name="ev_controllable" typeName="ARRAY[1..{{#events}}] OF BOOL">
+            {% for k_event, event in ipairs(events) %}
+			    <instanceElementDesc name="[{{k_event}}]">
+				    <value>{{ event.controllable and 1 or 0 }}</value>
+			    </instanceElementDesc>
+            {% end %}
+		</variables>
+		
+		<variables name="sup_events" typeName="ARRAY[1..{{ automata:len() }}, 1..{{ #events }}] OF BOOL">
+            {% for k_automaton, automaton in automata:ipairs() %}
+			    <instanceElementDesc name="[{{k_automaton}}]">
+                    {% for i = 1, #events %}
+				        <instanceElementDesc name="[{{i}}]">
+					        <value>{{ atm_events[k_automaton][i] and 1 or 0 }}</value>
+				        </instanceElementDesc>
+                    {% end %}
+			    </instanceElementDesc>
+            {% end %}
+		</variables>
+		
+		<variables name="sup_number" typeName="INT">
+			<variableInit value="{{ automata:len() }}"></variableInit>
+		</variables>
+		
+		<variables name="sup_current_state" typeName="ARRAY[1..{{ automata:len() }}] OF INT">
+            {% for k_automaton, automaton in automata:ipairs() %}
+			    <instanceElementDesc name="[{{k_automaton}}]">
+				    <value>{{var_state_address[automaton][automaton.initial]}}{{ns}}</value>
+			    </instanceElementDesc>
+            {% end %}
+		</variables>
+		
+		<variables name="sup_data_pos" typeName="ARRAY[1..{{automata:len()}}] OF INT">
+            {% for k_automaton, automaton in automata:ipairs() %}
+			    <instanceElementDesc name="[{{k_automaton}}]">
+				    <value>{{var_data_pos[k_automaton]}}</value>
+			    </instanceElementDesc>
+            {% end %}
+		</variables>
+		
+		<variables name="sup_data" typeName="ARRAY[1..{{ #var_data }}{{ns}}] OF INT">
+            {% for i = 1, #var_data .. ns %}
+			    <instanceElementDesc name="[{{i}}]">
+                        {% if type(var_data[i]) == 'string' %}
+                            {% for k_event, event in ipairs(events) %}
+                                {% if var_data[i] == event.name %}
+				                    <value>{{k_event}}</value>
+                                {% end %}
+                            {% end %}
+                        {% else %}
+				            <value>{{ var_data[i] .. ns }}</value>
+                        {% end %}
+			    </instanceElementDesc>
+            {% end %}
+		</variables>
+		
+		<variables name="input_buffer_get" typeName="Input_buffer_get"></variables>
+		<variables name="input_buffer_add" typeName="Input_buffer_add"></variables>
+		
+	</dataBlock>
+	
+	<FBSource nameOfFBType="Input_buffer_get" version="0.02" dateTime="dt#2013-02-18-15:30:45">
+		<inputParameters>
+			<variables name="ev_number" typeName="INT">
+				<attribute name="PositionPin" value="1"></attribute>
+			</variables>
+		</inputParameters>
+		<outputParameters>
+		
+		</outputParameters>
+		<inOutParameters>
+			<variables name="input_buffer" typeName="ARRAY[1..{{ #events }}] OF INT">
+				<attribute name="PositionPin" value="2"></attribute>
+			</variables>
+			<variables name="input_buffer_qtt" typeName="INT">
+				<attribute name="PositionPin" value="3"></attribute>
+			</variables>
+			
+			<variables name="event" typeName="INT">
+				<attribute name="PositionPin" value="4"></attribute>
+			</variables>
+		</inOutParameters>
+		<publicLocalVariables>
+			<variables name="return_flag" typeName="BOOL"></variables>
+		</publicLocalVariables>
+		<privateLocalVariables>
+			<variables name="n" typeName="INT"></variables>
+		</privateLocalVariables>
+		<FBProgram name="Input_buffer_get_section">
+			<STSource>
+				if input_buffer_qtt = 0 then
+					return_flag := 0;
+					return;
+				else
+					event := input_buffer[input_buffer_qtt];
+					input_buffer_qtt := input_buffer_qtt - 1;
+					return_flag := 1;
+				end_if;
+			</STSource>
+		</FBProgram>
+	</FBSource>
+	
+	<FBSource nameOfFBType="Input_buffer_add" version="0.02" dateTime="dt#2013-02-18-15:30:45">
+		<inputParameters>
+			<variables name="event" typeName="INT">
+				<attribute name="PositionPin" value="1"></attribute>
+			</variables>
+		</inputParameters>
+		<inOutParameters>
+			<variables name="input_buffer" typeName="ARRAY[1..{{ #events }}] OF INT">
+				<attribute name="PositionPin" value="2"></attribute>
+			</variables>
+			<variables name="input_buffer_qtt" typeName="INT">
+				<attribute name="PositionPin" value="3"></attribute>
+			</variables>
+		</inOutParameters>
+		<FBProgram name="Input_buffer_add_section">
+			<STSource>
+				input_buffer_qtt := input_buffer_qtt + 1;
+				input_buffer[ input_buffer_qtt ] := event;
+			</STSource>
+		</FBProgram>
+	</FBSource>
+    {% endwith %}
+</STExchangeFile>
+
+{# Event number;Event name;Address
+{% if generate_list[1] == 2 %}
+    
+    {% for k_event, event in ipairs(events) %}
+        {% if event.controllable %}
+            {{k_event}}; {{event.name}}; Q0.{{output_module[1]}}.{{q_slot}}
+            {% set q_slot = q_slot + 1 %}
+            {% if q_slot > 32 %}
+                {{k_event}};{{event.name}};no address
+            {% end %}
+        {% else %}
+            {{k_event}};{{event.name}};%I0.{{input_module[1]}}.{{i_slot}}
+            {% set i_slot = i_slot + 1 %}
+            {% if i_slot > 32 %}
+                {{k_event}};{{event.name}};no address
+            {% end %}
+        {% end %}
+    {% end %}
+    
+{% elseif generate_list[1] == 3 %}
+    
+    {% for k_event, event in ipairs(events) %}
+        {{k_event}};{{event.name}};%M0.0.{{k_event}}
+    {% end %}
+    
+{% else %}
+    
+    {% for k_event, event in ipairs(events) %}
+        {{k_event}};{{event.name}};no address
+    {% end %}
+    
+{% end %}
+#}

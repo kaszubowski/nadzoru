@@ -1,3 +1,25 @@
+--[[
+    This file is part of nadzoru.
+
+    nadzoru is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    nadzoru is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with nadzoru.  If not, see <http://www.gnu.org/licenses/>.
+
+    Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
+--]]
+
+--[[
+module "ScadaEditor"
+--]]
 ScadaEditor = letk.Class( function( self, gui, scada_plant, elements )
     Object.__super( self )
     self.gui            = gui
@@ -18,6 +40,12 @@ end, Object )
 
 ScadaEditor.scale_values = { 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 3.5, 4 }
 
+---TODO
+--TODO
+--@param self TODO
+--@see ScadaEditor:build_gui_components_list
+--@see PropertyEditor:draw_interface
+--@see Gui:add_tab
 function ScadaEditor:build_gui()
      self.vbox                            = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
         self.toolbar                      = gtk.Toolbar.new()
@@ -111,6 +139,9 @@ function ScadaEditor:build_gui()
     self.gui:add_tab( self.vbox, "edit " .. (self.scada_plant:get('file_name') or "-x-") )
 end
 
+---TODO
+--TODO
+--@param self TODO
 function ScadaEditor:build_gui_components_list()
     self.scrolled = gtk.ScrolledWindow.new()
     self.scrolled:set_shadow_type(gtk.SHADOW_ETCHED_IN)
@@ -129,23 +160,29 @@ function ScadaEditor:build_gui_components_list()
 
     --Icon View (list of components)
     self.components_list = {}
-    local count_itens = 0
+    local count_items = 0
     for name, component in pairs( ScadaComponent ) do
         if component.final_component then
             self.components_list[ #self.components_list + 1 ] = name
             model:append( iter )
             local pixbuf = gdk.Pixbuf.new_from_file( component.icon )
             model:set( iter, 0 , component.caption, 1, pixbuf )
-            count_itens = count_itens + 1
+            count_items = count_items + 1
         end
     end
-    self.icon_view:set( 'columns', count_itens )
+    self.icon_view:set( 'columns', count_items )
 
     self.vbox:pack_start( self.scrolled, false, false, 0 )
 
     self.icon_view:connect('selection-changed', self.select_component, self )
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param event
+--@see PropertyEditor:set_value
+--@see ScadaEditor:update_render
 function ScadaEditor:drawing_area_move_motion( event )
     local stats, coord_x, coord_y           = gdk.Event.get_coords( event )
     coord_x = coord_x / self.scale_values[ self.scale ]
@@ -163,6 +200,16 @@ function ScadaEditor:drawing_area_move_motion( event )
     end
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param event TODO
+--@see ScadaPlant:get_selected
+--@see ScadaPlant:add_component
+--@see ScadaComponent.Base:set_property
+--@see ScadaEditor:update
+--@see ScadaEditor:update_properties
+--@see ScadaComponent.Base:get_property
 function ScadaEditor:drawing_area_press( event )
     local stats, button_press = gdk.Event.get_button( event )
 
@@ -204,13 +251,24 @@ function ScadaEditor:drawing_area_press( event )
     end
 end
 
+---TODO
+--TODO
+--@param self TODO
 function ScadaEditor:select_component()
-    local itens = self.icon_view:get_selected_items()
-    if itens and itens[1] then
-        self.selected_component_IconView = self.components_list[ itens[1] + 1 ]
+    local items = self.icon_view:get_selected_items()
+    if items and items[1] then
+        self.selected_component_IconView = self.components_list[ items[1] + 1 ]
     end
 end
 
+---Changes the value of an attribute of a component.
+--TODO
+--@param self Scada editor in which th operation is applied.
+--@param prop_name Name of the attribute to be changed.
+--@param old_value For some reason, it is not used. TODO
+--@param new_value New value of the attrbute.
+--@see ScadaComponent.Base:set_property
+--@see ScadaEditor:update_render
 function ScadaEditor:change_property( prop_name, old_value, new_value )
     if self.selected_component then
         self.selected_component:set_property(
@@ -221,6 +279,11 @@ function ScadaEditor:change_property( prop_name, old_value, new_value )
     end
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param cr TODO
+--@see ScadaPlant:render
 function ScadaEditor:drawing_area_expose( cr )
     cr = cairo.Context.wrap(cr)
     cr:scale( self.scale_values[ self.scale ], self.scale_values[ self.scale ] )
@@ -228,6 +291,9 @@ function ScadaEditor:drawing_area_expose( cr )
     self.drawing_area:set_size_request( (x+32)*self.scale_values[ self.scale ], (y+32)*self.scale_values[ self.scale ] )
 end
 
+---TODO
+--TODO
+--@param self TODO
 function ScadaEditor:update_render()
     self.drawing_area:queue_draw()
 end
@@ -311,6 +377,18 @@ local function make_help( self )
     return h
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@see PropertyEditor:clear
+--@see PropertyEditor:add_change_callback
+--@see PropertyEditor:add_row_entry
+--@see ScadaComponent.Base:get_property
+--@see PropertyEditor:add_row_combobox
+--@see PropertyEditor:add_row_color
+--@see PropertyEditor:add_row_checkbox
+--@see PropertyEditor:add_row_code
+--@see PropertyEditor:draw_interface
 function ScadaEditor:update_properties()
     self.properties:clear()
 
@@ -343,11 +421,21 @@ function ScadaEditor:update_properties()
     self.properties:draw_interface()
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@see ScadaEditor:update_render
+--@see ScadaEditor:update_properties
 function ScadaEditor:update()
     self:update_render( )
     self:update_properties( )
 end
 
+---Sets a mode to active, deactivating the others.
+--TODO
+--@param self Scada editor in which the operation is applied.
+--@param mode Mode to be activated.
+--@see ScadaEditor:update
 function ScadaEditor:toolbar_set_unset_operation( mode )
     local btn      = {'edit','move_motion','add','delete'}
     local active   = self['btn_act_' .. mode]:get('active')
@@ -368,6 +456,11 @@ function ScadaEditor:toolbar_set_unset_operation( mode )
     self:update()
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@see ScadaPlant:save
+--@see ScadaEditor:set_act_save_as
 function ScadaEditor:set_act_save()
     local status, err, err_list = self.scada_plant:save()
     if not status then
@@ -381,6 +474,11 @@ function ScadaEditor:set_act_save()
     end
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@see ScadaPlant:save_as
+--@see Gui:set_tab_page_title
 function ScadaEditor:set_act_save_as()
     local dialog = gtk.FileChooserDialog.new(
         "Save AS", nil,gtk.FILE_CHOOSER_ACTION_SAVE,
@@ -406,26 +504,52 @@ function ScadaEditor:set_act_save_as()
     end
 end
 
+---TODO
+--Unfinished. TODO
+--@param self TODO
 function ScadaEditor:set_act_png()
 
 end
 
+---Sets mode to 'edit'.
+--TODO
+--@param self Scada editor in which the operation is applied.
+--@see ScadaEditor:toolbar_set_unset_operation
 function ScadaEditor:set_act_edit()
     self:toolbar_set_unset_operation( 'edit' )
 end
 
+---Sets mode to 'move_motion'.
+--TODO
+--@param self Scada editor in which the operation is applied.
+--@see ScadaEditor:toolbar_set_unset_operation
 function ScadaEditor:set_act_move_motion()
     self:toolbar_set_unset_operation( 'move_motion' )
 end
 
+---Sets mode to 'add'.
+--TODO
+--@param self Scada editor in which the operation is applied.
+--@see ScadaEditor:toolbar_set_unset_operation
 function ScadaEditor:set_act_add()
     self:toolbar_set_unset_operation( 'add' )
 end
 
+---Sets mode to 'delete'.
+--TODO
+--@param self Scada editor in which the operation is applied.
+--@see ScadaEditor:toolbar_set_unset_operation
 function ScadaEditor:set_act_delete()
     self:toolbar_set_unset_operation( 'delete' )
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@see ScadaPlant:add_automata_group
+--@see ScadaEditor:update_properties
+--@see Selector:add_combobox
+--@see Selector:run
 function ScadaEditor:set_act_automaton()
     Selector.new({
         title = "Automata Group",
@@ -449,12 +573,20 @@ function ScadaEditor:set_act_automaton()
     :run()
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@see ScadaEditor:update_render
 function ScadaEditor:set_act_zoom_out()
     self.scale = self.scale - 1
     if self.scale <= 0 then self.scale = 1 end
     self:update_render()
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@see ScadaEditor:update_render
 function ScadaEditor:set_act_zoom_in()
     self.scale = self.scale + 1
     if self.scale > #self.scale_values then self.scale = #self.scale_values end

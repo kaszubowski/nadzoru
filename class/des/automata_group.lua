@@ -1,3 +1,25 @@
+--[[
+    This file is part of nadzoru.
+
+    nadzoru is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    nadzoru is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with nadzoru.  If not, see <http://www.gnu.org/licenses/>.
+
+    Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
+--]]
+
+--[[
+module "AutomataGroup"
+--]]
 AutomataGroup = letk.Class( function( self )
     Object.__super( self )
     
@@ -14,6 +36,10 @@ end, Object )
 
 AutomataGroup.__TYPE = 'automatagroup'
 
+---Loads the automata to the automata group.
+--TODO
+--@param self Automata group in which the automata will be loaded.
+--@param element_list List of automata.
 function AutomataGroup:load_automata( element_list )
     self.automata_object = {}
     for k, v in element_list:ipairs() do
@@ -32,6 +58,10 @@ function AutomataGroup:load_automata( element_list )
     end
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@return TODO
 function AutomataGroup:check_automata()
     for t, l in pairs( self.automata_file ) do
         for name, const in pairs( l ) do
@@ -43,6 +73,10 @@ function AutomataGroup:check_automata()
     return true
 end
 
+---Serializes the automaton group, so it can be saved.
+--TODO
+--@param self Automaton group to be serialized.
+--@return Serialized automaton group.
 function AutomataGroup:save_serialize()
     local data = {}
     
@@ -55,11 +89,17 @@ function AutomataGroup:save_serialize()
 
     return letk.serialize( data )
 end
-local FILE_ERROS = {}
-FILE_ERROS.ACCESS_DENIED     = 1
-FILE_ERROS.NO_FILE_NAME      = 2
-FILE_ERROS.INVALID_FILE_TYPE = 3
+local FILE_ERRORS = {}
+FILE_ERRORS.ACCESS_DENIED     = 1
+FILE_ERRORS.NO_FILE_NAME      = 2
+FILE_ERRORS.INVALID_FILE_TYPE = 3
 
+---Saves the automaton group to its current file.
+--TODO
+--@param self Automaton group to be saved.
+--@return True if no problems occurred, false otherwise.
+--@return Ids of any errors that occurred.
+--@see AutomataGroup:save_serialize
 function AutomataGroup:save()
     local file_type = self:get( 'file_type' )
     local file_name = self:get( 'full_file_name' )
@@ -74,14 +114,21 @@ function AutomataGroup:save()
             file:close()
             return true
         end
-        return false, FILE_ERROS.ACCESS_DENIED, FILE_ERROS
+        return false, FILE_ERRORS.ACCESS_DENIED, FILE_ERRORS
     elseif not file_type then
-        return false, FILE_ERROS.NO_FILE_NAME, FILE_ERROS
+        return false, FILE_ERRORS.NO_FILE_NAME, FILE_ERRORS
     else
-        return false, FILE_ERROS.INVALID_FILE_TYPE, FILE_ERROS
+        return false, FILE_ERRORS.INVALID_FILE_TYPE, FILE_ERRORS
     end
 end
 
+---Saves the automaton group to a file.
+--TODO
+--@param self Automaton group to be saved.
+--@param file_name Name of the file where the automaton group will be saved.
+--@return True if no problems occurred, false otherwise.
+--@return Ids of any errors that occurred.
+--@see AutomataGroup:save_serialize
 function AutomataGroup:save_as( file_name )
     if file_name then
         if not file_name:match( '%.nag$' ) then
@@ -97,12 +144,17 @@ function AutomataGroup:save_as( file_name )
             self:set( 'file_name', select( 3, file_name:find( '.-([^/^\\]*)$' ) ) )
             return true
         end
-        return false, FILE_ERROS.ACCESS_DENIED, FILE_ERROS
+        return false, FILE_ERRORS.ACCESS_DENIED, FILE_ERRORS
     else
-        return false, FILE_ERROS.NO_FILE_NAME, FILE_ERROS
+        return false, FILE_ERRORS.NO_FILE_NAME, FILE_ERRORS
     end
 end
 
+---Loads the automaton group from a file.
+--TODO
+--@param self Automaton group where informations will be loaded.
+--@param file_name Name of the file to be loaded.
+--@return True if no problems occurred, false otherwise.
 function AutomataGroup:load_file( file_name )
     local file = io.open( file_name, 'r')
     if file then
@@ -136,6 +188,14 @@ AutomataGroupEditor = letk.Class( function( self, gui, automata_group, elements 
     self:build_gui()
 end, Object )
 
+---TODO
+--TODO
+--@param self TODO
+--@see Treeview:add_column_text
+--@see Treeview:build
+--@see Treeview:get_selected
+--@see AutomataGroupEditor:update_automaton_window
+--@see Gui:add_tab
 function AutomataGroupEditor:build_gui()
         self.AWgui = {}
         self.AWgui.vbox                          = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
@@ -267,6 +327,12 @@ function AutomataGroupEditor:build_gui()
         self.gui:add_tab( self.AWgui.vbox, "edit " .. (self.automata_group:get('file_name') or "-x-") )
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@see Treeview:clear_data
+--@see Treeview:add_row
+--@see Treeview:update
 function AutomataGroupEditor:start_automaton_window()
     if not self.AWgui then return end
     self.AWgui.treeview_automata:clear_data()
@@ -287,6 +353,13 @@ function AutomataGroupEditor:start_automaton_window()
     self.AWgui.treeview_automata:update()
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@see Treeview:clear_data
+--@see Treeview:add_row
+--@see Treeview:update
+--function AutomataGroupEditor:update_automaton_window(hist)
 function AutomataGroupEditor:update_automaton_window()
     if not self.AWgui then return end
     self.AWgui.treeview_g:clear_data()
@@ -311,8 +384,22 @@ function AutomataGroupEditor:update_automaton_window()
         end
         self.AWgui['treeview_' .. p]:update()
     end
+    
+--    --Update other treeviews
+--    hist = hist or {}
+--    hist[self] = true
+--    for tab_id, tab in self.gui.tab:ipairs() do
+--		if not hist[tab.content] and tab.content.automata_group==self.automata_group then
+--			tab.content:update_automaton_window(hist)
+--		end
+--	end
 end
 
+---Opens the window to save the automata group to a file.
+--TODO
+--@param self Automata group editor in which the operation is applied.
+--@see AutomataGroup:save_as
+--@see Gui:set_tab_page_title
 function AutomataGroupEditor:save_as()
     local dialog = gtk.FileChooserDialog.new(
         "Save AS", nil,gtk.FILE_CHOOSER_ACTION_SAVE,
@@ -338,6 +425,11 @@ function AutomataGroupEditor:save_as()
     end
 end
 
+---Opens the window to save the automata group to its file.
+--TODO
+--@param self Automata group editor in which the operation is applied.
+--@see AutomataGroup:save
+--@see AutomataGroupEditor:save_as
 function AutomataGroupEditor:save()
     local status, err, err_list = self.automata_group:save()
     if not status then

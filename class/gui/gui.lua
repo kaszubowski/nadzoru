@@ -18,23 +18,100 @@
     Copyright (C) 2013 Yuri Kaszubowski Lopes
 --]]
 
+--[[
+module "Gui"
+--]]
+--~ Gui = letk.Class( function( self, fn, data )
 Gui = letk.Class( function( self )
-    self.note         = gtk.Notebook.new()
+    
     self.tab          = letk.List.new()
 
     self.window       = gtk.Window.new(gtk.WINDOW_TOPLEVEL)
-    self.vbox         = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
-
-    self.menubar      = gtk.MenuBar.new()
+        self.vbox         = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
+            self.menubar      = gtk.MenuBar.new()
+        self.note         = gtk.Notebook.new()
+        --self.statusbar    = gtk.Statusbar.new()
 
     --~ self.actions   = {}
     self.menu      = {}
     self.menu_item = {}
 
+    --self.context      = self.statusbar:get_context_id("default")
+    --self.statusbar:push(self.context, "Statusbar message")
+
     --Menu
     self:append_menu('file', "_File")
     self:append_menu_item('file', "Quit nadzoru", "Quit nadzoru", 'gtk-quit', gtk.main_quit )
     self:append_menu_item('file', "Remove Tab", "Remove The Active Tab", 'gtk-delete', function( data ) data.gui:remove_current_tab() end, self )
+
+
+
+
+    --[[
+    -- ** Workspace ** --
+    self.level_box = gtk.ComboBoxText.new()
+    local level_list = get_list('level')
+    for _,t in ipairs(level_list) do
+        self.level_box:append_text(t)
+    end
+    self.level_box:set('active', 0)
+    
+    local atm_flag = false
+    self.level_box:connect('changed', function(data)
+        local editor
+        if not atm_flag then
+            editor = self:get_current_content()
+        end
+        fn.change_level(data, level_list[self.level_box:get('active')+1], editor and editor.automaton)
+    end, data)
+    
+    self.note:connect('switch-page', function(data, _, tab)
+        atm_flag = true
+        local editor = self.tab:get(tab+1) and self.tab:get(tab+1).content
+        if editor and editor.automaton then
+            self.level_box:set('active', level_list[editor.automaton.level])
+        end
+        atm_flag = false
+    end, data)
+    
+    self.treeview_events      = Treeview.new( true )
+    self.btn_to_automaton     = gtk.Button.new()
+    self.ta_box               = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
+    self.img_to_automaton     = gtk.Image.new_from_file( './images/icons/to_automaton.png' )
+    self.ta_box:pack_start(self.img_to_automaton, true, true, 0)
+    self.btn_to_automaton:add(self.ta_box)
+    
+    self.btn_add_event        = gtk.Button.new_from_stock( 'gtk-add' )
+    self.btn_delete_event     = gtk.Button.new_from_stock( 'gtk-delete' )
+    self.btn_to_automaton:connect('clicked', fn.to_automaton, data )
+    self.btn_add_event:connect('clicked', fn.add_event, data )
+    self.btn_delete_event:connect('clicked', fn.delete_event, data )
+    
+    self.treeview_events:add_column_text("Events",100, fn.edit_event, data)
+    self.treeview_events:add_column_toggle("Con", 50, fn.toggle_controllable, data )
+    self.treeview_events:add_column_toggle("Obs", 50, fn.toggle_observable, data )
+    self.treeview_events:add_column_text("Ref", 50, fn.edit_refinement, data )
+    
+    self.treeview_events.columns[1]:set('sizing', gtk.TREE_VIEW_COLUMN_AUTOSIZE)
+    self.treeview_events.columns[2]:set('sizing', gtk.TREE_VIEW_COLUMN_AUTOSIZE)
+    self.treeview_events.columns[3]:set('sizing', gtk.TREE_VIEW_COLUMN_AUTOSIZE)
+    self.treeview_events.render[2]:set('width', 32)
+    self.treeview_events.render[3]:set('width', 32)
+    
+    self.event_box:pack_start( gtk.Label.new_with_mnemonic('Level:'), false, false, 0 )
+    self.event_box:pack_start( self.level_box, false, false, 0 )
+    self.event_box:pack_start( self.treeview_events:build(), true, true, 0 )
+    self.event_box:pack_start( self.btn_to_automaton, false, false, 0 )
+    self.event_box:pack_start( self.btn_add_event, false, false, 0 )
+    self.event_box:pack_start( self.btn_delete_event, false, false, 0 )
+    
+    self.treeview_events.scrolled:set('width-request', 165)
+    self.treeview_events.render[1]:set('width', 36)
+    self.treeview_events:update()
+   --]]
+
+
+
 
     --** Packing it! (vbox) **--
     self.vbox:pack_start(self.menubar, false, false, 0)
@@ -51,10 +128,20 @@ Gui = letk.Class( function( self )
     self.note:set('enable-popup', true, 'scrollable', true, 'show-border', true)
 end, Object )
 
+---Refreshs the Gui.
+--Refreshs the gtk window.
+--@param self Gui in which the operation is applied.
 function Gui:run()
     self.window:show_all()
 end
 
+
+---Appends a new menu to the gui.
+--TODO
+--@param self Gui in which the menu is added.
+--@param name Name of the menu.
+--@param caption TODO
+--@return New menu.
 function Gui:append_menu( name, caption )
     self.menu[name] = gtk.Menu.new()
     local menu_item = gtk.MenuItem.new_with_mnemonic( caption )
@@ -67,6 +154,12 @@ function Gui:append_menu( name, caption )
     return menu_item
 end
 
+---Prepends a new menu to the gui.
+--TODO
+--@param self Gui in which the menu is added.
+--@param name Name of the menu.
+--@param caption TODO
+--@return New menu.
 function Gui:prepend_menu( name, caption )
     self.menu[name] = gtk.Menu.new()
     local menu_item = gtk.MenuItem.new_with_mnemonic( caption )
@@ -79,6 +172,13 @@ function Gui:prepend_menu( name, caption )
     return menu_item
 end
 
+---Appends a new submenu to a menu.
+--TODO
+--@param self Gui in which the submenu is added.
+--@param parent Parent menu in which the submenu is added.
+--@param name Name of the menu.
+--@param caption TODO
+--@return New menu.
 function Gui:append_sub_menu( parent, name, caption )
     self.menu[name] = gtk.Menu.new()
     local menu_item = gtk.MenuItem.new_with_mnemonic( caption )
@@ -91,6 +191,13 @@ function Gui:append_sub_menu( parent, name, caption )
     return menu_item
 end
 
+---Prepend a new submenu to a menu.
+--TODO
+--@param self Gui in which the submenu is added.
+--@param parent Parent menu in which the submenu is added.
+--@param name Name of the menu.
+--@param caption TODO
+--@return New menu.
 function Gui:prepend_sub_menu( parent, name, caption )
     self.menu[name] = gtk.Menu.new()
     local menu_item = gtk.MenuItem.new_with_mnemonic( caption )
@@ -103,18 +210,29 @@ function Gui:prepend_sub_menu( parent, name, caption )
     return menu_item
 end
 
+---Appends a separator line to a menu.
+--Creates a separator and appends it to the menu 'name'.
+--@param self Gui in which the separator is created.
+--@param name Name of the menu in which th separator is added.
 function Gui:append_menu_separator( name )
     local separator = gtk.SeparatorMenuItem.new()
     self.menu[name]:append( separator )
 end
 
+---Prepend a separator line to a menu.
+--Creates a separator and prepends it to the menu 'name'.
+--@param self Gui in which the separator is created.
+--@param name Name of the menu in which th separator is added.
 function Gui:prepend_menu_separator( name )
     local separator = gtk.SeparatorMenuItem.new()
     self.menu[name]:prepend( separator )
 end
 
-function Gui:remove_menu( menu )
-    self.menubar:remove( menu )
+---Removes a menu from the gui.
+--@param self Gui in which the menu is removed.
+--@param menu Menu to be removed.
+function Gui:remove_menu( name )
+    self.menubar:remove( name )
     self.menu_item[name] = nil
 end
 
@@ -160,6 +278,11 @@ function Gui:prepend_menu_item( menu_name, caption, hint, icon, callback, param,
     return menu_item
 end
 
+---TODO
+--TODO
+--@param self Gui in which the operation is applied.
+--@param menu_name TODO
+--@param menu_item TODO
 function Gui:remove_menu_item( menu_name, menu_item )
     self.menu[menu_name]:remove( menu_item )
     local pos
@@ -179,12 +302,24 @@ function Gui:add_tab( widget, title, destroy_callback, param )
     local note =  self.note:insert_page( widget, gtk.Label.new(title), -1)
     self.tab:add({ destroy_callback = destroy_callback, param = param, widget = widget }, note + 1)
     self.window:show_all()
+    self.note:set_current_page(note)
 
     return note
 end
 
+---Closes current selected tab.
+--Finds the id of the current tab and removes it.
+--@param self Gui in which the operation is applied.
 function Gui:remove_current_tab( )
     local id = self.note:get_current_page()
+    self:remove_tab(id)
+end
+
+---Closes a tab.
+--Finds the tab represented by id, removes it from the gtk notebook, calls it's destroy callback with it's destroy parameter and refreshs the window.
+--@param self Gui in which the operation is applied.
+--@param id Id of the tab.
+function Gui:remove_tab( id )
     if id then
         self.note:remove_page( id )
         local destroy = self.tab:remove( id + 1 )
@@ -195,9 +330,13 @@ function Gui:remove_current_tab( )
     self.window:show_all()
 end
 
+---Changes the name of a tab.
+--TODO
+--@param self Gui in which the operation is applied.
+--@param widget TODO
+--@param title New name of the tab.
 function Gui:set_tab_page_title( widget, title )
     local page_label = self.note:get_tab_label( widget )
-
     page_label:set_text( title )
 
     self.window:show_all()

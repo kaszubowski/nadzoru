@@ -1,0 +1,34 @@
+1. Style, coding.
+    1.0 Do NOT use tabs.
+    1.1 Indentation MUST BE 4 spaces
+    1.2 The code must be easy to read
+    1.3 Comments are nice, but they do not need to be verbose
+    1.4 Elegant code is prefered
+    1.5 Take care with performance, try use a lower complexity algorithms, but do not "brush bits" that reduce understandability.
+    1.6 Try to balance performance, elegance and understandability.
+    1.7 Do not reinventing the wheel.
+    1.8 Do NOT force file names case, never force upper.
+    1.8.1 file extension MUST BE lower case!
+
+2. LOW COUPLING, HIGH COHESION. Reduce the coupling between classes and increase cohesion.
+    High cohesion is desirable to obtain robustness, reliability, reusability, and understandability.
+    Low cohesion may be difficult to maintain, test, reuse, and understand.
+    2.1 Thus, COUPLING must be applied as near as possible to final classes. For example, the class Automaton has
+        no need at all to display GUI content, or keep an attribute of the controller object.
+
+3. Use the lasted version of libraries.
+    3.1 Do not use deprecated functions or functions that are going to be deprecated when you have a good new way to do it
+    3.2 To keep compatibility with old libs (The case of windows version of GTK is current 3.6 while in Linux we use the 3.14) write the new function in the "compat" file.
+        The "compat" file will implement new versions using deprecated functions to keep compatibility with old versions of libraries, mainly lgob/gtk3 for Windows
+
+4. Have a good development environment. aka Linux
+    4.1 If you do not have a Linux in your PC or you do not want to have it, use a virtual machine with Linux
+    4.2 Windows releases are for users only and will not always have the mainline
+    4.3 USE git. Learn how to use it. It is a painful job merge code done elsewhere. Git is one of the best tool for this. CVS and SVN are not good at all and DO NOT EVER USE DROPBOX again for code.
+
+5. "With great CHANCES comes great responsibility". Do NOT do a substantial change without discuss it with others, and I mean others programmers of the tool, not only your supervisor.
+    5.1 DO NOT BREAK what is working. If a change is going to impact elsewhere, elsewhere and all cascade effect must be updated.
+    5.3 Run unit tests. Write unit tests for new functions.
+    5.4 Commit piece by piece. Do not implement a pack of several features and commit all together, commit one by one. Use a branch if needed.
+    5.5 Only commit to mainline tested code. Use a branch if needed.
+    5.6 Do not develop over archaic versions. Keep your repository updated. It will be painful to merge it later.

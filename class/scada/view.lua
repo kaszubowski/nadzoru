@@ -1,3 +1,25 @@
+--[[
+    This file is part of nadzoru.
+
+    nadzoru is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    nadzoru is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with nadzoru.  If not, see <http://www.gnu.org/licenses/>.
+
+    Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
+--]]
+
+--[[
+module "ScadaView"
+--]]
 ScadaView = letk.Class( function( self, gui, scada_plant, elements )
     Object.__super( self )
     self.gui         = gui
@@ -15,6 +37,11 @@ end, Object )
 
 ScadaView.scale_values = ScadaEditor.scale_values
 
+---TODO
+--TODO
+--@param self TODO
+--@see ScadaView:build_server_config_window
+--@see Gui:add_tab
 function ScadaView:build_gui()
      self.vbox                           = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
         self.toolbar                     = gtk.Toolbar.new()
@@ -47,6 +74,9 @@ function ScadaView:build_gui()
     self.gui:add_tab( self.vbox, "view " .. (self.scada_plant:get('file_name') or "-x-") )
 end
 
+---TODO
+--TODO
+--@param self TODO
 function ScadaView:build_server_config_window()
     self.SCWgui = {}
     self.SCWgui.win                               = gtk.Window.new( gtk.WINDOW_TOPLEVEL )
@@ -150,6 +180,11 @@ function ScadaView:build_server_config_window()
     self.SCWgui.entry_namespace:set( 'width-request', 150 )
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param cr TODO
+--@see ScadaPlant:render
 function ScadaView:drawing_area_expose( cr )
     cr = cairo.Context.wrap(cr)
     cr:scale( self.scale_values[ self.scale ], self.scale_values[ self.scale ] )
@@ -157,6 +192,12 @@ function ScadaView:drawing_area_expose( cr )
     self.drawing_area:set_size_request( (x+32)*self.scale_values[ self.scale ], (y+32)*self.scale_values[ self.scale ] )
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param event TODO
+--@see ScadaPlant:get_selected
+--@see ScadaComponent.Base:click
 function ScadaView:drawing_area_press( event )
     local stats, button_press = gdk.Event.get_button( event )
 
@@ -174,6 +215,13 @@ function ScadaView:drawing_area_press( event )
     end
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@return TODO
+--@see ScadaPlant:load_automata_group
+--@see AutomataGroup:load_automata
+--@see AutomataGroup:check_automata
 function ScadaView:check_plant( )
     if not self.scada_plant then return false, "No plant" end
     if not self.scada_plant.automata_group_name then return false, "Plant do not have automata group" end
@@ -186,6 +234,10 @@ function ScadaView:check_plant( )
     return true
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@return TODO
 function ScadaView:redis_connect()
     if not self.server_config or not self.server_config.params then
         return false, "Connection not configured" 
@@ -205,10 +257,19 @@ function ScadaView:redis_connect()
     end
 end
 
+---TODO
+--TODO
+--@param self TODO
 function ScadaView:set_act_cfgcon()
     self.SCWgui.win:show_all()
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@see ScadaView:check_plant
+--@see ScadaView:redis_connect
+--@see ScadaView:run_init
 function ScadaView:set_act_connect()
     if not self.run then
         local status_plant, err_plant = self:check_plant( )
@@ -231,6 +292,9 @@ function ScadaView:set_act_connect()
     end
 end
 
+---TODO
+--TODO
+--@param self TODO
 function ScadaView:run_init()
     local base_env = {
         print    = print,
@@ -274,6 +338,12 @@ function ScadaView:run_init()
     self.run.event_position = 1
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@return TODO
+--@see Simulator:event_exists
+--@see Simulator:event_evolve
 function ScadaView:run_callback()
     if not self.run then return false end
     local event_name = true 
@@ -299,6 +369,11 @@ function ScadaView:run_callback()
     return self.run and true or false
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@return TODO
+--@see ScadaComponent.Base:tick
 function ScadaView:tick_callback()
     if not self.run then return false end
     for k, enviroment in ipairs( self.run.components_env ) do

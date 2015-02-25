@@ -1,3 +1,25 @@
+--[[
+    This file is part of nadzoru.
+
+    nadzoru is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    nadzoru is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with nadzoru.  If not, see <http://www.gnu.org/licenses/>.
+
+    Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
+--]]
+
+--[[
+module "GLRender"
+--]]
 GLRender = letk.Class( function( self, draw )
     self.draw = draw
 
@@ -13,10 +35,18 @@ GLRender = letk.Class( function( self, draw )
      self.draw:connect("expose-event", self.expose, self )
 end, Object )
 
+---TODO
+--TODO
+--@param self TODO
+--@param fn TODO
 function GLRender:set_render_callback( fn )
     self.render_callback = fn
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@return Always true.
 function GLRender:configure()
     local context       = gtkglext.Widget.get_gl_context(self.draw)
     local drawable      = gtkglext.Widget.get_gl_drawable(self.draw)
@@ -35,6 +65,9 @@ function GLRender:configure()
 
 end
 
+---TODO
+--TODO
+--@param self TODO
 function GLRender:expose()
     local context  = gtkglext.Widget.get_gl_context(self.draw)
     local drawable = gtkglext.Widget.get_gl_drawable(self.draw)

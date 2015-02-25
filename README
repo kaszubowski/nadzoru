@@ -1,7 +1,7 @@
 1.) Install: 
 
     1.1 From your package manager (Pacman, apt-get, ...)
-        gtk 3.10+
+        gtk 3.14+
         lua 5.1
         luarocks (for lua 5.1)
 
@@ -31,4 +31,4 @@
 
 2.4) Automata operations: unstable/in development
 
-2.5) SCADA plant editor/MES: stable/in development
+2.5) SCADA plant editor/MES: stable prototype/in development

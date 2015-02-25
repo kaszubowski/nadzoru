@@ -1,13 +1,36 @@
 --[[
+    This file is part of nadzoru.
+
+    nadzoru is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    nadzoru is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with nadzoru.  If not, see <http://www.gnu.org/licenses/>.
+
+    Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
+--]]
+
+--[[
     TODO:
     --text input: e.g. for automaton name
     --use multiple_selector in a language field (button)
 --]]
 
-Selector = letk.Class( function( self, options, nowindow )
+--[[
+module "Selector"
+--]]
+Selector = letk.Class( function( self, options, nowindow)
     options = table.complete( options or {}, {
         title      = 'nadzoru selector',
         success_fn = nil,
+        no_cancel = nil,
     })
     self             = {}
     self.options     = options
@@ -23,7 +46,9 @@ Selector = letk.Class( function( self, options, nowindow )
             self.hbox_main        = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
                 if not nowindow then
                     self.hbox_footer      = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
-                        self.btn_cancel   = gtk.Button.new_with_label("Cancel")
+                        if not options.no_cancel then
+                        	self.btn_cancel   = gtk.Button.new_with_label("Cancel")
+                        end
                         self.btn_ok       = gtk.Button.new_with_label("OK")
                 end
 
@@ -33,23 +58,27 @@ Selector = letk.Class( function( self, options, nowindow )
         self.vbox_main:pack_start( self.hbox_main, true, true, 0 )
             if not nowindow then
                 self.vbox_main:pack_start( self.hbox_footer, false, false, 0 )
-                    self.hbox_footer:pack_start( self.btn_cancel, true, true, 0 )
+                    if not options.no_cancel then
+                    	self.hbox_footer:pack_start( self.btn_cancel, true, true, 0 )
+                    end
                     self.hbox_footer:pack_start( self.btn_ok, true, true, 0 )
             end
 
     if not nowindow then
         self.window:connect("delete-event", self.window.destroy, self.window)
         self.window:set_modal( true )
-    end
-
-    if not nowindow then
-        self.btn_cancel:connect("clicked", self.window.destroy, self.window )
+        if not options.no_cancel then
+        	self.btn_cancel:connect("clicked", self.window.destroy, self.window )
+        end
         self.btn_ok:connect("clicked", self.success, self)
     end
 
     return self, self.vbox_main
 end, Object )
 
+---TODO
+--TODO
+--@param self TODO
 function Selector:success()
     if type(self.options.success_fn) == 'function' then
         local result = {}
@@ -67,6 +96,16 @@ function Selector:success()
     end
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param options TODO
+--@see Treeview:add_column_text
+--@see Treeview:build
+--@see Treeview:add_row
+--@see Treeview:update
+--@see Treeview:get_selected
+--@see Treeview:remove_row
 function Selector:multipler_selector( options )
     options = table.complete( options or {}, {
         list        = letk.List.new(),
@@ -175,6 +214,11 @@ function Selector:multipler_selector( options )
     end)
 end
 
+---Adds a combobox to the selector.
+--TODO
+--@param self Selector in which the combobox is added.
+--@param options Table containing the parameters of the combobox.
+--@return Selector with the combobox.
 function Selector:add_combobox( options )
     options = table.complete( options or {}, {
         list        = letk.List.new(),
@@ -214,6 +258,16 @@ function Selector:add_combobox( options )
     return self
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param options TODO
+--@return TODO
+--@see Treeview:add_column_text
+--@see Treeview:add_row
+--@see Treeview:get_selected
+--@see Treeview:build
+--@see Treeview:update
 function Selector:add_multipler( options )
     options = table.complete( options or {}, {
         list        = letk.List.new(),
@@ -242,6 +296,11 @@ function Selector:add_multipler( options )
     return self
 end
 
+---Adds a checkbox to the selector.
+--TODO
+--@param self Selector in which the checkbox is added.
+--@param options Table containing the parameters of the checkbox.
+--@return Selector with the checkbox.
 function Selector:add_checkbox( options )
      options = table.complete( options or {}, {
         text        = 'input',
@@ -260,6 +319,11 @@ function Selector:add_checkbox( options )
     return self
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param options TODO
+--@return TODO
 function Selector:add_file( options )
      options = table.complete( options or {}, {
         text        = 'input',
@@ -326,6 +390,11 @@ function Selector:add_file( options )
     return self
 end
 
+---TODO
+--Unfinished. TODO
+--@param self TODO
+--@param options TODO
+--@return TODO
 function Selector:add_spin( options )
      options = table.complete( options or {}, {
         text        = 'input',
@@ -358,6 +427,9 @@ function Selector:add_spin( options )
     return self
 end
 
+---Runs the selector.
+--TODO
+--@param self Selector to be run.
 function Selector:run()
     if not nowindow then
         local nc = self.num_columns
@@ -370,4 +442,6 @@ function Selector:run()
 
         self.window:show_all()
     end
+    
+    return self
 end

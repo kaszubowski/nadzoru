@@ -1,0 +1,18 @@
+{# Init #}
+
+{% for K_automaton, automaton in automatons:ipairs() %}
+
+{% endfor %}
+
+{# input read #}
+
+{# update supervisors - non controllable events #}
+
+{# Desable events #}
+
+{# Choice if have 2 or more options #}
+
+{# execute controllable if have one #}
+
+
+

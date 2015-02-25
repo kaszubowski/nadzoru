@@ -17,12 +17,19 @@
     Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
 --]]
 
+--[[
+module "Simulator"
+--]]
 Simulator = letk.Class( function( self, automaton )
     Object.__super( self )
     self.gui            = gui
     self:automaton_load( automaton )
 end, Object )
 
+---Loads an automaton to the simulator.
+--TODO
+--@param self Simulator in which the automaton will be loaded.
+--@param automaton Automaton to be loaded.
 function Simulator:automaton_load( automaton )
     self.automaton        = automaton or self.automaton
     self.event_name_map   = {}
@@ -48,23 +55,35 @@ function Simulator:automaton_load( automaton )
     --State Event Map
     for state_index, state in automaton.states:ipairs() do
         self.state_event_map[ state_index ] = {}
-        for pos, transition  in state.transitions_out:ipairs() do
-            local event_index  = self.event_map[ transition.event ] 
+        for pos, transition in state.transitions_out:ipairs() do
+            local event_index  = self.event_map[ transition.event ]
             local target_index = self.state_map[ transition.target ]
             if not self.state_event_map[ state_index ][  event_index ] then
-                self.state_event_map[ state_index ][  event_index ] = {} --Can be a Non-Deterministic Automaton
+                self.state_event_map[ state_index ][ event_index ] = {} --Can be a Non-Deterministic Automaton
             end
-            table.insert( self.state_event_map[ state_index ][  event_index ], target_index )
+            
+            local newPosition = #self.state_event_map[state_index][event_index]+1
+            self.state_event_map[ state_index ][ event_index ][ newPosition ] = target_index
         end
     end
 end
 
+---Returns current state of the simulator.
+--TODO
+--@param self Simulator whose current state is returned.
+--@return Id of the current state.
+--@return TODO
 function Simulator:get_current_state()
     --~ local node  = self.automaton.states:get( self.current_state_id )
     local node  = self.state_map[ self.current_state_id ]
     return self.current_state_id, node
 end
 
+---Returns informations about the current state of the simulator.
+--TODO
+--@param self Simulator whose informations about current state are returned.
+--@return Table with index, name, initial property and marked property of the state.
+--@see Simulator:get_current_state
 function Simulator:get_current_state_info()
     local state_index, node = self:get_current_state()
     return {
@@ -75,6 +94,11 @@ function Simulator:get_current_state_info()
     }
 end
 
+---Returns informations about the events of the current state of the simulator.
+--TODO
+--@param self Simulator whose informations about events are returned.
+--@return Table with the events and index, target state, source state, target index and source index of each event.
+--@see Simulator:get_current_state
 function Simulator:get_current_state_events_info()
     local state_index, node = self:get_current_state()
     local events            = {}
@@ -96,6 +120,11 @@ function Simulator:get_current_state_events_info()
     return events
 end
 
+---Returns controllable events of the current state of the simulator.
+--For some reason, it doesn't check if the events are controllable. TODO
+--@param self Simulator whose events are returned.
+--@return Table with controllable events of the current state.
+--@see Simulator:get_current_state
 function Simulator:get_current_state_controllable_events()
     local state_index, node = self:get_current_state()
     local events            = {}
@@ -108,6 +137,10 @@ function Simulator:get_current_state_controllable_events()
     return events
 end
 
+---Returns controllable events of the automaton of the simulator.
+--TODO
+--@param self Simulator whose events are returned.
+--@return Table with controllable events of the automaton.
 function Simulator:get_controllable_events()
     local events            = {}
     for event_index, event in self.automaton.events:ipairs() do
@@ -119,6 +152,10 @@ function Simulator:get_controllable_events()
     return events
 end
 
+---Returns non controllable events of the automaton of the simulator.
+--TODO
+--@param self Simulator whose events are returned.
+--@return Table with non controllable events of the automaton.
 function Simulator:get_non_controllable_events()
     local events            = {}
     for event_index, event in self.automaton.events:ipairs() do
@@ -130,6 +167,10 @@ function Simulator:get_non_controllable_events()
     return events
 end
 
+---Returns all events of the automaton of the simulator.
+--TODO
+--@param self Simulator whose events are returned.
+--@return Table with all events of the automaton.
 function Simulator:get_events()
     local events            = {}
     for event_index, event in self.automaton.events:ipairs() do
@@ -139,6 +180,11 @@ function Simulator:get_events()
     return events
 end
 
+---Changes current state of the simulator.
+--TODO
+--@param self Simulator in which the operation is applied.
+--@param state_index Index of the new state.
+--@return True if the state is valid, false otherwise.
 function Simulator:change_state( state_index )
     state_index = tonumber( state_index )
     if not state_index then return false end
@@ -148,6 +194,12 @@ function Simulator:change_state( state_index )
     return true
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param event_index TODO
+--@return Always false.
+--@see Simulator:get_current_state
 function Simulator:get_event_options( event_index )
     local t_ev_id = type( event_index )
     local state_index, node = self:get_current_state()
@@ -169,6 +221,13 @@ function Simulator:get_event_options( event_index )
     return false
 end
 
+---Change state of the simulator according to the occurrence of an event.
+--TODO
+--@param self Simulator in which the operation is applied.
+--@param event_index Index of the event used to change state.
+--@return True if no problems occurred, false otherwise.
+--@see Simulator:get_event_options
+--@see Simulator:change_state
 function Simulator:event_evolve( event_index )
     local target_index_options = self:get_event_options( event_index )
     if target_index_options and target_index_options[1] then
@@ -178,6 +237,11 @@ function Simulator:event_evolve( event_index )
     return false
 end
 
+---Verifies if an event exists.
+--TODO
+--@param self Simulator in which the operation is applied.
+--@param ev_name Name of the event to be verified.
+--@return True if the event exists, false otherwise.
 function Simulator:event_exists( ev_name )
     return self.event_name_map[ ev_name ] and true or false
 end

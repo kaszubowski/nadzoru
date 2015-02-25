@@ -1,0 +1,804 @@
+{#
+IMPORTANT:
+There are two types of indentation in this file. Indentation with tabs is normal indentation that will also appear on generated codes.
+Indentation with spaces is special and won't appear on generated codes. Space indentation is used to indent lua commands and lua blocks.
+You can use search highlight (avaliable in editors like Gedit or Geany) and type "    " (without the quotation marks, four spaces) on the
+search to see the special indentation.
+#}
+
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<STExchangeFile>
+	<fileHeader company="Schneider Automation" product="Unity Pro M V4.1 - 90415E" dateTime="date_and_time#2014-4-22-16:36:28" content="Structured source file" DTDVersion="41"></fileHeader>
+	<contentHeader name="Project" version="0.0.20" dateTime="date_and_time#2014-4-10-13:19:31"></contentHeader>
+    
+    {% with
+        var_data, var_data_pos = {}, var_state_map = {}, var_state_address = {}, var_automaton_map = {}, var_ref_rel = {}, var_ev_map, var_flag,
+        sup_automata = {}, sup_data = {},
+        ps_automata = {}, ps_data = {},
+        dis_automata = {}, dis_data = {},
+        sup_r_automata = {}, sup_r_data = {},
+    %}
+    
+    {% for k_automaton, automaton in automata:ipairs() %}
+        {# Separate automata types #}
+        {% if automaton.type == 'Supervisor' %}
+            {% set sup_automata[ #sup_automata+1 ] = automaton %}
+            {% set var_data = sup_data %}
+            {% set var_ev_map = events_map %}
+        {% elseif automaton.type == 'Plant' %}
+            {% set ps_automata[ #ps_automata+1 ] = automaton %}
+            {% set var_data = ps_data %}
+            {% set var_ev_map = events_map %}
+        {% elseif automaton.type == 'Distinguisher' %}
+            {% set dis_automata[ #dis_automata+1 ] = automaton %}
+            {% set var_data = dis_data %}
+            {% set var_ev_map = events_r_map %}
+        {% elseif automaton.type == 'Ref. Supervisor' %}
+            {% set sup_r_automata[ #sup_r_automata+1 ] = automaton %}
+            {% set var_data = sup_r_data %}
+            {% set var_ev_map = events_r_map %}
+        {% end %}
+        
+        {# Memorize general automaton position #}
+        {% set var_automaton_map[automaton] = k_automaton %}
+        
+        {# Memorize specific automaton position and create state map #}
+        {% set var_data_pos[automaton] = #var_data %}
+        {% for k_state, state in automaton.states:ipairs() %}
+            {% set var_state_map[ state ] = k_state %}
+        {% end %}
+        
+        {# Store automaton states and transitions in the vector #}
+        {% set var_state_address[automaton] = {} %}
+        {% for k_state, state in automaton.states:ipairs() %}
+            {% set var_data[#var_data +1] = state.transitions_out:len() %}
+            {% set var_state_address[automaton][k_state] = #var_data %}
+            {% for k_transition, transition in state.transitions_out:ipairs() %}
+                {% set var_data[#var_data +1] = var_ev_map[ transition.event.name ] %}
+                {% set var_data[#var_data +1] = var_state_map[ transition.target ] %}
+            {% end %}
+        {% end %}
+        
+        {# Replace states with addresses #}
+        {% for k_state, pos in ipairs(var_state_address[automaton]) %}
+            {% for i=1,var_data[pos] %}
+                {% set var_data[pos + 2*i] = var_state_address[automaton][ var_data[pos + 2*i] ] %}
+            {% end %}
+        {% end %}
+    {% end %}
+    
+    {# Memorize refinement relationship #}
+    {% for k_event, event in ipairs(events) %}
+        {% set var_ref_rel[k_event] = {} %}
+        {% if refinements[event.name] %}
+            {% for ref_name in pairs(refinements[event.name]) %}
+                {% set var_ref_rel[k_event][ events_r_map[ref_name] ] = true %}
+            {% end %}
+        {% else %}
+            {% set var_ref_rel[k_event][ events_r_map[event.name] ] = true %}
+        {% end %}
+    {% end %}
+    
+	<program>
+		<identProgram name="main" type="section" task="MAST"></identProgram>
+		<STSource>
+			if reset then (* reset function *)
+				reset:=0;
+				reset_states();
+			end_if;
+			
+			if run then
+				input_change(); (* checks if uncontrollable events occured during last cycle *)
+				input_buffer_check_empty(); (* checks if event buffer is empty *)
+				
+				while not input_buffer_check_empty_return do (* consume all buffered events *)
+					input_buffer_get (input_buffer := input_buffer, input_buffer_qtt := input_buffer_qtt, event := event); (* get next event in the buffer *)
+					distinguish(); (* distinguishes the event to the refined alphabet *)
+					update_product_system(); (* updates the product system with the event *)
+					update_distinguisher(); (* updates the distinguisher with the event *)
+					update_supervisor(); (* updates the supervisor with the event *)
+					callback(); (* execute event callback *)
+					input_buffer_check_empty(); (* checks if buffer is still empty *)
+				end_while;
+				
+				get_next_controllable(); (* choose next controllable event *)
+				
+				if get_next_controllable_return then
+					distinguish();
+					update_product_system(); (* updates the product system with the event *)
+					update_distinguisher(); (* updates the distinguisher with the event *)
+					update_supervisor(); (* updates the supervisor with the event *)
+					callback(); (* execute event callback *)
+				end_if;
+				
+				pic_rand(); (* update random seed *)
+			end_if;
+		</STSource>
+	</program>
+	
+	<program>
+		<identProgram name="Reset_states" type="SR" task="MAST"></identProgram>
+		<STSource>
+			for i:=1 to ev_number do
+				input_buffer[i]:=0;
+				input_buffer_qtt:=0;
+			end_for;
+			
+			for i:=1 to dis_number do
+				dis_current_state[i]:=dis_initial_states[i];
+			end_for;
+				
+			for i:=1 to ps_number do
+				ps_current_state[i]:=ps_initial_states[i];
+			end_for;
+			
+			for i:=1 to sup_r_number do
+				sup_r_current_state[i]:=sup_r_initial_states[i];
+			end_for;
+			
+			for i:=1 to sup_r_number do
+				sup_current_state[i]:=sup_initial_states[i];
+			end_for;
+		</STSource>
+	</program>
+	
+	<dataBlock>
+		<variables name="dis_number" typeName="INT">
+			<variableInit value="{{ #dis_automata }}"></variableInit>
+		</variables>
+		<variables name="sup_r_current_state" typeName="ARRAY[1..{{ #sup_r_automata }}] OF INT">
+            {% for k_automaton, automaton in ipairs(sup_r_automata) %}
+			    <instanceElementDesc name="[{{ k_automaton }}]">
+				    <value>{{ var_state_address[automaton][automaton.initial] }}</value>
+			    </instanceElementDesc>
+            {% end %}
+		</variables>
+		<variables name="sup_r_initial_states" typeName="ARRAY[1..{{ #sup_r_automata }}] OF INT">
+            {% for k_automaton, automaton in ipairs(sup_r_automata) %}
+			    <instanceElementDesc name="[{{ k_automaton }}]">
+				    <value>{{ var_data_pos[automaton] }}</value>
+			    </instanceElementDesc>
+            {% end %}
+		</variables>
+		<variables name="i" typeName="INT">
+			<variableInit value="0"></variableInit>
+		</variables>
+		<variables name="ps_current_state" typeName="ARRAY[1..{{ #ps_automata }}] OF INT">
+            {% for k_automaton, automaton in ipairs(ps_automata) %}
+			    <instanceElementDesc name="[{{ k_automaton }}]">
+				    <value>{{ var_state_address[automaton][automaton.initial] }}</value>
+			    </instanceElementDesc>
+            {% end %}
+		</variables>
+		<variables name="input_buffer" typeName="ARRAY[1..{{ #events }}] OF INT"></variables>
+		<variables name="sup_current_state" typeName="ARRAY[1..{{ #sup_automata }}] OF INT">
+            {% for k_automaton, automaton in ipairs(sup_automata) %}
+			    <instanceElementDesc name="[{{ k_automaton }}]">
+				    <value>{{ var_state_address[automaton][automaton.initial] }}</value>
+			    </instanceElementDesc>
+            {% end %}
+		</variables>
+		<variables name="ev_number" typeName="INT">
+			<variableInit value="{{ #events }}"></variableInit>
+		</variables>
+		<variables name="ps_number" typeName="INT">
+			<variableInit value="{{ #ps_automata }}"></variableInit>
+		</variables>
+		<variables name="dis_current_state" typeName="ARRAY[1..{{ #dis_automata }}] OF INT">
+            {% for k_automaton, automaton in ipairs(dis_automata) %}
+			    <instanceElementDesc name="[{{ k_automaton }}]">
+				    <value>{{ var_state_address[automaton][automaton.initial] }}</value>
+			    </instanceElementDesc>
+            {% end %}
+		</variables>
+		<variables name="ps_initial_states" typeName="ARRAY[1..{{ #ps_automata }}] OF INT">
+            {% for k_automaton, automaton in ipairs(ps_automata) %}
+			    <instanceElementDesc name="[{{ k_automaton }}]">
+				    <value>{{ var_data_pos[automaton] }}</value>
+			    </instanceElementDesc>
+            {% end %}
+		</variables>
+		<variables name="sup_r_number" typeName="INT">
+			<variableInit value="{{ #sup_r_automata }}"></variableInit>
+		</variables>
+		<variables name="dis_initial_states" typeName="ARRAY[1..{{ #dis_automata }}] OF INT">
+            {% for k_automaton, automaton in ipairs(dis_automata) %}
+			    <instanceElementDesc name="[{{ k_automaton }}]">
+				    <value>{{ var_data_pos[automaton] }}</value>
+			    </instanceElementDesc>
+            {% end %}
+		</variables>
+		<variables name="input_buffer_qtt" typeName="INT">
+			<variableInit value="0"></variableInit>
+		</variables>
+		<variables name="sup_initial_states" typeName="ARRAY[1..{{ #sup_automata }}] OF INT">
+            {% for k_automaton, automaton in ipairs(sup_automata) %}
+			    <instanceElementDesc name="[{{ k_automaton }}]">
+				    <value>{{ var_data_pos[automaton] }}</value>
+			    </instanceElementDesc>
+            {% end %}
+		</variables>
+		<variables name="reset" typeName="BOOL"></variables>
+		<variables name="event" typeName="INT"></variables>
+		<variables name="input_buffer_check_empty_return" typeName="BOOL"></variables>
+		<variables name="dis_data" typeName="ARRAY[1..{{ #dis_data }}] OF INT">
+            {% for i,data in ipairs(dis_data) %}
+			    <instanceElementDesc name="[{{ i }}]">
+				    <value>{{ data }}</value>
+			    </instanceElementDesc>
+            {% end %}
+		</variables>
+		<variables name="event_distinguished" typeName="INT"></variables>
+		<variables name="position" typeName="INT">
+			<variableInit value="1"></variableInit>
+		</variables>
+		<variables name="dis_refinements" typeName="ARRAY[1..{{ #dis_automata }},1..{{ #events_r }}] OF BOOL">
+            {% for k_automaton, automaton in ipairs(dis_automata) %}
+			    <instanceElementDesc name="[{{k_automaton}}]">
+                    {% for i in ipairs(events_r) %}
+				        <instanceElementDesc name="[{{i}}]">
+					        <value>{{ atm_events_r[ var_automaton_map[automaton] ][i] and 1 or 0 }}</value>
+				        </instanceElementDesc>
+                    {% end %}
+			    </instanceElementDesc>
+            {% end %}
+		</variables>
+		<variables name="num_transitions" typeName="INT">
+			<variableInit value="0"></variableInit>
+		</variables>
+		<variables name="input_buffer_get" typeName="Input_buffer_get"></variables>
+		<variables name="get_next_controllable_return" typeName="BOOL">
+			<variableInit value="0"></variableInit>
+		</variables>
+		<variables name="sup_r_refinements" typeName="ARRAY[1..{{ #sup_r_automata }},1..{{ #events_r }}] OF BOOL">
+            {% for k_automaton, automaton in ipairs(sup_r_automata) %}
+			    <instanceElementDesc name="[{{k_automaton}}]">
+                    {% for i in ipairs(events_r) %}
+				        <instanceElementDesc name="[{{i}}]">
+					        <value>{{ atm_events_r[ var_automaton_map[automaton] ][i] and 1 or 0 }}</value>
+				        </instanceElementDesc>
+                    {% end %}
+			    </instanceElementDesc>
+            {% end %}
+		</variables>
+		<variables name="sup_number" typeName="INT">
+			<variableInit value="{{ #sup_automata }}"></variableInit>
+		</variables>
+		<variables name="sup_data" typeName="ARRAY[1..{{ #sup_data }}] OF INT">
+            {% for i,data in ipairs(sup_data) %}
+			    <instanceElementDesc name="[{{ i }}]">
+				    <value>{{ data }}</value>
+			    </instanceElementDesc>
+            {% end %}
+		</variables>
+		<variables name="sup_r_data" typeName="ARRAY[1..{{ #sup_r_data }}] OF INT">
+            {% for i,data in ipairs(sup_r_data) %}
+			    <instanceElementDesc name="[{{ i }}]">
+				    <value>{{ data }}</value>
+			    </instanceElementDesc>
+            {% end %}
+		</variables>
+		<variables name="sup_events" typeName="ARRAY[1..{{ #sup_automata }},1..{{ #events }}] OF BOOL">
+            {% for k_automaton, automaton in ipairs(sup_automata) %}
+			    <instanceElementDesc name="[{{k_automaton}}]">
+                    {% for i in ipairs(events) %}
+				        <instanceElementDesc name="[{{i}}]">
+					        <value>{{ atm_events[ var_automaton_map[automaton] ][i] and 1 or 0 }}</value>
+				        </instanceElementDesc>
+                    {% end %}
+			    </instanceElementDesc>
+            {% end %}
+		</variables>
+		<variables name="dis_events" typeName="ARRAY[1..{{ #dis_automata }},1..{{ #events }}] OF BOOL">
+            {% for k_automaton, automaton in ipairs(dis_automata) %}
+			    <instanceElementDesc name="[{{k_automaton}}]">
+                    {% for i in ipairs(events) %}
+				        <instanceElementDesc name="[{{i}}]">
+                            {% if atm_events[ var_automaton_map[automaton] ][i] %}
+					            <value>1</value>
+                            {% else %}
+                                {% set var_flag = 0 %}
+                                {% for j in ipairs(events_r) %}
+                                    {% if var_flag==0 and var_ref_rel[i][j] and atm_events_r[ var_automaton_map[automaton] ][j] %}
+					                    <value>1</value>
+                                        {% set var_flag = 1 %}
+                                    {% end %}
+                                {% end %}
+                                {% if var_flag==0 %}
+					                <value>0</value>
+                                {% end %}
+                            {% end %}
+				        </instanceElementDesc>
+                    {% end %}
+			    </instanceElementDesc>
+            {% end %}
+		</variables>
+		<variables name="j" typeName="INT">
+			<variableInit value="0"></variableInit>
+		</variables>
+		<variables name="refinements_number" typeName="INT">
+			<variableInit value="{{ #events_r }}"></variableInit>
+		</variables>
+		<variables name="refinements" typeName="ARRAY[1..{{ #events_r }}] OF BOOL"></variables>
+		<variables name="refinement_relationship" typeName="ARRAY[1..{{ #events }},1..{{ #events_r }}] OF BOOL">
+            {% for k_event in ipairs(events) %}
+			    <instanceElementDesc name="[{{k_event}}]">
+                    {% for k_ref in ipairs(events_r) %}
+				        <instanceElementDesc name="[{{k_ref}}]">
+					        <value>{{ var_ref_rel[k_event][k_ref] and 1 or 0 }}</value>
+				        </instanceElementDesc>
+                    {% end %}
+			    </instanceElementDesc>
+            {% end %}
+		</variables>
+		<variables name="refinements_disable" typeName="ARRAY[1..{{ #events_r }}] OF BOOL"></variables>
+		<variables name="run" typeName="BOOL"></variables>
+		<variables name="input_buffer_add" typeName="Input_buffer_add"></variables>
+        {% for k_event, event in ipairs(events) %}
+		    <variables name="EV_{{ event.name }}" typeName="EBOOL">
+			    <variableInit value="0"></variableInit>
+		    </variables>
+        {% end %}
+		<variables name="ps_events" typeName="ARRAY[1..{{ #ps_automata }},1..{{ #events }}] OF BOOL">
+            {% for k_automaton, automaton in ipairs(ps_automata) %}
+			    <instanceElementDesc name="[{{k_automaton}}]">
+                    {% for i in ipairs(events) %}
+				        <instanceElementDesc name="[{{i}}]">
+					        <value>{{ atm_events[ var_automaton_map[automaton] ][i] and 1 or 0 }}</value>
+				        </instanceElementDesc>
+                    {% end %}
+			    </instanceElementDesc>
+            {% end %}
+		</variables>
+		<variables name="ps_data" typeName="ARRAY[1..{{ #ps_data }}] OF INT">
+            {% for i,data in ipairs(ps_data) %}
+			    <instanceElementDesc name="[{{ i }}]">
+				    <value>{{ data }}</value>
+			    </instanceElementDesc>
+            {% end %}
+		</variables>
+		<variables name="seed" typeName="INT">
+			<variableInit value="0"></variableInit>
+		</variables>
+		<variables name="dif_to_seed" typeName="INT"></variables>
+		<variables name="random_pos" typeName="INT">
+			<variableInit value="0"></variableInit>
+		</variables>
+		<variables name="dif_to_seed2" typeName="INT"></variables>
+		<variables name="count_actives" typeName="INT">
+			<variableInit value="0"></variableInit>
+		</variables>
+		<variables name="event_disable" typeName="ARRAY[1..{{ #events }}] OF BOOL"></variables>
+		<variables name="events" typeName="ARRAY[1..{{ #events }}] OF BOOL">
+            {% for i in ipairs(events) %}
+			    <instanceElementDesc name="[{{i}}]">
+				    <value>0</value>
+			    </instanceElementDesc>
+            {% end %}
+		</variables>
+		<variables name="refinements_controllable" typeName="ARRAY[1..{{ #events_r }}] OF BOOL">
+        {% for k_event, event in ipairs(events_r) %}
+			<instanceElementDesc name="[{{k_event}}]">
+				<value>{{ event.controllable and 1 or 0 }}</value>
+			</instanceElementDesc>
+        {% end %}
+		</variables>
+		<variables name="lesser_dif_to_seed" typeName="INT"></variables>
+	</dataBlock>
+	<program>
+		<identProgram name="callback" type="SR" task="MAST"></identProgram>
+		<STSource>
+			case event of
+                {% for k_event, event in ipairs(events) %}
+				    {{k_event}}: callback_{{ event.name }}();
+                {% end %}
+			end_case;
+		</STSource>
+	</program>
+	
+    {% for k_event, event in ipairs(events) %}
+	    <program>
+		    <identProgram name="callback_{{ event.name }}" type="SR" task="MAST"></identProgram>
+		    <STSource>
+			    {{ event_code[ event.name ] and event_code[ event.name ].output or ''  }}
+		    </STSource>
+	    </program>
+    {% end %}
+	
+	<program>
+		<identProgram name="update_distinguisher" type="SR" task="MAST"></identProgram>
+		<STSource>
+			for i:=1 to dis_number do
+				if dis_refinements[i][event_distinguished] > 0 then
+					position := dis_current_state[i];
+					num_transitions := dis_data[position];
+					position := position + 1;
+					while num_transitions > 0 do
+						if dis_data[position] = event_distinguished then
+							dis_current_state[i] := dis_data[position + 1];
+							exit;
+						end_if;
+						position := position + 2;
+						num_transitions := num_transitions - 1;
+					end_while;
+				end_if;
+			end_for;
+		</STSource>
+	</program>
+	
+	<FBSource nameOfFBType="Input_buffer_get" version="0.04" dateTime="dt#2014-04-03-13:15:53">
+		<inOutParameters>
+			<variables name="input_buffer" typeName="ARRAY[1..{{ #events }}] OF INT">
+				<attribute name="PositionPin" value="2"></attribute>
+			</variables>
+			<variables name="input_buffer_qtt" typeName="INT">
+				<attribute name="PositionPin" value="3"></attribute>
+			</variables>
+			<variables name="event" typeName="INT">
+				<attribute name="PositionPin" value="4"></attribute>
+			</variables>
+		</inOutParameters>
+		<publicLocalVariables>
+			<variables name="return_flag" typeName="BOOL"></variables>
+		</publicLocalVariables>
+		<FBProgram name="Input_buffer_get_section">
+			<STSource>
+				if input_buffer_qtt = 0 then
+					return_flag := 0;
+					return;
+				else
+					event := input_buffer[input_buffer_qtt];
+					input_buffer_qtt := input_buffer_qtt - 1;
+					return_flag := 1;
+				end_if;
+			</STSource>
+		</FBProgram>
+	</FBSource>
+	<program>
+		<identProgram name="update_supervisor" type="SR" task="MAST"></identProgram>
+		<STSource>
+			for i:=1 to sup_r_number do
+				if sup_r_refinements[i][event_distinguished] > 0 then
+					position := sup_r_current_state[i];
+					num_transitions := sup_r_data[position];
+					position := position + 1;
+					while num_transitions > 0 do
+						if sup_r_data[position] = event_distinguished then
+							sup_r_current_state[i] := sup_r_data[position + 1];
+							exit;
+						end_if;
+						position := position + 2;
+						num_transitions := num_transitions - 1;
+					end_while;
+				end_if;
+			end_for;
+
+			for i:=1 to sup_number do
+				if sup_events[i][event] > 0 then
+					position := sup_current_state[i];
+					num_transitions := sup_data[position];
+					position := position + 1;
+					while num_transitions > 0 do
+						if sup_data[position] = event then
+							sup_current_state[i] := sup_data[position + 1];
+							exit;
+						end_if;
+						position := position + 2;
+						num_transitions := num_transitions - 1;
+					end_while;
+				end_if;
+			end_for;
+		</STSource>
+	</program>
+	
+	<program>
+		<identProgram name="distinguish" type="SR" task="MAST"></identProgram>
+		<STSource>
+			(* set all refinements as active *)
+			for i := 1 to refinements_number do
+				refinements[i] := 1;
+			end_for;
+			
+			for i:=1 to dis_number do (* check disabled instances for all models of the distinguisher *)
+				if dis_events[i][event]>0 then (*if the automata doesn't have the event to be distinguished, skip to next automata*)
+					(*disable all refinements for current model*)
+					for j:=1 to refinements_number do
+						refinements_disable[j] := 1;
+					end_for;
+					
+					(*if distinguisher model has a transition with the event in the current state, it can't disable the event *)
+					position := dis_current_state[i];
+					num_transitions := dis_data[position];
+					position := position + 1;
+					
+					while num_transitions > 0 do
+						if refinement_relationship[event][dis_data[position]]=1 then(*if transition is not a refinement of current event, it should be disabled*)
+							refinements_disable[dis_data[position] ] := 0;
+						end_if;
+						position := position + 2;
+						num_transitions := num_transitions -1;
+					end_while;
+
+					(* Disable for current distinguisher models *)
+					for j :=1 to refinements_number do
+						if refinements_disable[j] = 1 then
+							refinements[j] := 0;
+						end_if;
+					end_for;
+				end_if;
+			end_for;
+			
+			for i:=1 to refinements_number do
+				if refinements[i] =1 then
+					event_distinguished:=i;
+				end_if;
+			end_for;
+		</STSource>
+	</program>
+	
+	<program>
+		<identProgram name="input_buffer_check_empty" type="SR" task="MAST"></identProgram>
+		<STSource>
+			input_buffer_check_empty_return := input_buffer_qtt = 0;
+		</STSource>
+	</program>
+	
+	<program>
+		<identProgram name="input_change" type="SR" task="MAST"></identProgram>
+		<STSource>
+            {% for k_event, event in ipairs(events) %}
+                {% if not event.controllable %}
+                    {% if generate_list[1] == 2 %}
+			            if RE(EV_{{event.name}}) then
+				            EV_{{event.name}} := 0
+				            input_buffer_add(event := {{k_event}}, input_buffer:=input_buffer,input_buffer_qtt:=input_buffer_qtt);
+			            end_if;
+                    {% elseif generate_list[1] == 3 %}
+			            if RE(EV_{{event.name}}) then
+				            EV_{{event.name}} := 0
+				            input_buffer_add(event := {{k_event}}, input_buffer:=input_buffer,input_buffer_qtt:=input_buffer_qtt);
+			            end_if;
+                    {% else %}
+			            (*input_buffer_add(event := {{k_event}}, input_buffer:=input_buffer,input_buffer_qtt:=input_buffer_qtt);*)
+                    {% end %}
+			        {{ event_code[ event.name ] and event_code[ event.name ].input or '' }}
+                {% end %}
+            {% end %}
+		</STSource>
+	</program>
+	
+	<FBSource nameOfFBType="Input_buffer_add" version="0.03" dateTime="dt#2014-04-03-13:15:53">
+		<inputParameters>
+			<variables name="event" typeName="INT">
+				<attribute name="PositionPin" value="1"></attribute>
+			</variables>
+		</inputParameters>
+		<inOutParameters>
+			<variables name="input_buffer" typeName="ARRAY[1..{{ #events }}] OF INT">
+				<attribute name="PositionPin" value="2"></attribute>
+			</variables>
+			<variables name="input_buffer_qtt" typeName="INT">
+				<attribute name="PositionPin" value="3"></attribute>
+			</variables>
+		</inOutParameters>
+		<FBProgram name="Input_buffer_add_section">
+			<STSource>
+				input_buffer_qtt := input_buffer_qtt + 1;
+				input_buffer[ input_buffer_qtt ] := event;
+			</STSource>
+		</FBProgram>
+	</FBSource>
+	
+	<program>
+		<identProgram name="update_product_system" type="SR" task="MAST"></identProgram>
+		<STSource>
+			for i:=1 to ps_number do (*update all models of the product system*)
+				if ps_events[i][event] > 0 then (*only update if event is on models alphabet*)
+					position := ps_current_state[i];
+					num_transitions := ps_data[position];
+					position := position + 1;
+					while num_transitions > 0 do
+						if ps_data[position] = event then
+							ps_current_state[i] := ps_data[position + 1];
+							exit;
+						end_if;
+						position := position + 2;
+						num_transitions := num_transitions - 1;
+					end_while;
+				end_if;
+			end_for;
+		</STSource>
+	</program>
+	
+	<program>
+		<identProgram name="pic_rand" type="SR" task="MAST"></identProgram>
+		<STSource>
+			seed := seed + 1;
+			if seed > ev_number then
+				seed := 1;
+			end_if;
+		</STSource>
+	</program>
+	
+	<program>
+		<identProgram name="get_next_controllable" type="SR" task="MAST"></identProgram>
+		<STSource>
+			for i := 1 to refinements_number do (*enable all refinements*)
+				refinements[i] := 1;
+			end_for;
+
+			for i := 1 to ev_number do (*disable all events*)
+				events[i] := 0;
+			end_for;
+
+			get_active_controllable_events();
+
+			count_actives := 0;
+			for i:=1 to ev_number do
+				if events[i] > 0 then
+					count_actives := count_actives + 1; (*count_actives*)
+				end_if;
+			end_for;
+
+			if count_actives > 1 then
+				
+				lesser_dif_to_seed := ev_number;
+				for i := 1 to ev_number do
+					if events[i] > 0 then
+						dif_to_seed := seed - i;
+						dif_to_seed2 := refinements_number - seed + i;
+						if dif_to_seed > dif_to_seed2 then
+							dif_to_seed := dif_to_seed2;
+						end_if;
+						if 0 > dif_to_seed then
+							dif_to_seed := - dif_to_seed;
+						end_if;
+						if lesser_dif_to_seed > dif_to_seed then
+							lesser_dif_to_seed := dif_to_seed;
+							random_pos := i;
+						end_if;
+					end_if;
+				end_for;
+				event:= random_pos;
+				get_next_controllable_return:=1;
+				
+			elsif count_actives = 1 then
+				
+				for i:=1 to ev_number do
+					if events[i] > 0 then
+						event:=i;
+						get_next_controllable_return:=1;
+						exit;
+					end_if;
+				end_for;
+				
+			else
+				
+				get_next_controllable_return:=0;
+				
+			end_if;
+			
+		</STSource>
+	</program>
+	
+	<program>
+		<identProgram name="get_active_controllable_events" type="SR" task="MAST"></identProgram>
+		<STSource>
+			(* Disable all non controllable events *)
+			for i := 1 to refinements_number do
+				if not refinements_controllable[i] then
+					refinements[i] := 0;
+				end_if;
+			end_for;
+			
+			(* Check disabled events for all supervisors *)
+			for i:=1 to sup_r_number do (*get enabled controllable events from the refined supervisors *)
+				for j:=1 to refinements_number do
+					refinements_disable[j] := 1;
+				end_for;
+				
+				for j:=1 to refinements_number do
+					(*if supervisor doesn't have this event, it can't disable the event*)
+					if not sup_r_refinements[i][j] then
+						refinements_disable[j] := 0;
+					end_if;
+				end_for;
+				
+				(*if supervisor has a transition with the event in the current state, it can't disable the event *)
+				position := sup_r_current_state[i];
+				num_transitions := sup_r_data[position];
+				position := position + 1;
+				while num_transitions > 0 do
+					refinements_disable[ sup_r_data[position] ] := 0;
+					position := position + 2;
+					num_transitions := num_transitions -1;
+				end_while;
+				
+				(* Disable for current supervisor states *)
+				for j :=1 to refinements_number do
+					if refinements_disable[j] = 1 then
+						refinements[ j ] := 0;
+					end_if;
+				end_for;
+			end_for;
+			
+			project_enabled_refinements();
+			
+			for i:=1 to sup_number do (*get enabled controllable events from the non refined language supervisors *)
+				for j:=1 to ev_number do
+					event_disable[j] := 1;
+				end_for;
+				
+				for j:=1 to ev_number do
+					(*if supervisor doesn't have this event, it can't disable the event*)
+					if not sup_events[i][j] then
+						event_disable[j] := 0;
+					end_if;
+				end_for;
+				
+				(*if supervisor has a transition with the event in the current state, it can't disable the event *)
+				position := sup_current_state[i];
+				num_transitions := sup_data[position];
+				position := position + 1;
+				while num_transitions > 0 do
+					event_disable[ sup_data[position] ] := 0;
+					position := position + 2;
+					num_transitions := num_transitions -1;
+				end_while;
+				
+				(* Disable for current supervisor states *)
+				for j :=1 to ev_number do
+					if event_disable[j] = 1 then
+						events[ j ] := 0;
+					end_if;
+				end_for;
+			end_for;
+			
+			for i:=1 to ps_number do (*get enabled controllable events from the product system *)
+				for j:=1 to ev_number do
+					event_disable[j] := 1;
+				end_for;
+				
+				for j:=1 to ev_number do
+				(*if supervisor doesn't have this event, it can't disable the event*)
+					if not ps_events[i][j] then
+						event_disable[j] := 0;
+					end_if;
+				end_for;
+				
+				(*if supervisor has a transition with the event in the current state, it can't disable the event *)
+				position := ps_current_state[i];
+				num_transitions := ps_data[position];
+				position := position + 1;
+				while num_transitions > 0 do
+					event_disable[ ps_data[position] ] := 0;
+					position := position + 2;
+					num_transitions := num_transitions -1;
+				end_while;
+				
+				(* Disable for current supervisor states *)
+				for j :=1 to ev_number do
+					if event_disable[j] = 1 then
+						events[ j ] := 0;
+					end_if;
+				end_for;
+			end_for;
+		</STSource>
+	</program>
+	
+	<program>
+		<identProgram name="project_enabled_refinements" type="SR" task="MAST"></identProgram>
+		<STSource>
+			for i :=1 to refinements_number do
+				if refinements[i] then
+					for j:=1 to ev_number do
+						if refinement_relationship[j][i]=1 then
+							events[j]:=1;
+						end_if;
+					end_for;
+				end_if;
+			end_for;
+		</STSource>
+	</program>
+    {% endwith %}
+</STExchangeFile>

@@ -17,6 +17,9 @@
     Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
 --]]
 
+--[[
+module "Treeview"
+--]]
 Treeview = letk.Class( function( self, multiple )
     Object.new( self )
     self.scrolled   = gtk.ScrolledWindow.new()
@@ -36,18 +39,32 @@ Treeview = letk.Class( function( self, multiple )
 
 end, Object )
 
+---bind a callback for a double click
+--@param callback <function>
+--@param param an user data to be sent to the callback function
+--@return self
 function Treeview:bind_ondoubleclick( callback, param )
     self.view:connect( 'row-activated', callback, param )
 
     return self
 end
 
+---bind a callback for a single click
+--@param callback <function>
+--@param param an user data to be sent to the callback function
+--@return self
 function Treeview:bind_onclick( callback, param )
     self.view:connect( 'cursor-changed', callback, param )
 
     return self
 end
 
+---adds a text column
+--@param caption <string>
+--@param width <number-integer>
+--@param callback <function>
+--@param param an user data to be sent to the callback function
+--@return self
 function Treeview:add_column_text( caption, width, callback, param )
     self.render[#self.render +1] = gtk.CellRendererText.new()
     self.columns[#self.columns +1] = gtk.TreeViewColumn.new_with_attributes(
@@ -70,6 +87,14 @@ function Treeview:add_column_text( caption, width, callback, param )
     return self
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param caption TODO
+--@param width TODO
+--@param callback TODO
+--@param param TODO
+--@return TODO
 function Treeview:add_column_toggle( caption, width, callback, param )
     self.render[#self.render +1] = gtk.CellRendererToggle.new()
     self.columns[#self.columns +1] = gtk.TreeViewColumn.new_with_attributes(
@@ -90,24 +115,41 @@ function Treeview:add_column_toggle( caption, width, callback, param )
     return self
 end
 
+---TODO
+--Unfinished. TODO
+--@param self TODO
+--@param caption TODO
+--@param width TODO
+--@param callback TODO
+--@param param TODO
+--@return TODO
 function Treeview:add_column_combobox( caption, width, callback, param )
-
+	
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param options TODO
+--@return TODO
 function Treeview:build( options )
     options = options or {}
     self.model = gtk.ListStore.new( unpack( self.model_list ) )
     self.view:set( 'model', self.model )
     if options.width then
-        self.scrolled:set('width-request', options.width )
+        self.scrolled:set( 'width-request', options.width )
     end
     if options.height then
-        self.scrolled:set('height-request', options.height )
+        self.scrolled:set( 'height-request', options.height )
     end
 
     return self.scrolled
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@return TODO
 function Treeview:clear_data()
     while self.data:get( 1 ) do
         self.data:remove( 1 )
@@ -116,6 +158,10 @@ function Treeview:clear_data()
     return self
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@return TODO
 function Treeview:clear_gui()
     if not self.model then return end
     self.model:clear()
@@ -123,6 +169,12 @@ function Treeview:clear_gui()
     return self
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@return TODO
+--@see Treeview:clear_data
+--@see Treeview:clear_gui
 function Treeview:clear_all()
     self:clear_data()
     self:clear_gui()
@@ -130,6 +182,11 @@ function Treeview:clear_all()
     return self
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@return TODO
+--@see Treeview:clear_gui
 function Treeview:update()
     self:clear_gui()
     for ch_row, row in self.data:ipairs() do
@@ -142,6 +199,15 @@ function Treeview:update()
     return self
 end
 
+--function Treeview:set_selected( column, items )
+	
+--end
+
+---TODO
+--TODO
+--@param self TODO
+--@param column TODO
+--@return TODO
 function Treeview:get_selected( column )
     if not self.multiple then
         local res, model = self.selection:get_selected( self.iter )
@@ -174,18 +240,33 @@ function Treeview:get_selected( column )
     end
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param row TODO
+--@return TODO
 function Treeview:add_row( row )
     self.data:append( row )
 
     return self
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param pos TODO
+--@return TODO
 function Treeview:remove_row( pos )
     self.data:remove( pos )
 
     return self
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@return TODO
+--@see Treeview:get_selected
 function Treeview:remove_selected( )
     local pos = self:get_selected()
     if pos then

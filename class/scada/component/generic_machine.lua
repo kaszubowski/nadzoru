@@ -1,3 +1,25 @@
+--[[
+    This file is part of nadzoru.
+
+    nadzoru is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    nadzoru is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with nadzoru.  If not, see <http://www.gnu.org/licenses/>.
+
+    Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
+--]]
+
+--[[
+module "ScadaComponent.GenericMachine"
+--]]
 ScadaComponent.GenericMachine = letk.Class( function( self )
     ScadaComponent.Base.__super( self )
 end, ScadaComponent.Base )
@@ -15,6 +37,14 @@ ScadaComponent.GenericMachine:change_properties{
     ['h']              = { default = 48 },
 }
 
+---TODO
+--TODO
+--@param self TODO
+--@param cr TODO
+--@return TODO
+--@see ScadaComponent.Base:get_property
+--@see ScadaComponent.Base:translate_color
+--@see ScadaComponent.Base:write_text
 function ScadaComponent.GenericMachine:render( cr )
     local x, y               = self:get_property( 'x' ), self:get_property( 'y' )
     local w, h               = self:get_property( 'w' ), self:get_property( 'h' )
@@ -40,6 +70,13 @@ function ScadaComponent.GenericMachine:render( cr )
     return x+w, y+h    
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param x TODO
+--@param y TODO
+--@return TODO
+--@see ScadaComponent.Base:get_property
 function ScadaComponent.GenericMachine:is_selected( x, y )
     local px, py = self:get_property( 'x' ), self:get_property( 'y' )
     local w, h   = self:get_property( 'w' ), self:get_property( 'h' )

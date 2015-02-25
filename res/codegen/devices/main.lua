@@ -1,4 +1,4 @@
-local Devices = {}
+Devices = {}
 
 Devices['base'] = letk.Class( Object )
 
@@ -55,6 +55,7 @@ Devices['base']:set_option('pathname', {
 Devices['pic18f'] = letk.Class( Devices['base'] ):init_options()
 
 Devices['pic18f'].template_file       = 'pic18f.c'
+Devices['pic18f'].file_extension      = 'c' --???
 Devices['pic18f'].RANDOM_PSEUDOFIX    = 1
 Devices['pic18f'].RANDOM_PSEUDOAD     = 2
 Devices['pic18f'].RANDOM_AD           = 3
@@ -88,6 +89,10 @@ Devices['pic18f'].char       = 'unsigned char'
 Devices['pic18f'].int        = 'unsigned long int'
 Devices['pic18f'].int_cast   = '(unsigned long int)'
 Devices['pic18f'].ns         = '' --number suffix
+
+Devices['pic18f'].models = { --???
+	['Supervisor'] = true,   --???
+}                            --???
 
 Devices['pic18f']:set_option('random_fn', {
     caption = "Random Type",
@@ -243,5 +248,8 @@ Devices['GenericMicDistributed']:set_option('sup_end', {
     min_value = 0,
     max_value = function( codeGen ) return codeGen.automata:len()-1 end,
 })
+
+require 'res.codegen.devices.schneider'
+require 'res.codegen.devices.schneider_distinguisher'
 
 return Devices

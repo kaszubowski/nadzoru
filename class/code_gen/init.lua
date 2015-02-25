@@ -1,9 +1,32 @@
+--[[
+    This file is part of nadzoru.
+
+    nadzoru is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    nadzoru is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with nadzoru.  If not, see <http://www.gnu.org/licenses/>.
+
+    Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
+--]]
+
 --We need check if all the same name events in differens automata are equals (eg: all are controlable or all are not controlabled)
 
 Devices = require 'res.codegen.devices.main'
 
+--[[
+module "CodeGen"
+--]]
 CodeGen = letk.Class( function( self, options )
     options             = options or {}
+    --self.workspace_events = options.workspace_events
     self.automata       = options.automata
     self.device_id      = options.device_id
     self.path_name      = options.path_name
@@ -12,6 +35,10 @@ CodeGen = letk.Class( function( self, options )
     self.device         = Devices[ self.device_id ].new()
     self.custom_code    = {}
 
+	--self.automata:iremove(function(automaton) --???
+	--	return not Devices[ self.device_id ].models[ automaton.type ]
+	--end)
+	
     local num_automata = self.automata:len()
     if num_automata == 0 then return end
     if num_automata == 1 then
@@ -24,6 +51,12 @@ end, Object )
 CodeGen.SUPTYPE_MONOLITIC   = 1
 CodeGen.SUPTYPE_MODULAR     = 2
 
+---Executes the code generation.
+--Reads the automata and build the gui.
+--@param self CodeGen in which the operation is applied.
+--@param gui Gui in which the operation is applied.
+--@see CodeGen:read_automata
+--@see CodeGen:build_gui
 function CodeGen:execute( gui )
     self:read_automata( )
     self:build_gui( gui )
@@ -32,11 +65,90 @@ end
 ------------------------------------------------------------------------
 --                         Read Automata                              --
 ------------------------------------------------------------------------
+
+---Reads the event map file.
+--Verifies if the file was chosen. Sets the ids from the map to the codegen.
+--@param self Codegen in which the operation is applied.
+--function CodeGen:read_event_map()
+--	if not self.event_map or not self.event_map_file then return end
+--	local file = io.open(self.event_map_file, 'r')
+--	if file then
+--		local s    = file:read('*a')
+--		local data = loadstring('return ' .. s)() --This returns the event map as a table
+--		if data then
+--			local event_info = data.information
+--			
+--			--events
+--			for k, e in pairs(data.events) do
+--				if type(e)=='string' then
+--					local event = event_info[k]
+--					self.events[ k ] = {
+--						name = e,
+--						controllable = event.controllable,
+--					}
+--			        self.events_map[ e ]   = k
+--			        self.event_code[ e ]   = {
+--			            id           = k,
+--			            input        = event.input,
+--			            output       = event.output,
+--			            automaton    = {},
+--			            source       = event.source,
+--			            controllable = event.controllable,
+--			            refinement   = event.refinement,
+--			        }
+--				end
+--			end
+--			
+--			--refinements
+--			for k, e in pairs(data.refinements) do
+--				if type(e)=='string' then
+--					local event = event_info[k]
+--					self.events_r[ k ] = {
+--						name = e,
+--						controllable = event.controllable,
+--					}
+--			        self.events_r_map[ e ] = k
+--			        self.event_code[ e ]   = {
+--			            id           = k,
+--			            input        = event.input,
+--			            output       = event.output,
+--			            automaton    = {},
+--			            source       = event.source,
+--			            controllable = event.controllable,
+--			            refinement   = event.refinement,
+--			        }
+--				end
+--			end
+--		end
+--	end
+--end
+
+---Reads the automata.
+--Reads the event map. For each automaton, sets the event ids from the events that are not mapped yet to the codegen.
+--@param self CodeGen in which the operation is applied.
+--@see Codegen:read_event_map
 function CodeGen:read_automata()
     self.event_code      = {}
     self.events_map      = {}
+    --self.events_r_map    = {}
     self.events          = {}
     self.sup_events      = {}
+
+    --[[
+    self.events_r        = {}
+    self.atm_events      = {}
+    self.atm_events_r    = {}
+    self.refinements     = {}
+    
+    self:read_event_map()
+    
+    for k_event, event in self.workspace_events:ipairs() do
+		if event.refinement~='' then
+			self.refinements[event.refinement] = self.refinements[event.refinement] or {}
+			self.refinements[event.refinement][event.name] = true
+		end
+    end
+   --]]
 
     for k_automaton, automaton in self.automata:ipairs() do
         for k_event, event in automaton.events:ipairs() do
@@ -56,6 +168,68 @@ function CodeGen:read_automata()
         end
     end
 
+    
+--[[ --???
+    for k_event, event in self.workspace_events:ipairs() do
+		--Event is not a refinement => add to events list
+		if event.refinement=='' then
+			if not self.events_map[ event.name ] then
+				local pos = #self.events + 1
+				self.events[ pos ] = event
+				self.events_map[ event.name ]   = pos
+				self.event_code[ event.name ]   = {
+					id           = pos,
+					input        = '',
+					output       = '',
+					automaton    = {},
+					source       = "Automaton",
+					controllable = event.controllable,
+					refinement   = event.refinement,
+				}
+			end
+		end
+		
+		--Event doesn't have refinements => add to events_r list
+		if not self.refinements[event.name] then
+			if not self.events_r_map[ event.name ] then
+				local pos = #self.events_r + 1
+				self.events_r[ pos ] = event
+				self.events_r_map[ event.name ]   = pos
+				self.event_code[ event.name ]   = {
+					id           = pos,
+					input        = '',
+					output       = '',
+					automaton    = {},
+					source       = "Automaton",
+					controllable = event.controllable,
+					refinement   = event.refinement,
+				}
+			end
+		end
+    end
+--]]
+
+    --[[
+    for k_automaton, automaton in self.automata:ipairs() do
+		self.atm_events[#self.atm_events + 1] = {}
+		self.atm_events_r[#self.atm_events_r + 1] = {}
+		
+		for k_event, event in automaton.events:ipairs() do
+			self.event_code[ event.name ].automaton[ k_automaton ] = event.controllable and 'c' or 'n' --Maybe this can be deleted. It's not used anywhere.
+			
+			--Event is not a refinement => add to atm_events list
+			if event.refinement=='' then
+				self.atm_events[#self.atm_events][ self.events_map[ event.name ] ] = true
+			end
+			
+			--Event doesn't have refinements => add to atm_events_r list
+			if not self.refinements[event.name] then
+				self.atm_events_r[#self.atm_events_r][ self.events_r_map[ event.name ] ] = true
+			end
+		end
+    end
+    --]]
+	
     for k_automaton, automaton in self.automata:ipairs() do
         self.sup_events[#self.sup_events + 1] = {}
         for k_event, event in automaton.events:ipairs() do
@@ -75,6 +249,15 @@ local function eval_option( opt, self )
     end
 end
 
+---Builds the CodeGen gui.
+--TODO
+--@param self Codegen in which the operation is applied.
+--@param gui TODO
+--@see Selector:add_combobox
+--@see Treeview:add_column_text
+--@see Treeview:bind_onclick
+--@see CodeGen:update_treeviews
+--@see Gui:add_tab
 function CodeGen:build_gui( gui )
     self.gui              = {}
     self.gui.vbox         = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
@@ -246,6 +429,12 @@ function CodeGen:build_gui( gui )
     gui:add_tab( self.gui.vbox, 'Code Gen: ' .. self.device.name )
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@see Treeview:clear_all
+--@see Treeview:add_row
+--@see Treeview:update
 function CodeGen:update_treeviews()
     local in_ev  = {}
     local out_ev = {}
@@ -281,6 +470,10 @@ function CodeGen:update_treeviews()
     self.gui.code_custom_label:set_text( '---' )
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@see Treeview:get_selected
 function CodeGen:change_event_input()
     self.selected_event_input = self.gui.code_input_treeview:get_selected(1)
     if self.selected_event_input then
@@ -289,6 +482,10 @@ function CodeGen:change_event_input()
     end
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@see Treeview:get_selected
 function CodeGen:change_event_output()
     self.selected_event_output = self.gui.code_output_treeview:get_selected(1)
     if self.selected_event_output then
@@ -305,11 +502,18 @@ function CodeGen:change_place_custom()
     end
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@see Treeview:set_selected
 function CodeGen:change_code_input()
     if not self.selected_event_input and not self.event_code[ self.selected_event_input ] then return end
     self.event_code[ self.selected_event_input ].input = self.gui.code_input_buffer:get( 'text' )
 end
 
+---TODO
+--TODO
+--@param self TODO
 function CodeGen:change_code_output()
     if not self.selected_event_output and not self.event_code[ self.selected_event_output ] then return end
     self.event_code[ self.selected_event_output ].output = self.gui.code_output_buffer:get( 'text' )
@@ -320,6 +524,9 @@ function CodeGen:change_code_custom()
     self.custom_code[ self.selected_custom_code ] = self.gui.code_custom_buffer:get( 'text' )
 end
 
+---Opens the window to save the code project to a file.
+--TODO
+--@param self Codegen to be saved.
 function CodeGen:save_project()
      local dialog = gtk.FileChooserDialog.new(
         "Save AS", nil,gtk.FILE_CHOOSER_ACTION_SAVE,
@@ -358,6 +565,10 @@ function CodeGen:save_project()
     end
 end
 
+---Opens the window to load the code project from a file.
+--TODO
+--@param self Codegen in which the file will be loaded.
+--@see CodeGen:update_treeviews
 function CodeGen:load_project()
      local dialog = gtk.FileChooserDialog.new(
         "Save AS", nil,gtk.FILE_CHOOSER_ACTION_SAVE,
@@ -398,18 +609,79 @@ end
 --                             GENERATE                               --
 ------------------------------------------------------------------------
 
+---Generates the event map.
+--Verifies if the file was chosen. Maps the events from the CodeGen to the map.
+--@param self CodeGen in which the operation is applied.
 function CodeGen:generate_event_map()
     if not self.event_map or not self.event_map_file then return end
     local ev_map = {}
+    --local ev_map = {
+	--	events = {},
+	--	refinements = {},
+	--	information = {},
+    --}
+    
+    --local event_info = ev_map.information
+    
+    --events
     for name, id in pairs( self.events_map ) do
+        local code = self.event_code[ name ]
+        --ev_map.events[ name ] = id
+        --ev_map.events[ id   ] = name
         ev_map[ name ] = id
         ev_map[ id   ] = name
+        
+        --event_info[ id ] = {
+		--	input        = code.input,
+		--	output       = code.output,
+		--	source       = code.source,
+		--	controllable = code.controllable,
+		--	refinement   = code.refinement,
+        --}
     end
+    
+    --refinements
+    --local event_info = ev_map.information
+    --for name, id in pairs( self.events_r_map ) do
+    --    local code = self.event_code[ name ]
+    --    ev_map.refinements[ name ] = id
+    --    ev_map.refinements[ id   ] = name
+    --    
+    --    event_info[ id ] = {
+	--		input        = code.input,
+	--		output       = code.output,
+	--		source       = code.source,
+	--		controllable = code.controllable,
+	--		refinement   = code.refinement,
+    --    }
+    --end
+    
     local file = io.open( self.event_map_file, "w")
     file:write( letk.serialize( ev_map )  )
     file:close()
 end
 
+--[[
+local function clean_code(code)
+	local n
+	code = string.gsub(code, '%s+', ' ')
+	repeat
+		code, n = string.gsub(code, '\n%s\n', '\n')
+	until n==0
+	code = string.gsub(code, '\t +', '\t')
+	code = string.gsub(code, '^\n+', '')
+	code = string.gsub(code, '\n\n+$', '\n')
+	return code
+end
+--]]
+
+---Generates the code.
+--TODO
+--@param results TODO
+--@param numresults TODO
+--@param selector TODO
+--@param self TODO
+--@see CodeGen:generate_event_map
 function CodeGen.generate( results, numresults, selector, self )
     -- Context --
     local options = {}
@@ -425,6 +697,7 @@ function CodeGen.generate( results, numresults, selector, self )
             end
         end
     end
+
     local Context = letk.Context.new()
     Context:push( options )
     Context:push( self )

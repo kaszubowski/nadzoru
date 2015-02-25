@@ -1,3 +1,25 @@
+--[[
+    This file is part of nadzoru.
+
+    nadzoru is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    nadzoru is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with nadzoru.  If not, see <http://www.gnu.org/licenses/>.
+
+    Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
+--]]
+
+--[[
+module "ScadaComponent.Alarm"
+--]]
 ScadaComponent.Alarm = letk.Class( function( self )
     ScadaComponent.Base.__super( self )
     self.alarmTick = 1
@@ -14,6 +36,12 @@ ScadaComponent.Alarm:change_properties{
     ['w']              = { default = 96 },
 }
 
+---TODO
+--TODO
+--@param self TODO
+--@param cr TODO
+--@return TODO
+--@see ScadaComponent.Base:get_property
 function ScadaComponent.Alarm:render( cr )
     local image_file  = 'res/scada/images/alarm0.png'
     if  self:get_property( 'state' ) == 2 then
@@ -45,6 +73,10 @@ function ScadaComponent.Alarm:render( cr )
     return x+w, y+h
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@see ScadaComponent.Base:set_property
 function ScadaComponent.Alarm:click()
     self:set_property( 'state', 1 )
 end

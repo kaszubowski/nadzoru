@@ -21,11 +21,17 @@
 local info = {
     {'coaccessible'            , "Coaccessible"            },
     {'length'                  , "Length"                  },
+    {'accessible'              , "Accessible"              },
+    {'coaccessible'            , "Coaccessible"            },
     {'choice_problem'          , "Choice Problem"          },
     {'avalanche_effect'        , "Avalanche Effect"        },
     {'inexact_synchronization' , "Inexact Synchronization" },
+    {'simultaneity'            , "Simultaneity"            },
 }
 
+---Shows informations about the automaton.
+--Shows the number of states, events and transitions of the automaton.
+--@param self TODO
 function info.length( self )
     gtk.InfoDialog.showInfo(
         "Automanton States: " .. self.automaton.states:len() .. "\n" ..
@@ -34,6 +40,36 @@ function info.length( self )
     )
 end
 
+---Shows informations about the no accessible states of the automaton.
+--Verifies if the no accessible states have already been calculated. If they weren't, just shows a message saying that. Otherwise, shows the number of no accessible states and the index of each one.
+--@param self TODO
+function info.accessible( self )
+    if not self.automaton.accessible_calc then
+        gtk.InfoDialog.showInfo("Accessible are NOT processed!")
+        return
+    end
+    local no_a_states = {}
+    local count        = 0
+    for k,v in self.automaton.states:ipairs() do
+        if v.no_accessible then
+            if count % 20 == 0 then
+                no_a_states[#no_a_states + 1] = {}
+            end
+            no_a_states[#no_a_states][ #no_a_states[#no_a_states]+1 ] = tostring(k)
+            count = count + 1
+        end
+    end
+    local text_lines = {}
+    for k, v in ipairs( no_a_states ) do
+        text_lines[#text_lines + 1] = table.concat( v, "; " )
+    end
+
+    gtk.InfoDialog.showInfo( string.format("No Accessible States: (found: %i)\n", count) .. table.concat( text_lines, ", \n" ) )
+end
+
+---Shows informations about the no coaccessible states of the automaton.
+--Verifies if the no coaccessible states have already been calculated. If they weren't, just shows a message saying that. Otherwise, shows the number of no coaccessible states and the index of each one.
+--@param self TODO
 function info.coaccessible( self )
     if not self.automaton.coaccessible_calc then
         gtk.InfoDialog.showInfo("Coaccessible are NOT processed!")
@@ -46,7 +82,8 @@ function info.coaccessible( self )
             if count % 20 == 0 then
                 no_ca_states[#no_ca_states + 1] = {}
             end
-            table.insert( no_ca_states[#no_ca_states], tostring(k) ) --v.name or '???'
+            --table.insert( no_ca_states[#no_ca_states], tostring(k) ) --v.name or '???'
+            no_ca_states[#no_ca_states][ #no_ca_states[#no_ca_states]+1 ] = tostring(k)
             count = count + 1
         end
     end
@@ -58,6 +95,9 @@ function info.coaccessible( self )
     gtk.InfoDialog.showInfo( string.format("No Coaccessible States: (found: %i)\n", count) .. table.concat( text_lines, ", \n" ) )
 end
 
+---Shows informations about the choice problem states of the automaton.
+--Verifies if the choice problem states have already been calculated. If they weren't, just shows a message saying that. Otherwise, shows the number of choice problem states and the index of each one.
+--@param self TODO
 function info.choice_problem( self )
     if not self.automaton.choice_problem_calc then
         gtk.InfoDialog.showInfo("Choice problem check are NOT processed!")
@@ -70,7 +110,8 @@ function info.choice_problem( self )
             if count % 20 == 0 then
                 choice_problem_states[#choice_problem_states + 1] = {}
             end
-            table.insert( choice_problem_states[#choice_problem_states], tostring(k) ) --v.name or '???'
+            --table.insert( choice_problem_states[#choice_problem_states], tostring(k) ) --v.name or '???'
+            choice_problem_states[#choice_problem_states][ #choice_problem_states[#choice_problem_states]+1 ] = tostring(k)
             count = count + 1
         end
     end
@@ -82,6 +123,9 @@ function info.choice_problem( self )
     gtk.InfoDialog.showInfo( string.format("Choice Problem States: (found: %i)\n", count) .. table.concat( text_lines, ", \n" ) )
 end
 
+---Shows informations about the avalanche effect states of the automaton.
+--Verifies if the avalanche effect states have already been calculated. If they weren't, just shows a message saying that. Otherwise, shows the number of avalanche effect states and the index of each one.
+--@param self TODO
 function info.avalanche_effect( self )
     if not self.automaton.avalanche_effect_calc then
         gtk.InfoDialog.showInfo("Avalanche effect check are NOT processed!")
@@ -95,9 +139,12 @@ function info.avalanche_effect( self )
                 if count % 5 == 0 then
                     avalanche_effect_states[#avalanche_effect_states + 1] = {}
                 end
+                --[[
                 table.insert( avalanche_effect_states[#avalanche_effect_states],
                     string.format("%i,%s -> %i",k,ev,t_s)
                 ) --v.name or '???'
+                ]]--
+                avalanche_effect_states[#avalanche_effect_states][ #avalanche_effect_states[#avalanche_effect_states]+1 ] = string.format("%i,%s -> %i",k,ev,t_s)
                 count = count + 1
             end
         end
@@ -110,6 +157,9 @@ function info.avalanche_effect( self )
     gtk.InfoDialog.showInfo( string.format("Avalanche effect: (found: %i)\n", count) .. table.concat( text_lines, ", \n" ) )
 end
 
+---TODO
+--TODO
+--@param self TODO
 function info.inexact_synchronization( self )
     if not self.automaton.inexact_synchronization_calc then
         gtk.InfoDialog.showInfo("Inexact Synchronization check are NOT processed!")
@@ -123,9 +173,12 @@ function info.inexact_synchronization( self )
                 if count % 5 == 0 then
                     inexact_synchronization[#inexact_synchronization + 1] = {}
                 end
+                --[[
                 table.insert( inexact_synchronization[#inexact_synchronization],
-                    string.format("%i(%s,%s)",k,evs.controlable.name,evs.uncontrolable.name)
+                    string.format("%i(%s,%s)",k,evs.controllable.name,evs.uncontrollable.name)
                 )
+                ]]--
+                inexact_synchronization[#inexact_synchronization][ #inexact_synchronization[#inexact_synchronization]+1 ] = string.format("%i(%s,%s)",k,evs.controllable.name,evs.uncontrollable.name)
                 count = count + 1
             end
         end
@@ -138,6 +191,38 @@ function info.inexact_synchronization( self )
     gtk.InfoDialog.showInfo( string.format("Inexact Synchronization: (found: %i)\n", count) .. table.concat( text_lines, ", \n" ) )
 end
 
+---TODO
+--TODO
+--@param self TODO
+function info.simultaneity( self )
+    if not self.automaton.simultaneity_calc then
+        gtk.InfoDialog.showInfo("Simultaneity check are NOT processed!")
+        return
+    end
+    local simultaneity = {}
+    local count                   = 0
+    for k,v in self.automaton.states:ipairs() do
+        if v.simultaneity then
+            for _, evs in ipairs( v.simultaneity ) do
+                if count % 5 == 0 then
+                    simultaneity[#simultaneity + 1] = {}
+                end
+                simultaneity[#simultaneity][ #simultaneity[#simultaneity]+1 ] = string.format("%i(%s,%s)",k,evs.event1.name,evs.event2.name)
+                count = count + 1
+            end
+        end
+    end
+    local text_lines = {}
+    for k, v in ipairs( simultaneity ) do
+        text_lines[#text_lines + 1] = table.concat( v, "; " )
+    end
+
+    gtk.InfoDialog.showInfo( string.format("Simultaneity: (found: %i)\n", count) .. table.concat( text_lines, ", \n" ) )
+end
+
+--[[
+module "GraphvizSimulator"
+--]]
 GraphvizSimulator = letk.Class( function( self, gui, automaton )
     Simulator.__super( self, automaton )
 
@@ -196,11 +281,26 @@ GraphvizSimulator = letk.Class( function( self, gui, automaton )
     self.btn_statejump:connect('clicked', self.statejump_cb, self)
 end, Simulator )
 
+---TODO
+--TODO
+--@param self TODO
+--@see info.length
+--@see info.accessible
+--@see info.coaccessible
+--@see info.choice_problem
+--@see info.avalanche_effect
+--@see info.inexact_synchronization
+--@see info.simultaneity
 function GraphvizSimulator.info( self )
     local fn_name = info[ self.cbx_info:get_active() + 1 ][1]
     info[fn_name]( self )
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@see GraphvizSimulator:update_treeview
+--@see GraphvizSimulator:draw
 function GraphvizSimulator.statejump_cb( self )
     local st = self.sb_statejump:get_value()
     self.current_state_id = st
@@ -208,6 +308,14 @@ function GraphvizSimulator.statejump_cb( self )
     self:draw()
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param ud_treepath TODO
+--@param ud_treeviewcolumn TODO
+--@return Always true.
+--@see Treeview:get_selected
+--@see Simulator:change_state
 function GraphvizSimulator.state_change(self, ud_treepath, ud_treeviewcolumn)
     local state_id, pos2   = self.treeview:get_selected( 2 )
     if not state_id then return true end
@@ -217,6 +325,11 @@ function GraphvizSimulator.state_change(self, ud_treepath, ud_treeviewcolumn)
     return true
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param cr TODO
+--@return Always false.
 function GraphvizSimulator:drawing_area_expose( cr )
     if not self.image then return false end
 
@@ -237,6 +350,10 @@ function GraphvizSimulator:drawing_area_expose( cr )
     return false
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@see GraphvizSimulator:generate_graphviz
 function GraphvizSimulator:draw()
     local deep         = self.sb_draw_deep:get_value()
     local backwaredeep = true
@@ -246,7 +363,7 @@ function GraphvizSimulator:draw()
         file_dot:write( dot )
         file_dot:close()
         os.execute('dot -Tpng -otemp.png temp.dot')
-        os.execute('rm temp.dot')
+        os.execute('rm temp.dot') --TODO: Use luafilesystem because of windows
     end
     if self.image then
         self.image:destroy()
@@ -257,6 +374,14 @@ function GraphvizSimulator:draw()
     self.drawing_area:queue_draw()
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@return TODO
+--@see Simulator:get_current_state_events_info
+--@see Treeview:clear_data
+--@see Treeview:add_row
+--@see Treeview:update
 function GraphvizSimulator:update_treeview()
     local events   = self:get_current_state_events_info(  )
     self.treeview:clear_data()
@@ -267,6 +392,11 @@ function GraphvizSimulator:update_treeview()
     self.treeview:update()
 end
 
+---Returns the color of the state according to its properties.
+--TODO
+--@param s State whose color is returned.
+--@param current Specifies if the state is the current.
+--@return Color of the state.
 function get_state_color( s, current )
     if current then
         if s.no_coaccessible and s.no_accessible then return 'darkyellow'
@@ -281,6 +411,13 @@ function get_state_color( s, current )
     end
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param deep TODO
+--@param backwaredeep TODO
+--@return TODO
+--@see Simulator:get_current_state
 function GraphvizSimulator:generate_graphviz( deep, backwaredeep )
     deep  = deep or 1
     local state_index, node            = self:get_current_state()
@@ -384,6 +521,10 @@ digraph test123 {
     return dot
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@see Object:trigger
 function GraphvizSimulator:destroy()
     self:trigger('destroy')
     if self.image then

@@ -1,3 +1,25 @@
+--[[
+    This file is part of nadzoru.
+
+    nadzoru is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    nadzoru is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with nadzoru.  If not, see <http://www.gnu.org/licenses/>.
+
+    Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
+--]]
+
+--[[
+module "AutomatonRender"
+--]]
 AutomatonRender = letk.Class( function( self, automaton )
     self.automaton = automaton
     self.color_states      = {}
@@ -51,19 +73,71 @@ local function arrow(cr, xe, ye, xr, yr, r, c)
     cr:fill()
 end
 
+local function circ_int(x1, y1, r1, x2, y2, r2)
+    local p = {}
+    p[1] = {
+        x = x1,
+        y = y1,
+        r = r1,
+    }
+    p[2] = {
+        x = x2,
+        y = y2,
+        r = r2,
+    }
+    
+    local d, a, h
+    d = ((p[1].x-p[2].x)^2 + (p[1].y-p[2].y)^2) ^ 0.5
+    a = (p[1].r^2 - p[2].r^2 + d*d)/(2*d);
+    h = (p[1].r^2 - a^2)^0.5;
+    p[3] = {
+        x = (p[2].x - p[1].x)*(a/d) + p[1].x,
+        y = (p[2].y - p[1].y)*(a/d) + p[1].y,
+    }
+    
+    local x3, y3, x4, y4
+    x3 = p[3].x + h*(p[2].y - p[1].y)/d;
+    y3 = p[3].y - h*(p[2].x - p[1].x)/d;
+    x4 = p[3].x - h*(p[2].y - p[1].y)/d;
+    y4 = p[3].y + h*(p[2].x - p[1].x)/d;
+    
+    return x3, y3, x4, y4
+end
+
 local function arc_calc( xs, ys, rs, xt, yt, rt, factor )
     local result
-    factor       = factor or 2
+    factor = factor or 2
 
-    if not xt or not yt or not rt or not factor then
+    if not xt or not yt or not rt then
+        --result = {
+        --    xe = xs - math.cos(5*math.pi/6)*rs,
+        --    ye = ys - math.sin(5*math.pi/6)*rs,
+        --    xc = xs,
+        --    yc = ys - rs,
+        --    as = 5*math.pi/6,
+        --    ae = math.pi/6,
+        --    ar = rs,
+        --}
+
+        factor = factor - 2
+        local rf = rs + factor
+        local dx = (rs^2 - rs^4/(4*rs^2)) ^ 0.5
+        local dy = rs^2/(2*rs)
+        
+        local x4, y4 = circ_int(xs, ys-rf, rf, xs, ys, rs)
+        local x3, y3 = circ_int(xs, ys-rf, rf, x4, y4, 15) --arrow size = 15
+        
         result = {
-            xe = xs - math.cos(5*math.pi/6)*rs,
-            ye = ys - math.sin(5*math.pi/6)*rs,
+            xe = x4, --arrow pos
+            ye = y4, --arrow pos
+            xa = 2*x4 - x3, --arrow dest x
+            ya = 2*y4 - y3, --arrow dest y
             xc = xs,
-            yc = ys - rs,
-            as = 5*math.pi/6,
-            ae = math.pi/6,
-            ar = rs,
+            yc = ys - rf,
+            as = math.atan2(dy+rf-rs, -dx),
+            ae = math.atan2(dy+rf-rs, dx),
+            ar = rf,
+            h  = 2*rf,
         }
     else
         local xp,yp     = (xs - xt)/2 + xt, (ys - yt)/2 + yt --P
@@ -83,73 +157,145 @@ local function arc_calc( xs, ys, rs, xt, yt, rt, factor )
         --formula da corda c = 2*r*sin(ang/2)
         local ass, ast = math.asin( rs/(2*r) )*2, math.asin( rt/(2*r) )*2
 
-        if (as <= at and (at-as)<=math.pi) then
-            if (as+ass) < (at-ast) then
-                result = {
-                    xe = xc + math.cos(at-ast)*r,
-                    ye = yc + math.sin(at-ast)*r,
-                    xc = xc,
-                    yc = yc,
-                    as = as+ass,
-                    ae = at-ast,
-                    ar = r,
-                    xp = xp,
-                    yp = yp,
-                    xv3 = xv3,
-                    yv3 = yv3,
-                    h   = h,
-                }
+        if factor>=0 then
+            if (as <= at and (at-as)<=math.pi) then
+                if (as+ass) < (at-ast) then
+                    result = {
+                        xe = xc + math.cos(at-ast)*r,
+                        ye = yc + math.sin(at-ast)*r,
+                        xc = xc,
+                        yc = yc,
+                        as = as+ass,
+                        ae = at-ast,
+                        ar = r,
+                        xp = xp,
+                        yp = yp,
+                        xv3 = xv3,
+                        yv3 = yv3,
+                        h   = h,
+                    }
+                end
+            elseif (as > at and (as-at)<=math.pi) then
+                if (as-ass) > (at+ast) then
+                    result = {
+                        xe = xc + math.cos(at+ast)*r,
+                        ye = yc + math.sin(at-ast)*r,
+                        xc = xc,
+                        yc = yc,
+                        as = at+ast,
+                        ae = as-ass,
+                        ar = r,
+                        xp = xp,
+                        yp = yp,
+                        xv3 = xv3,
+                        yv3 = yv3,
+                        h   = h,
+                    }
+                end
+            elseif as <= at then
+                if (as-ass) < (at+ast) then
+                    result = {
+                        xe = xc + math.cos(at+ast)*r,
+                        ye = yc + math.sin(at-ast)*r,
+                        xc = xc,
+                        yc = yc,
+                        as = at+ast,
+                        ae = as-ass,
+                        ar = r,
+                        xp = xp,
+                        yp = yp,
+                        xv3 = xv3,
+                        yv3 = yv3,
+                        h   = h,
+                    }
+                end
+            elseif as > at then
+                if (as+ass) > (at-ast) then
+                    result = {
+                        xe = xc + math.cos(at-ast)*r,
+                        ye = yc + math.sin(at-ast)*r,
+                        xc = xc,
+                        yc = yc,
+                        as = as+ass,
+                        ae = at-ast ,
+                        ar = r,
+                        xp = xp,
+                        yp = yp,
+                        xv3 = xv3,
+                        yv3 = yv3,
+                        h   = h,
+                    }
+                end
             end
-        elseif (as > at and (as-at)<=math.pi) then
-            if (as-ass) > (at+ast) then
-                result = {
-                    xe = xc + math.cos(at+ast)*r,
-                    ye = yc + math.sin(at-ast)*r,
-                    xc = xc,
-                    yc = yc,
-                    as = at+ast,
-                    ae = as-ass,
-                    ar = r,
-                    xp = xp,
-                    yp = yp,
-                    xv3 = xv3,
-                    yv3 = yv3,
-                    h   = h,
-                }
-            end
-        elseif as <= at then
-            if (as-ass) < (at+ast) then
-                result = {
-                    xe = xc + math.cos(at+ast)*r,
-                    ye = yc + math.sin(at-ast)*r,
-                    xc = xc,
-                    yc = yc,
-                    as = at+ast,
-                    ae = as-ass,
-                    ar = r,
-                    xp = xp,
-                    yp = yp,
-                    xv3 = xv3,
-                    yv3 = yv3,
-                    h   = h,
-                }
-            end
-        elseif as > at then
-            if (as+ass) > (at-ast) then
-                result = {
-                    xe = xc + math.cos(at-ast)*r,
-                    ye = yc + math.sin(at-ast)*r,
-                    xc = xc,
-                    yc = yc,
-                    as = as+ass,
-                    ae = at-ast ,
-                    ar = r,
-                    xp = xp,
-                    yp = yp,
-                    xv3 = xv3,
-                    yv3 = yv3,
-                    h   = h,
-                }
+        else
+            if (as <= at and (at-as)<=math.pi) then
+                if (as+ass) < (at-ast) then
+                    result = {
+                        xe = xc + math.cos(at-ast)*r,
+                        ye = yc + math.sin(at+ast)*r,
+                        xc = xc,
+                        yc = yc,
+                        as = as+ass,
+                        ae = at-ast,
+                        ar = r,
+                        xp = xp,
+                        yp = yp,
+                        xv3 = xv3,
+                        yv3 = yv3,
+                        h   = -h,
+                    }
+                end
+            elseif (as > at and (as-at)<=math.pi) then
+                if (as-ass) > (at+ast) then
+                    result = {
+                        xe = xc + math.cos(at+ast)*r,
+                        ye = yc + math.sin(at+ast)*r,
+                        xc = xc,
+                        yc = yc,
+                        as = at+ast,
+                        ae = as-ass,
+                        ar = r,
+                        xp = xp,
+                        yp = yp,
+                        xv3 = xv3,
+                        yv3 = yv3,
+                        h   = -h,
+                    }
+                end
+            elseif as <= at then
+                if (as-ass) < (at+ast) then
+                    result = {
+                        xe = xc + math.cos(at+ast)*r,
+                        ye = yc + math.sin(at+ast)*r,
+                        xc = xc,
+                        yc = yc,
+                        as = at+ast,
+                        ae = as-ass,
+                        ar = r,
+                        xp = xp,
+                        yp = yp,
+                        xv3 = xv3,
+                        yv3 = yv3,
+                        h   = -h,
+                    }
+                end
+            elseif as > at then
+                if (as+ass) > (at-ast) then
+                    result = {
+                        xe = xc + math.cos(at-ast)*r,
+                        ye = yc + math.sin(at+ast)*r,
+                        xc = xc,
+                        yc = yc,
+                        as = as+ass,
+                        ae = at-ast ,
+                        ar = r,
+                        xp = xp,
+                        yp = yp,
+                        xv3 = xv3,
+                        yv3 = yv3,
+                        h   = -h,
+                    }
+                end
             end
         end
     end
@@ -172,12 +318,22 @@ local function write_text(cr,x,y,text,font,color)
     return (txt_width/2), (txt_height/2), x -(txt_width/2), y + (txt_height/2)
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param color_states TODO
+--@param color_transitions TODO
 function AutomatonRender:draw( color_states, color_transitions)
     self.color_states      = color_states or self.color_states
     self.color_transitions = color_transitions or self.color_transitions
     self.drawing_area:queue_draw()
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param cr TODO
+--@see AutomatonRender:draw_context
 function AutomatonRender:drawing_area_expose( cr )
     cr = cairo.Context.wrap(cr)
     local size = self:draw_context( cr )
@@ -186,6 +342,12 @@ function AutomatonRender:drawing_area_expose( cr )
     self.last_size = size
 end
 
+---Draws all states and transitions of the automaton.
+--TODO
+--@param self TODO
+--@param cr TODO
+--@see Automaton:state_get_position
+--@see Automaton:state_set_position
 function AutomatonRender:draw_context( cr )
     local size               = {x=0,y=0}
     local states_position    = {}
@@ -204,7 +366,7 @@ function AutomatonRender:draw_context( cr )
         end
 
         --write name and set r based in name len
-        local r = write_text(cr,x,y,state.name or tostring(id),20) + 15
+        local r = (self.automaton.radius_factor or 1)*write_text(cr,x,y,state.name or tostring(id),20) + 15
         state.r = r
 
         states_position[#states_position +1] = {x=x,y=y,r=r}
@@ -249,14 +411,15 @@ function AutomatonRender:draw_context( cr )
             local xs, ys, rs           = states_position[source_id].x, states_position[source_id].y, states_position[source_id].r
             local xt, yt, rt           = states_position[target_id].x, states_position[target_id].y, states_position[target_id].r
 
-            transitions_out[index] = transitions_out[index] or {xs=xs, ys=ys, rs=rs, xt=xt, yt=yt, rt=rt, factor = 2 }
+            transitions_out[index] = transitions_out[index] or {xs=xs, ys=ys, rs=rs, xt=xt, yt=yt, rt=rt, factor = trans.factor or 2 }
             table.insert( transitions_out[index], trans.event.name )
         else
             local index                = source_id .. '_' .. target_id
             transitions_self[index] = transitions_self[index] or {
                 x = states_position[source_id].x,
                 y = states_position[source_id].y,
-                r = states_position[source_id].r
+                r = states_position[source_id].r,
+                factor = trans.factor or 2,
             }
             table.insert( transitions_self[index], trans.event.name )
         end
@@ -277,13 +440,13 @@ function AutomatonRender:draw_context( cr )
                 cr:stroke()
                 arrow(cr, result.xe, result.ye, v.xt, v.yt, v.rt, {0, 0, 0})
             end
-            --write even's name
+            --write event's name
             write_text(cr, result.xp + result.xv3*(result.h+10), result.yp + result.yv3*(result.h+10), table.concat(v,","), 14)
         end
     end
 
     for c,v in pairs(transitions_self) do
-        local result = arc_calc( v.x, v.y, v.r, nil, nil, nil, nil )
+        local result = arc_calc( v.x, v.y, v.r, nil, nil, nil, v.factor )
 
         if result then
             if self.color_transitions and self.color_transitions[c] then
@@ -292,15 +455,18 @@ function AutomatonRender:draw_context( cr )
                 cr:arc( result.xc, result.yc, result.ar, result.as, result.ae )
                 cr:stroke()
                 arrow(cr, result.xe, result.ye, result.xe, result.ye + v.r, v.r, {color[1], color[2], color[3]})
+                --arrow(cr, result.xe, result.ye, result.xa, result.ya, nil, {color[1], color[2], color[3]}) --???
             else
                 cr:set_source_rgb(0, 0, 0)
                 cr:arc( result.xc, result.yc, result.ar, result.as, result.ae )
                 cr:stroke()
                 arrow(cr, result.xe, result.ye, result.xe, result.ye + v.r, v.r, {0, 0, 0})
+                --arrow(cr, result.xe, result.ye, result.xa, result.ya, nil, {0, 0, 0})
             end
 
-            --write even's name
-            write_text(cr, v.x, v.y - 2*v.r - 8, table.concat(v,","), 14)
+            --write event's name
+            --write_text(cr, v.x, v.y - 2*v.r - 8, table.concat(v,","), 14)
+            write_text(cr, v.x, v.y - result.h - 8, table.concat(v,","), 14) --???
         end
     end
 
@@ -318,6 +484,12 @@ local function two_point_angle(x1,y1,x2,y2)
     end
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param x TODO
+--@param y TODO
+--@return TODO
 function AutomatonRender:select_element(x,y)
     local state_index = {}
     for id, state in self.automaton.states:ipairs() do
@@ -335,9 +507,9 @@ function AutomatonRender:select_element(x,y)
         if not tran_select.type then
             local r
             if s ~= t then
-                r = arc_calc( s.x, s.y, s.r or 10, t.x, t.y, t.r or 10, 2 )
+                r = arc_calc( s.x, s.y, s.r or 10, t.x, t.y, t.r or 10, transitions.factor )
             else
-                r = arc_calc( s.x, s.y, s.r or 10 )
+                r = arc_calc( s.x, s.y, s.r or 10, nil, nil, nil, transitions.factor )
             end
             if r then
                 local a, hip = two_point_angle( r.xc, r.yc, x, y)

@@ -1,3 +1,25 @@
+--[[
+    This file is part of nadzoru.
+
+    nadzoru is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    nadzoru is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with nadzoru.  If not, see <http://www.gnu.org/licenses/>.
+
+    Copyright (C) 2011 Yuri Kaszubowski Lopes, Eduardo Harbs, Andre Bittencourt Leal and Roberto Silvio Ubertino Rosso Jr.
+--]]
+
+--[[
+module "PropertyEditor"
+--]]
 PropertyEditor = letk.Class( function( self )
     Object.new( self )
     
@@ -8,6 +30,12 @@ PropertyEditor = letk.Class( function( self )
     self.callback   = nil
 end, Object )
 
+---TODO
+--TODO
+--@param self TODO
+--@param label_w TODO
+--@param value_w TODO
+--@return TODO
 function PropertyEditor:build( label_w, value_w)
     self.vbox       = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
     self.scrolled   = gtk.ScrolledWindow.new()
@@ -22,6 +50,9 @@ function PropertyEditor:build( label_w, value_w)
     return self.scrolled
 end
 
+---TODO
+--TODO
+--@param self TODO
 function PropertyEditor:clear_interface()
     self.enable_callback = false
     for name, widget in pairs( self.hboxs ) do
@@ -30,7 +61,9 @@ function PropertyEditor:clear_interface()
     self.enable_callback = true
 end
 
-
+---TODO
+--TODO
+--@param self TODO
 function PropertyEditor:clear()
     self:clear_interface()
     self.hboxs    = {}
@@ -83,8 +116,8 @@ local function combobox_callback( data )
     if not data.self.enable_callback then return end
     local ok
     local selected = data.row.combobox:get_active() + 1
-    local old_value    = type(data.row.itens[data.row.value]) == 'table' and data.row.itens[data.row.value].value or data.row.value
-    local new_value    = type(data.row.itens[selected]) == 'table' and data.row.itens[selected].value or selected
+    local old_value    = type(data.row.items[data.row.value]) == 'table' and data.row.items[data.row.value].value or data.row.value
+    local new_value    = type(data.row.items[selected]) == 'table' and data.row.items[selected].value or selected
 
     if data.row.callback then
         ok = data.row.callback( data.row.param, old_value, new_value )
@@ -260,6 +293,10 @@ local function code_callback( data )
     code_gui.win:show_all()
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@see PropertyEditor:clear_interface
 function PropertyEditor:draw_interface()
     self:clear_interface()
     local order = {}
@@ -283,14 +320,14 @@ function PropertyEditor:draw_interface()
         elseif row.type == 'combobox' then
             row.combobox = gtk.ComboBoxText.new()
             row.combobox:set( 'width-request', self.value_w )
-            for k, dt in ipairs( row.itens ) do
+            for k, dt in ipairs( row.items ) do
                 if type( dt ) == 'string' then
                     row.combobox:append_text( dt )
                 elseif type( dt ) == 'table' then
                     row.combobox:append_text( dt.text or '' )
                 end
             end
-            if #row.itens > 0 then
+            if #row.items > 0 then
                 row.combobox:set('active', (row.value and row.value - 1) or (row.default and row.default - 1 or 0) )
             end
             row.combobox:connect( 'changed', combobox_callback, { row = row, self = self } )
@@ -319,10 +356,19 @@ function PropertyEditor:draw_interface()
     self.vbox:show_all()
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param fn TODO
+--@param param TODO
 function PropertyEditor:add_change_callback( fn, param )
     self.callback = { fn = fn, param = param }
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param name TODO
 function PropertyEditor:rm_row( name )
     self.rows[ name ] = nil
     if self.hboxs[ name ] then
@@ -333,6 +379,15 @@ function PropertyEditor:rm_row( name )
     end
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param name TODO
+--@param caption TODO
+--@param default TODO
+--@param options TODO
+--@param callback TODO
+--@param param TODO
 function PropertyEditor:add_row_entry( name, caption, default, options, callback, param )
     self.rows[ name ] = {
         name     = name,
@@ -345,9 +400,19 @@ function PropertyEditor:add_row_entry( name, caption, default, options, callback
     }
 end
 
-function PropertyEditor:add_row_combobox( name, caption, default, itens, options, callback, param )
-    if type(itens) == 'function' then
-        itens = itens( options )
+---TODO
+--TODO
+--@param self TODO
+--@param name TODO
+--@param caption TODO
+--@param default TODO
+--@param items TODO
+--@param options TODO
+--@param callback TODO
+--@param param TODO
+function PropertyEditor:add_row_combobox( name, caption, default, items, options, callback, param )
+    if type(items) == 'function' then
+        items = items( options )
     end
     self.rows[ name ] = {
         name     = name,
@@ -357,10 +422,19 @@ function PropertyEditor:add_row_combobox( name, caption, default, itens, options
         callback = callback,
         param    = param or {},
         options  = options or {},
-        itens    = itens or {},
+        items    = items or {},
     }
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param name TODO
+--@param caption TODO
+--@param default TODO
+--@param options TODO
+--@param callback TODO
+--@param param TODO
 function PropertyEditor:add_row_checkbox( name, caption, default, options, callback, param )
     self.rows[ name ] = {
         name     = name,
@@ -373,6 +447,15 @@ function PropertyEditor:add_row_checkbox( name, caption, default, options, callb
     }
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param name TODO
+--@param caption TODO
+--@param default TODO
+--@param options TODO
+--@param callback TODO
+--@param param TODO
 function PropertyEditor:add_row_color( name, caption, default, options, callback, param )
     self.rows[ name ] = {
         name     = name,
@@ -385,6 +468,15 @@ function PropertyEditor:add_row_color( name, caption, default, options, callback
     }
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param name TODO
+--@param caption TODO
+--@param default TODO
+--@param options TODO
+--@param callback TODO
+--@param param TODO
 function PropertyEditor:add_row_code( name, caption, default, options, callback, param )
     self.rows[ name ] = {
         name     = name,
@@ -397,6 +489,15 @@ function PropertyEditor:add_row_code( name, caption, default, options, callback,
     }
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param name TODO
+--@param caption TODO
+--@param default TODO
+--@param options TODO
+--@param callback TODO
+--@param param TODO
 function PropertyEditor:add_row_link( name, caption, default, options, callback, param )
     self.rows[ name ] = {
         name     = name,
@@ -409,13 +510,24 @@ function PropertyEditor:add_row_link( name, caption, default, options, callback,
     }
 end
 
-function PropertyEditor:change_combobox_itens( name, itens )
+---TODO
+--TODO
+--@param self TODO
+--@param name TODO
+--@param items TODO
+--@see PropertyEditor:draw_interface
+function PropertyEditor:change_combobox_items( name, items )
     if self.rows[ name ] and self.rows[ name ].type == 'combobox' then
-        self.rows[ name ].itens = itens
+        self.rows[ name ].items = items
     end
     self:draw_interface()
 end
 
+---TODO
+--TODO
+--@param self TODO
+--@param name TODO
+--@param value TODO
 function PropertyEditor:set_value( name, value )
     if self.rows[ name ] then
         if self.rows[ name ].type == 'entry' then
