@@ -106,7 +106,7 @@ end
 
 local function arc_calc( xs, ys, rs, xt, yt, rt, factor )
     local result
-    factor = factor or 2
+    factor = factor or 1
 
     if not xt or not yt or not rt then
         --result = {
@@ -114,12 +114,12 @@ local function arc_calc( xs, ys, rs, xt, yt, rt, factor )
         --    ye = ys - math.sin(5*math.pi/6)*rs,
         --    xc = xs,
         --    yc = ys - rs,
-        --    as = 5*math.pi/6,
+        --    ai = 5*math.pi/6,
         --    ae = math.pi/6,
         --    ar = rs,
         --}
 
-        factor = factor - 2
+        --factor = factor - 2
         local rf = rs + factor
         local dx = (rs^2 - rs^4/(4*rs^2)) ^ 0.5
         local dy = rs^2/(2*rs)
@@ -134,7 +134,7 @@ local function arc_calc( xs, ys, rs, xt, yt, rt, factor )
             ya = 2*y4 - y3, --arrow dest y
             xc = xs,
             yc = ys - rf,
-            as = math.atan2(dy+rf-rs, -dx),
+            ai = math.atan2(dy+rf-rs, -dx),
             ae = math.atan2(dy+rf-rs, dx),
             ar = rf,
             h  = 2*rf,
@@ -143,11 +143,13 @@ local function arc_calc( xs, ys, rs, xt, yt, rt, factor )
         local xp,yp     = (xs - xt)/2 + xt, (ys - yt)/2 + yt --P
         local xv1, yv1  = xp-xs, yp-ys                       -- V1
         local xv2, yv2  = -yv1 * factor, xv1 * factor      -- V2
+        --~ local xv2, yv2  = -yv1, xv1      -- V2
         local xc, yc    = xv2 + xp, yv2 + yp
         local r         = math.sqrt(  (xs-xc)^2 + (ys-yc)^2  )
         local h         = r - math.sqrt( (xp-xc)^2 + (yp-yc)^2 )
-        local s         = math.sqrt( (xp-xs)^2 + (yp-ys)^2 )
-        local xv3, yv3  = yv1/s, -xv1/s                      --V3 (-V2 no factor)
+        --~ local s         = math.sqrt( (xp-xs)^2 + (yp-ys)^2 )
+        local s         = math.sqrt( (xv1)^2 + (yv1)^2 )     --V1 module
+        local xv3, yv3  = yv1/s, -xv1/s                      --V1 normilized
 
         local as_, qs   = math.acos((xs - xc)/r),(ys - yc)/r
         local as        = qs >= 0 and as_ or (2*math.pi) - as_
@@ -165,7 +167,7 @@ local function arc_calc( xs, ys, rs, xt, yt, rt, factor )
                         ye = yc + math.sin(at-ast)*r,
                         xc = xc,
                         yc = yc,
-                        as = as+ass,
+                        ai = as+ass,
                         ae = at-ast,
                         ar = r,
                         xp = xp,
@@ -182,7 +184,7 @@ local function arc_calc( xs, ys, rs, xt, yt, rt, factor )
                         ye = yc + math.sin(at-ast)*r,
                         xc = xc,
                         yc = yc,
-                        as = at+ast,
+                        ai = at+ast,
                         ae = as-ass,
                         ar = r,
                         xp = xp,
@@ -199,7 +201,7 @@ local function arc_calc( xs, ys, rs, xt, yt, rt, factor )
                         ye = yc + math.sin(at-ast)*r,
                         xc = xc,
                         yc = yc,
-                        as = at+ast,
+                        ai = at+ast,
                         ae = as-ass,
                         ar = r,
                         xp = xp,
@@ -216,7 +218,7 @@ local function arc_calc( xs, ys, rs, xt, yt, rt, factor )
                         ye = yc + math.sin(at-ast)*r,
                         xc = xc,
                         yc = yc,
-                        as = as+ass,
+                        ai = as+ass,
                         ae = at-ast ,
                         ar = r,
                         xp = xp,
@@ -235,7 +237,7 @@ local function arc_calc( xs, ys, rs, xt, yt, rt, factor )
                         ye = yc + math.sin(at+ast)*r,
                         xc = xc,
                         yc = yc,
-                        as = as+ass,
+                        ai = as+ass,
                         ae = at-ast,
                         ar = r,
                         xp = xp,
@@ -252,7 +254,7 @@ local function arc_calc( xs, ys, rs, xt, yt, rt, factor )
                         ye = yc + math.sin(at+ast)*r,
                         xc = xc,
                         yc = yc,
-                        as = at+ast,
+                        ai = at+ast,
                         ae = as-ass,
                         ar = r,
                         xp = xp,
@@ -269,7 +271,7 @@ local function arc_calc( xs, ys, rs, xt, yt, rt, factor )
                         ye = yc + math.sin(at+ast)*r,
                         xc = xc,
                         yc = yc,
-                        as = at+ast,
+                        ai = at+ast,
                         ae = as-ass,
                         ar = r,
                         xp = xp,
@@ -286,7 +288,7 @@ local function arc_calc( xs, ys, rs, xt, yt, rt, factor )
                         ye = yc + math.sin(at+ast)*r,
                         xc = xc,
                         yc = yc,
-                        as = as+ass,
+                        ai = as+ass,
                         ae = at-ast ,
                         ar = r,
                         xp = xp,
@@ -367,7 +369,7 @@ function AutomatonRender:draw_context( cr )
 
         --write name and set r based in name len
         local r = (self.automaton.radius_factor or 1)*write_text(cr,x,y,state.name or tostring(id),20) + 15
-        state.r = r
+        --~ state.r = r
 
         states_position[#states_position +1] = {x=x,y=y,r=r}
         size.x = math.max(x+r,size.x)
@@ -411,7 +413,7 @@ function AutomatonRender:draw_context( cr )
             local xs, ys, rs           = states_position[source_id].x, states_position[source_id].y, states_position[source_id].r
             local xt, yt, rt           = states_position[target_id].x, states_position[target_id].y, states_position[target_id].r
 
-            transitions_out[index] = transitions_out[index] or {xs=xs, ys=ys, rs=rs, xt=xt, yt=yt, rt=rt, factor = trans.factor or 2 }
+            transitions_out[index] = transitions_out[index] or {xs=xs, ys=ys, rs=rs, xt=xt, yt=yt, rt=rt, factor = trans.source.target_trans_factor[ trans.target ] }
             table.insert( transitions_out[index], trans.event.name )
         else
             local index                = source_id .. '_' .. target_id
@@ -419,7 +421,7 @@ function AutomatonRender:draw_context( cr )
                 x = states_position[source_id].x,
                 y = states_position[source_id].y,
                 r = states_position[source_id].r,
-                factor = trans.factor or 2,
+                factor = source.target_trans_factor[ trans.target ],
             }
             table.insert( transitions_self[index], trans.event.name )
         end
@@ -431,12 +433,12 @@ function AutomatonRender:draw_context( cr )
             if self.color_transitions and self.color_transitions[c] then
                 local color = self.color_transitions[c]
                 cr:set_source_rgb(color[1], color[2], color[3])
-                cr:arc( result.xc, result.yc, result.ar, result.as, result.ae )
+                cr:arc( result.xc, result.yc, result.ar, result.ai, result.ae )
                 cr:stroke()
                 arrow(cr, result.xe, result.ye, v.xt, v.yt, v.rt, {color[1], color[2], color[3]})
             else
                 cr:set_source_rgb(0, 0, 0)
-                cr:arc( result.xc, result.yc, result.ar, result.as, result.ae )
+                cr:arc( result.xc, result.yc, result.ar, result.ai, result.ae )
                 cr:stroke()
                 arrow(cr, result.xe, result.ye, v.xt, v.yt, v.rt, {0, 0, 0})
             end
@@ -452,13 +454,13 @@ function AutomatonRender:draw_context( cr )
             if self.color_transitions and self.color_transitions[c] then
                 local color = self.color_transitions[c]
                 cr:set_source_rgb(color[1], color[2], color[3])
-                cr:arc( result.xc, result.yc, result.ar, result.as, result.ae )
+                cr:arc( result.xc, result.yc, result.ar, result.ai, result.ae )
                 cr:stroke()
                 arrow(cr, result.xe, result.ye, result.xe, result.ye + v.r, v.r, {color[1], color[2], color[3]})
                 --arrow(cr, result.xe, result.ye, result.xa, result.ya, nil, {color[1], color[2], color[3]}) --???
             else
                 cr:set_source_rgb(0, 0, 0)
-                cr:arc( result.xc, result.yc, result.ar, result.as, result.ae )
+                cr:arc( result.xc, result.yc, result.ar, result.ai, result.ae )
                 cr:stroke()
                 arrow(cr, result.xe, result.ye, result.xe, result.ye + v.r, v.r, {0, 0, 0})
                 --arrow(cr, result.xe, result.ye, result.xa, result.ya, nil, {0, 0, 0})
@@ -507,14 +509,14 @@ function AutomatonRender:select_element(x,y)
         if not tran_select.type then
             local r
             if s ~= t then
-                r = arc_calc( s.x, s.y, s.r or 10, t.x, t.y, t.r or 10, transitions.factor )
+                r = arc_calc( s.x, s.y, s.r or 10, t.x, t.y, t.r or 10, s.target_trans_factor[ t ] )
             else
-                r = arc_calc( s.x, s.y, s.r or 10, nil, nil, nil, transitions.factor )
+                r = arc_calc( s.x, s.y, s.r or 10, nil, nil, nil, s.target_trans_factor[ t ] )
             end
             if r then
                 local a, hip = two_point_angle( r.xc, r.yc, x, y)
-                if r.ae < r.as then
-                     if ( (a >= r.as and a <= 2*math.pi) or a <= r.ae ) and hip <= r.ar + 3 and hip >= r.ar - 3 then
+                if r.ae < r.ai then
+                     if ( (a >= r.ai and a <= 2*math.pi) or a <= r.ae ) and hip <= r.ar + 3 and hip >= r.ar - 3 then
                         tran_select.type   = 'transition'
                         tran_select.source = state_index[s]
                         tran_select.target = state_index[t]
@@ -526,7 +528,7 @@ function AutomatonRender:select_element(x,y)
                         tran_select.target_obj = t
                     end
                 else
-                    if a >= r.as and a <= r.ae and hip <= r.ar + 3 and hip >= r.ar - 3 then
+                    if a >= r.ai and a <= r.ae and hip <= r.ar + 3 and hip >= r.ar - 3 then
                         tran_select.type   = 'transition'
                         tran_select.source = state_index[s]
                         tran_select.target = state_index[t]

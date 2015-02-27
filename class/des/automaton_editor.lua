@@ -120,17 +120,17 @@ AutomatonEditor = letk.Class( function( self, gui, automaton )
     self.sep = gtk.SeparatorToolItem.new()
     self.toolbar:insert( self.sep, -1 )
 
-    --undo
-    self.img_act_undo = gtk.Image.new_from_icon_name( 'gtk-go-back' )
-    self.btn_act_undo = gtk.ToolButton.new( self.img_act_undo, "Undo" )
-    self.btn_act_undo:connect( 'clicked', self.automaton.undo, self.automaton )
-    self.toolbar:insert( self.btn_act_undo, -1 )
-
-    --redo
-    self.img_act_redo = gtk.Image.new_from_icon_name( 'gtk-go-forward' )
-    self.btn_act_redo = gtk.ToolButton.new( self.img_act_redo, "Redo" )
-    self.btn_act_redo:connect( 'clicked', self.automaton.redo, self.automaton )
-    self.toolbar:insert( self.btn_act_redo, -1 )
+    --~ --undo
+    --~ self.img_act_undo = gtk.Image.new_from_icon_name( 'gtk-go-back' )
+    --~ self.btn_act_undo = gtk.ToolButton.new( self.img_act_undo, "Undo" )
+    --~ self.btn_act_undo:connect( 'clicked', self.automaton.undo, self.automaton )
+    --~ self.toolbar:insert( self.btn_act_undo, -1 )
+--~ 
+    --~ --redo
+    --~ self.img_act_redo = gtk.Image.new_from_icon_name( 'gtk-go-forward' )
+    --~ self.btn_act_redo = gtk.ToolButton.new( self.img_act_redo, "Redo" )
+    --~ self.btn_act_redo:connect( 'clicked', self.automaton.redo, self.automaton )
+    --~ self.toolbar:insert( self.btn_act_redo, -1 )
 
     --separator
     self.sep = gtk.SeparatorToolItem.new()
@@ -164,20 +164,6 @@ AutomatonEditor = letk.Class( function( self, gui, automaton )
     self.btn_act_state:connect( 'toggled', self.set_act_state, self )
     self.toolbar:insert( self.btn_act_state, -1 )
     
-    -- N-State
-    self.img_act_state_n = gtk.Image.new_from_file( './images/icons/state_n.png' )
-    self.btn_act_state_n = gtk.ToggleToolButton.new( )
-    self.btn_act_state_n:set_icon_widget( self.img_act_state_n )
-    self.btn_act_state_n:connect( 'toggled', self.set_act_state_n, self )
-    self.toolbar:insert( self.btn_act_state_n, -1 )
-    
-    -- Y-State
-    self.img_act_state_y = gtk.Image.new_from_file( './images/icons/state_y.png' )
-    self.btn_act_state_y = gtk.ToggleToolButton.new( )
-    self.btn_act_state_y:set_icon_widget( self.img_act_state_y )
-    self.btn_act_state_y:connect( 'toggled', self.set_act_state_y, self )
-    self.toolbar:insert( self.btn_act_state_y, -1 )
-    
      --state initial
     self.img_act_initial = gtk.Image.new_from_file( './images/icons/state_initial.png' )
     self.btn_act_initial = gtk.ToggleToolButton.new( )
@@ -191,6 +177,20 @@ AutomatonEditor = letk.Class( function( self, gui, automaton )
     self.btn_act_marked:set_icon_widget( self.img_act_marked )
     self.btn_act_marked:connect( 'toggled', self.set_act_marked, self )
     self.toolbar:insert( self.btn_act_marked, -1 )
+
+    -- N-State
+    self.img_act_state_n = gtk.Image.new_from_file( './images/icons/state_n.png' )
+    self.btn_act_state_n = gtk.ToggleToolButton.new( )
+    self.btn_act_state_n:set_icon_widget( self.img_act_state_n )
+    self.btn_act_state_n:connect( 'toggled', self.set_act_state_n, self )
+    self.toolbar:insert( self.btn_act_state_n, -1 )
+    
+    -- Y-State
+    self.img_act_state_y = gtk.Image.new_from_file( './images/icons/state_y.png' )
+    self.btn_act_state_y = gtk.ToggleToolButton.new( )
+    self.btn_act_state_y:set_icon_widget( self.img_act_state_y )
+    self.btn_act_state_y:connect( 'toggled', self.set_act_state_y, self )
+    self.toolbar:insert( self.btn_act_state_y, -1 )
 
     --transition
     self.img_act_transition = gtk.Image.new_from_file( './images/icons/transition.png' )
@@ -211,6 +211,22 @@ AutomatonEditor = letk.Class( function( self, gui, automaton )
     self.btn_act_positionstates = gtk.ToolButton.new( self.img_act_positionstates, "" )
     self.btn_act_positionstates:connect( 'clicked', self.set_act_position_states, self )
     self.toolbar:insert( self.btn_act_positionstates, -1 )
+
+    --factor
+    self.scale_act_factor = gtk.Scale.new_with_range( gtk.ORIENTATION_HORIZONTAL, 0.2, 5.0, 0.2 )
+    self.scale_act_factor:set_digits( 1 )
+    --~ self.scale_act_factor:connect( 'change-value', function( s, scrollType, value )
+        --~ s:change_radius_factor( value )
+    --~ end, self )
+    self.scale_act_factor:connect( 'value-changed', function( s)
+        s:change_radius_factor( s.scale_act_factor:get_value() )
+    end, self )
+    self.tool_item        = gtk.ToolItem.new()
+    self.tool_item:set_homogeneous( true )
+    self.tool_item:add( self.scale_act_factor )
+    self.toolbar:insert( self.tool_item, -1 )
+    
+    
 
 
     gui:add_tab( self.vbox, (automaton:get('file_name') or "-x-"), nil, nil, self )
@@ -354,12 +370,19 @@ end
 --@see Automaton:write_log
 function AutomatonEditor:edit_transition( source, target )
     local window          = gtk.Window.new(gtk.WINDOW_TOPLEVEL)
-    local vbox            = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
-    local tree            = Treeview.new( true )
-    local btnOk           = gtk.Button.new_with_mnemonic( "OK" )
+        local vbox        = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
+        local tree        = Treeview.new( true )
+        local scale       = gtk.Scale.new_with_range( gtk.ORIENTATION_HORIZONTAL, 0.2, 5.0, 0.2 )
+        local btnOk           = gtk.Button.new_with_mnemonic( "OK" )
     local events_toggle   = {}
     local transitions_map = {}
     local events_map      = {}
+
+    scale:set_digits( 1 )
+
+    --~ self.scale_act_factor:connect( 'value-changed', function( s)
+        --~ s:change_radius_factor( s.scale_act_factor:get_value() )
+    --~ end, self )
 
     for k_event, event in self.automaton.events:ipairs() do
         events_toggle[k_event] = source.event_target[event] and source.event_target[event][target] and true or false
@@ -393,6 +416,7 @@ function AutomatonEditor:edit_transition( source, target )
 
     window:add( vbox )
         vbox:pack_start(tree:build(), true, true, 0)
+        vbox:pack_start(scale, false, false, 0)
         vbox:pack_start(btnOk, false, false, 0)
 
     update()
@@ -419,6 +443,8 @@ function AutomatonEditor:edit_transition( source, target )
                 end
             end
         end
+
+        source.target_trans_factor[ target ] = scale:get_value()
 
         self.render:draw({},{})
         --self.automaton:write_log(function() --???
@@ -693,11 +719,11 @@ end
 function AutomatonEditor:set_act_position_states()
     self.automaton:position_states()
     self.render:draw()
-    self.automaton:write_log(function()
-        for tab_id, tab in self.gui.tab:ipairs() do
-            self.render:draw()
-        end
-    end)
+    --self.automaton:write_log(function()
+    --    for tab_id, tab in self.gui.tab:ipairs() do
+    --        self.render:draw()
+    --    end
+    --end)
 end
 
 local function scalar(v, u)
@@ -926,10 +952,10 @@ end
 --@see AutomatonRender:draw
 --@see Automaton:write_log
 function AutomatonEditor:drawing_area_release( )
-    self.automaton:write_log(function()
-        self.last_element = nil
-        self.render:draw({},{})
-    end)
+    --self.automaton:write_log(function()
+    --    self.last_element = nil
+    --    self.render:draw({},{})
+    --end)
 end
 
 
@@ -1063,9 +1089,9 @@ end
 function AutomatonEditor:change_radius_factor(factor)
     self.automaton:set_radius_factor(factor)
     self.render:draw()
-    self.automaton:write_log(function()
-        self.render:draw()
-    end)
+    --self.automaton:write_log(function()
+    --    self.render:draw()
+    --end)
 end
 
 ---Renames all states with their ids.
@@ -1079,7 +1105,7 @@ function AutomatonEditor:renumber_states()
         self.automaton:state_set_name(k_state, k_state)
     end
     self.render:draw()
-    self.automaton:write_log(function()
-        self.render:draw()
-    end)
+    --self.automaton:write_log(function()
+    --    self.render:draw()
+    --end)
 end

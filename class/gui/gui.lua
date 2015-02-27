@@ -41,8 +41,9 @@ Gui = letk.Class( function( self )
 
     --Menu
     self:append_menu('file', "_File")
-    self:append_menu_item('file', "Quit nadzoru", "Quit nadzoru", 'gtk-quit', gtk.main_quit )
-    self:append_menu_item('file', "Remove Tab", "Remove The Active Tab", 'gtk-delete', function( data ) data.gui:remove_current_tab() end, self )
+    self:append_menu_item('file', "_Close Tab", "Close The Active Tab", 'gtk-delete', function( data ) data.gui:remove_current_tab() end, self )
+    self:append_menu_separator('file')
+    self:append_menu_item('file', "_Quit nadzoru", "Quit nadzoru", 'gtk-quit', gtk.main_quit )
 
 
 
@@ -119,8 +120,8 @@ Gui = letk.Class( function( self )
     self.window:add(self.vbox)
 
     --** window defines **--
-    self.window:set("title", "nadzoru", "width-request", 800,
-        "height-request", 600, "window-position", gtk.WIN_POS_CENTER,
+    self.window:set("title", "nadzoru", "width-request", 1000,
+        "height-request", 800, "window-position", gtk.WIN_POS_CENTER,
         "icon-name", "gtk-about")
 
     self.window:connect("delete-event", gtk.main_quit)
@@ -239,9 +240,9 @@ end
 function Gui:append_menu_item( menu_name, caption, hint, icon, callback, param, ... )
     local menu_item
     if not icon then
-        menu_item = gtk.MenuItem.new_with_label( caption )
+        menu_item = gtk.MenuItem.new_with_mnemonic( caption )
     else
-        menu_item = gtk.MenuItem.new_with_label( caption ) --TODO
+        menu_item = gtk.MenuItem.new_with_mnemonic( caption ) --TODO
     end
     menu_item:connect('activate', callback, { gui = self, param = param } )
     
@@ -260,9 +261,9 @@ end
 function Gui:prepend_menu_item( menu_name, caption, hint, icon, callback, param, ... )
     local menu_item
     if not icon then
-        menu_item = gtk.MenuItem.new_with_label( caption )
+        menu_item = gtk.MenuItem.new_with_mnemonic( caption )
     else
-        menu_item = gtk.MenuItem.new_with_label( caption ) --TODO
+        menu_item = gtk.MenuItem.new_with_mnemonic( caption ) --TODO
     end
     menu_item:connect('activate', callback, { gui = self, param = param } )
     
