@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<model version="2.1" type="FSA" id="G1">
+<data>
+	<state id="1">
+		<properties>
+			<initial />
+			<marked />
+		</properties>
+		<name>1</name>
+	</state>
+	<state id="2">
+		<properties/>
+		<name>2</name>
+	</state>
+	<event id="1">
+		<properties>
+			<controllable />
+			<observable />
+		</properties>
+		<name>c1</name>
+	</event>
+	<event id="2">
+		<properties>
+			<controllable />
+			<observable />
+		</properties>
+		<name>c2</name>
+	</event>
+	<event id="3">
+		<properties>
+			<observable />
+		</properties>
+		<name>u1</name>
+	</event>
+	<event id="4">
+		<properties>
+			<observable />
+		</properties>
+		<name>u2</name>
+	</event>
+	<event id="5">
+		<properties>
+			<observable />
+		</properties>
+		<name>u3</name>
+	</event>
+	<transition id="3" source="1" target="2" event="2">
+	</transition>
+	<transition id="4" source="1" target="2" event="1">
+	</transition>
+	<transition id="5" source="2" target="1" event="4">
+	</transition>
+	<transition id="6" source="2" target="1" event="5">
+	</transition>
+	<transition id="7" source="2" target="1" event="3">
+	</transition>
+</data>
+<meta tag="layout" version="2.1">
+	<font size="12.0"/>
+	<layout uniformnodes="false"/>
+	<state id="1">
+		<circle r="18.0" x="198.0" y="275.0" />
+		<arrow x="36.0" y="0.0" />
+	</state>
+	<state id="2">
+		<circle r="18.0" x="336.0" y="272.0" />
+		<arrow x="1.0" y="0.0" />
+	</state>
+	<transition id="3" group="1">
+		<bezier x1="198.0" y1="275.0" x2="336.0" y2="272.0" ctrlx1="237.33717346191406" ctrly1="251.13397216796875" ctrlx2="295.662841796875" ctrly2="249.86602783203125" />
+		<label x="-1.0" y="-19.0" />
+	</transition>
+	<transition id="4" group="1">
+		<bezier x1="198.0" y1="275.0" x2="336.0" y2="272.0" ctrlx1="237.33717346191406" ctrly1="251.13397216796875" ctrlx2="295.662841796875" ctrly2="249.86602783203125" />
+		<label x="-1.0" y="-19.0" />
+	</transition>
+	<transition id="5" group="2">
+		<bezier x1="336.0" y1="272.0" x2="198.0" y2="275.0" ctrlx1="296.662841796875" ctrly1="295.86602783203125" ctrlx2="238.33717346191406" ctrly2="297.13397216796875" />
+		<label x="5.0" y="5.0" />
+	</transition>
+	<transition id="6" group="2">
+		<bezier x1="336.0" y1="272.0" x2="198.0" y2="275.0" ctrlx1="296.662841796875" ctrly1="295.86602783203125" ctrlx2="238.33717346191406" ctrly2="297.13397216796875" />
+		<label x="5.0" y="5.0" />
+	</transition>
+	<transition id="7" group="2">
+		<bezier x1="336.0" y1="272.0" x2="198.0" y2="275.0" ctrlx1="296.662841796875" ctrly1="295.86602783203125" ctrlx2="238.33717346191406" ctrly2="297.13397216796875" />
+		<label x="5.0" y="5.0" />
+	</transition>
+</meta>
+<meta tag="annotation" version="3">c1,c2: check sensor
+u1,u2: part 1 part 2
+u3 no part</meta>
+</model>

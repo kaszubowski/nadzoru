@@ -419,11 +419,15 @@ function Automaton:position_states()
     for i,state in self.states:ipairs() do
         state.x = v[i].x + 400
         state.y = v[i].y + 300
-        if state.x - state.r < minx then
-            minx = state.x - state.r
+        --~ if state.x - state.r < minx then
+        if state.x < minx then
+            --~ minx = state.x - state.r
+            minx = state.x
         end
-        if state.y - state.r < miny then
-            miny = state.y - state.r
+        --~ if state.y - state.r < miny then
+        if state.y < miny then
+            --~ miny = state.y - state.r
+            miny = state.y
         end
     end
     for i,state in self.states:ipairs() do
@@ -760,7 +764,9 @@ end
 --@see Object:set
 --@see Automaton:create_log
 function Automaton:IDES_import( file_name, get_layout )
-    get_layout      = true
+    if get_layout == nil then
+        get_layout      = true
+    end
     local t         = { s = 1, e = 2, t = 3, }
     local sm        = 0
     local last_tag  = ''
@@ -1793,7 +1799,7 @@ local function checkForInitialState( ... )
         end
     end
 
-    if #errorAutomata then
+    if #errorAutomata > 0 then
         return false, errorAutomata
     else
         return true
@@ -3536,4 +3542,69 @@ function Automaton:check()
         end
     end
     print'Check finish.'
+end
+
+---Check if two automata are isomorphic, to check if they are similar you first need to minimize it.
+---Only works for DFA (convert to DFA if it is NFA first)
+function Automaton:check_isomorphic( A2 )
+    local A1 = self
+
+    if not A1.initial or not A2.initial then return false, 'Initial state is required to compare' end 
+
+    --Initial (Maybe redundant) check
+    if A1.events.itens ~= A2.events.itens then return false, 'number of events are different ' .. A1.events.itens .. '/' .. A2.events.itens  end
+    if A1.states.itens ~= A2.states.itens then return false, 'number of states are different '  .. A1.states.itens .. '/' .. A2.states.itens end
+    if A1.transitions.itens ~= A2.transitions.itens then return false, 'number of transitions are different ' .. A1.transitions.itens .. '/' .. A2.transitions.itens end
+
+    --Check eventNames TODO: transform to an EventSet and use EventSet comparison function
+    local event_map={}
+    for _, e1 in A1.events:ipairs() do
+        event_map[ e1.name ] = { e1 }
+    end
+    for _, e2 in A2.events:ipairs() do
+        event_map[ e2.name ] = event_map[ e2.name ] or {}
+        event_map[ e2.name ][2] = e2
+    end
+    for eventName, e in pairs( event_map ) do
+        if not e[1] or not e[2] then return false, 'events does not match ' .. eventName .. (e[1] and 'T' or 'F') .. '/' .. (e[2] and 'T' or 'F') end
+        if e[1].controllable ~= e[2].controllable then return false, 'events controllability does not match ' .. eventName end
+        if e[1].observable ~= e[2].observable then return false, 'events observable does not match ' .. eventName end
+        if e[1].refinement ~= e[2].refinement then return false, 'events refinement does not match ' .. eventName end
+    end
+
+    local is1                = A1.states:find( A1.initial ) 
+    local is2                = A2.states:find( A2.initial )
+    if is1.marked ~= is2.marked then return false, 'State does not have same marked pattern' end
+    local stack              = { is1 }
+    local sPos               = 1
+    local state_relation_map = { [is1] = is2 }
+    while sPos <= #stack do
+        local s1 = stack[ sPos ]
+        local s2 = state_relation_map[ s1 ]
+        for k_trans1, trans1 in s1.transitions_out:ipairs() do
+            local eventName = trans1.event.name
+            local t1        = trans1.target
+            local t2
+            if s2.transitions_out.itens ~= s1.transitions_out.itens then return false, 'State does no has same transition amount' end
+            for k_trans2, trans2 in s2.transitions_out:ipairs() do
+                if trans2.event.name == eventName then
+                    t2 = trans2.target
+                    break
+                end
+            end
+            if not t2 then return false, 'State does no has same transitions' end
+            if state_relation_map[ t1 ] then
+                if state_relation_map[ t1 ] ~= t2 then return false, 'State does not have same transitions map' end
+            else
+                state_relation_map[ t1 ] = t2
+                stack[ #stack + 1 ]      = t1
+                if t1.marked ~= t2.marked then return false, 'State does not have same marked pattern' end
+            end
+            
+        end
+
+        sPos = sPos + 1
+    end
+
+    return true
 end

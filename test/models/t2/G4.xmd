@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<model version="2.1" type="FSA" id="G4">
+<data>
+	<state id="1">
+		<properties>
+			<initial />
+			<marked />
+		</properties>
+		<name>1</name>
+	</state>
+	<state id="2">
+		<properties/>
+		<name>2</name>
+	</state>
+	<state id="3">
+		<properties/>
+		<name>3</name>
+	</state>
+	<event id="1">
+		<properties>
+			<controllable />
+			<observable />
+		</properties>
+		<name>m1_ini_a</name>
+	</event>
+	<event id="2">
+		<properties>
+			<controllable />
+			<observable />
+		</properties>
+		<name>m1_ini_b</name>
+	</event>
+	<event id="3">
+		<properties>
+			<observable />
+		</properties>
+		<name>m1_fim</name>
+	</event>
+	<event id="4">
+		<properties>
+			<controllable />
+			<observable />
+		</properties>
+		<name>m1_ini_c_c1</name>
+	</event>
+	<event id="5">
+		<properties>
+			<controllable />
+			<observable />
+		</properties>
+		<name>m1_ini_c_c2</name>
+	</event>
+	<transition id="8" source="3" target="1" event="3">
+	</transition>
+	<transition id="9" source="1" target="2" event="2">
+	</transition>
+	<transition id="11" source="2" target="3" event="1">
+	</transition>
+	<transition id="12" source="2" target="3" event="4">
+	</transition>
+	<transition id="13" source="1" target="2" event="5">
+	</transition>
+</data>
+<meta tag="layout" version="2.1">
+	<font size="12.0"/>
+	<layout uniformnodes="false"/>
+	<state id="1">
+		<circle r="18.0" x="292.0" y="203.0" />
+		<arrow x="36.0" y="0.0" />
+	</state>
+	<state id="2">
+		<circle r="18.0" x="367.0" y="157.0" />
+		<arrow x="1.0" y="0.0" />
+	</state>
+	<state id="3">
+		<circle r="18.0" x="374.0" y="245.0" />
+		<arrow x="1.0" y="0.0" />
+	</state>
+	<transition id="8">
+		<bezier x1="374.0" y1="245.0" x2="292.0" y2="203.0" ctrlx1="343.3286437988281" ctrly1="246.5423126220703" ctrlx2="308.6713562011719" ctrly2="228.79103088378906" />
+		<label x="-19.0" y="8.0" />
+	</transition>
+	<transition id="9" group="1">
+		<bezier x1="292.0" y1="203.0" x2="367.0" y2="157.0" ctrlx1="305.9839782714844" ctrly1="177.220947265625" ctrlx2="337.6827087402344" ctrly2="157.779052734375" />
+		<label x="-61.0" y="-13.0" />
+	</transition>
+	<transition id="11" group="2">
+		<bezier x1="367.0" y1="157.0" x2="374.0" y2="245.0" ctrlx1="383.6874084472656" ctrly1="181.2367401123047" ctrlx2="386.64593505859375" ctrly2="218.429931640625" />
+		<label x="70.0" y="-3.0" />
+	</transition>
+	<transition id="12" group="2">
+		<bezier x1="367.0" y1="157.0" x2="374.0" y2="245.0" ctrlx1="383.6874084472656" ctrly1="181.2367401123047" ctrlx2="386.64593505859375" ctrly2="218.429931640625" />
+		<label x="70.0" y="-3.0" />
+	</transition>
+	<transition id="13" group="1">
+		<bezier x1="292.0" y1="203.0" x2="367.0" y2="157.0" ctrlx1="305.9839782714844" ctrly1="177.220947265625" ctrlx2="337.6827087402344" ctrly2="157.779052734375" />
+		<label x="-61.0" y="-13.0" />
+	</transition>
+</meta>
+</model>

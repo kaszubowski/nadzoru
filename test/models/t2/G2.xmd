@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<model version="2.1" type="FSA" id="G2">
+<data>
+	<state id="1">
+		<properties>
+			<initial />
+			<marked />
+		</properties>
+		<name>1</name>
+	</state>
+	<state id="2">
+		<properties/>
+		<name>2</name>
+	</state>
+	<event id="1">
+		<properties>
+			<observable />
+		</properties>
+		<name>s_c1</name>
+	</event>
+	<event id="2">
+		<properties>
+			<observable />
+		</properties>
+		<name>s_c2</name>
+	</event>
+	<event id="3">
+		<properties>
+			<observable />
+		</properties>
+		<name>s_des</name>
+	</event>
+	<event id="4">
+		<properties>
+			<observable />
+		</properties>
+		<name>s_c3</name>
+	</event>
+	<transition id="3" source="1" target="2" event="1">
+	</transition>
+	<transition id="4" source="1" target="2" event="2">
+	</transition>
+	<transition id="5" source="2" target="1" event="3">
+	</transition>
+	<transition id="6" source="1" target="2" event="4">
+	</transition>
+</data>
+<meta tag="layout" version="2.1">
+	<font size="12.0"/>
+	<layout uniformnodes="false"/>
+	<state id="1">
+		<circle r="18.0" x="404.0" y="213.0" />
+		<arrow x="36.0" y="0.0" />
+	</state>
+	<state id="2">
+		<circle r="18.0" x="561.0" y="214.0" />
+		<arrow x="1.0" y="0.0" />
+	</state>
+	<transition id="3" group="1">
+		<bezier x1="404.0" y1="213.0" x2="561.0" y2="214.0" ctrlx1="449.4886474609375" ctrly1="187.12200927734375" ctrlx2="515.8446655273438" ctrly2="187.54466247558594" />
+		<label x="9.0" y="-19.0" />
+	</transition>
+	<transition id="4" group="1">
+		<bezier x1="404.0" y1="213.0" x2="561.0" y2="214.0" ctrlx1="449.4886474609375" ctrly1="187.12200927734375" ctrlx2="515.8446655273438" ctrly2="187.54466247558594" />
+		<label x="9.0" y="-19.0" />
+	</transition>
+	<transition id="5">
+		<bezier x1="561.0" y1="214.0" x2="404.0" y2="213.0" ctrlx1="515.5113525390625" ctrly1="239.87799072265625" ctrlx2="449.15533447265625" ctrly2="239.45533752441406" />
+		<label x="5.0" y="5.0" />
+	</transition>
+	<transition id="6" group="1">
+		<bezier x1="404.0" y1="213.0" x2="561.0" y2="214.0" ctrlx1="449.4886474609375" ctrly1="187.12200927734375" ctrlx2="515.8446655273438" ctrly2="187.54466247558594" />
+		<label x="9.0" y="-19.0" />
+	</transition>
+</meta>
+</model>

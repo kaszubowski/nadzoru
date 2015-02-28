@@ -76,54 +76,15 @@ require('class.des.automaton_editor')
 local CodeGenDevices = require 'res.codegen.devices.main'
 --local AutomataTemplates = require 'class.automata_templates'
 
---[[
-module "Controller"
---]]
 Controller = letk.Class( function( self )
     self.gui              = Gui.new()
-    ---self.gui              = Gui.new( ---???
-    --- {
-    ---     add_event = Controller.add_event,
-    ---     delete_event = Controller.delete_event,
-    ---     to_automaton = Controller.to_automaton,
-    ---     edit_event = Controller.edit_event,
-    ---     edit_refinement = Controller.edit_refinement,
-    ---     toggle_controllable = Controller.toggle_controllable,
-    ---     toggle_observable = Controller.toggle_observable,
-    ---     change_level = Controller.change_level,
-    --- }, self
-    ---)
     self.elements         = letk.List.new()
     self.active_automaton = nil
-    self.simulators       = letk.List.new() ---???
-    ---self.events           = letk.List.new() ---???
-    ---self.level            = get_list('level')[1] ---???
-    ---self.file_name        = nil ---???
+    self.simulators       = letk.List.new()
 
     self.gui:run()
     self:build()
 end, Object )
-
----Returns one of the combobox lists.
----??? This is not the place of such thing.
---Verifies if 'l' is "type" or "level" and returns the propper list.
---@param l Name of the list to be returned.
---@return Requested list.
----function get_list(l)
---- local list
---- if l=='type' then
----     list = {'Other', 'Plant', 'Specification', 'Supervisor', 'S. C. L.', 'Distinguisher', 'Ref. Plant', 'Ref. Specification', 'Ref. Supervisor'}
---- elseif l=='level' then
----     list = {'Control', 'SCADA', 'MES'}
---- else
----     return
---- end
---- 
---- for i,e in ipairs(list) do
----     list[e] = i-1
---- end
---- return list
----end
 
 ---Creates all Nadzoru's menus.
 --Creates the menus file, automata, templates and options, appending all the submenus and actions.
@@ -203,9 +164,6 @@ function Controller:build()
     --for i, temp in AutomataTemplates:ipairs() do
     --  self.gui:add_action(temp.name, temp.caption, temp.hint, nil, temp.callback, self)
     --end
-        --Options
-    ---self.gui:add_action('set_radius_factor', "_Set Radius Factor", "Set Radius Factor", nil, self.change_radius_factor, self)
-    ---self.gui:add_action('renumber_states', "_Enumerate States", "Enumerate States", nil, self.renumber_states, self)
 end
 
 ---Executes the controller.
@@ -266,7 +224,7 @@ function Controller:save_workspace( file_name )
 end
 
 function Controller:load_workspace( file_name )
-     local file = io.open( file_name, 'r')
+    local file = io.open( file_name, 'r')
     if file then
         local s    = file:read('*a')
         local data = loadstring('return ' .. s)()
@@ -1898,58 +1856,6 @@ end
 
 --- OPTIONS ---
 ---TODO: BIG CHECK ALL OVER THIS POINT
-
----Changes state radius factor.
---TODO
---@param data TODO
---@see Selector:add_combobox
---@see Selector:run
---@see Gui:get_current_content
---@see Automaton:set_radius_factor
-function Controller.change_radius_factor( data )
-    local list =  letk.List.new()
-    for n=0,2.1,0.1 do
-        list:append(string.format("%.1f", n))
-    end
-    Selector.new({
-        title = 'nadzoru',
-        success_fn = function( results, numresult )
-            local factor = results[1]
-            if factor then
-                local editor = data.gui:get_current_content()
-                if editor then
-                    editor:change_radius_factor(factor)
-                end
-            end
-        end,
-    })
-    :add_combobox{
-        list = list,
-        text_fn  = function( a )
-            if a == '1.0' then
-                return a .. ' (default)'
-            end
-            return a
-        end,
-        filter_fn = function( v )
-            return true
-        end,
-        text = "Radius Factor:"
-    }
-    :run()
-end
-
----Changes states names to numbers.
---TODO
---@param data TODO
---@see Gui:get_current_content
---@see AutomatonEditor:renumber_states
-function Controller.renumber_states( data )
-    local editor = data.gui:get_current_content()
-    if editor then
-        editor:renumber_states()
-    end
-end
 
 --- EVENT TREEVIEW ---
 

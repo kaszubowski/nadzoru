@@ -212,6 +212,12 @@ AutomatonEditor = letk.Class( function( self, gui, automaton )
     self.btn_act_positionstates:connect( 'clicked', self.set_act_position_states, self )
     self.toolbar:insert( self.btn_act_positionstates, -1 )
 
+    --renumber states
+    self.img_act_renumber_states = gtk.Image.new_from_file( './images/icons/position_states.png' )
+    self.btn_act_renumber_states = gtk.ToolButton.new( self.img_act_renumber_states, "" )
+    self.btn_act_renumber_states:connect( 'clicked', self.set_act_renumber_states, self )
+    self.toolbar:insert( self.btn_act_renumber_states, -1 )
+
     --factor
     self.scale_act_factor = gtk.Scale.new_with_range( gtk.ORIENTATION_HORIZONTAL, 0.2, 5.0, 0.2 )
     self.scale_act_factor:set_digits( 1 )
@@ -718,6 +724,16 @@ end
 --@see AutomatonRender:draw
 function AutomatonEditor:set_act_position_states()
     self.automaton:position_states()
+    self.render:draw()
+    --self.automaton:write_log(function()
+    --    for tab_id, tab in self.gui.tab:ipairs() do
+    --        self.render:draw()
+    --    end
+    --end)
+end
+
+function AutomatonEditor:set_act_renumber_states()
+    self:renumber_states()
     self.render:draw()
     --self.automaton:write_log(function()
     --    for tab_id, tab in self.gui.tab:ipairs() do
