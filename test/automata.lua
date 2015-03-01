@@ -4,6 +4,9 @@ require 'letk'
 require 'class.object'
 require 'class.des.automaton'
 
+--Check if IDES read is OK: events (controllable, ...), states, transitions
+--Check all operations
+
 ---create an automata where state n go to states n-1 and n+1 with alternates states
 --first state is always initial
 local OPTIONS     = {}
@@ -216,6 +219,7 @@ describe( "Test 2", function()
         local s = Automaton.supC( G, K )
         assert.truthy( s )
 
+        --~ s:minimize(true)
         assert( s:check_isomorphic(S) )
     end )
     
