@@ -75,8 +75,8 @@ end
 --@return TODO
 function Simulator:get_current_state()
     --~ local node  = self.automaton.states:get( self.current_state_id )
-    local node  = self.state_map[ self.current_state_id ]
-    return self.current_state_id, node
+    local state  = self.state_map[ self.current_state_id ]
+    return self.current_state_id, state
 end
 
 ---Returns informations about the current state of the simulator.
@@ -100,37 +100,32 @@ end
 --@return Table with the events and index, target state, source state, target index and source index of each event.
 --@see Simulator:get_current_state
 function Simulator:get_current_state_events_info()
-    local state_index, node = self:get_current_state()
+    local state_index, state = self:get_current_state()
     local events            = {}
-    for event_index, event in self.automaton.events:ipairs() do
-        if node.event_target[ event ] then
-            for target, _ in pairs( node.event_target[ event ] ) do
+    for k_trans, trans in state.transitions_out:ipairs() do
                 events[#events +1] = {
-                    event        = event,
-                    event_index  = event_index,
-                    target_state = target,
-                    target_index = self.state_map[target],
-                    source_state = node,
-                    source_index = self.state_map[node],
+                    event        = trans.event,
+                    event_index  = self.event_map[ trans.event ],
+                    target_state = trans.target,
+                    target_index = self.state_map[trans.target],
+                    source_state = trans.state,
+                    source_index = self.state_map[trans.state],
                 }
-            end
-        end
     end
 
     return events
 end
 
 ---Returns controllable events of the current state of the simulator.
---For some reason, it doesn't check if the events are controllable. TODO
 --@param self Simulator whose events are returned.
 --@return Table with controllable events of the current state.
 --@see Simulator:get_current_state
 function Simulator:get_current_state_controllable_events()
-    local state_index, node = self:get_current_state()
-    local events            = {}
-    for event_index, event in self.automaton.events:ipairs() do
-        if node.event_target[ event ] then
-            events[#events +1] = event
+    local state_index, state = self:get_current_state()
+    local events             = {}
+    for k_trans, trans in state.transitions_out:ipairs() do
+        if trans.event.controllable then
+            events[#events +1] = trans.event
         end
     end
     

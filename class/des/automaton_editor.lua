@@ -756,8 +756,11 @@ function AutomatonEditor:drawing_area_move_motion( event )
     local stats, coord_x, coord_y           = gdk.Event.get_coords( event )
     if self.operation == 'move_motion' then
         if self.last_element and self.last_element.type == 'state'  then
-            self.last_element.object.x = math.floor(coord_x) - (self.selected_component_move_motion_diff_x or 0)
-            self.last_element.object.y = math.floor(coord_y) - (self.selected_component_move_motion_diff_y or 0)
+            --~ self.last_element.object.x = math.floor(coord_x) - (self.selected_component_move_motion_diff_x or 0)
+            --~ self.last_element.object.y = math.floor(coord_y) - (self.selected_component_move_motion_diff_y or 0)
+            local x = math.floor(coord_x) - (self.selected_component_move_motion_diff_x or 0)
+            local y = math.floor(coord_y) - (self.selected_component_move_motion_diff_y or 0)
+            self.automaton:state_set_position( self.last_element.id, x, y )
             self.render:draw({ [self.last_element.id] = {0.85,0,0} }, {})
         --[[  ---???      
         elseif self.last_element and self.last_element.type == 'transition' then

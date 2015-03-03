@@ -493,17 +493,13 @@ function GraphvizSimulator:generate_graphviz( deep, backwaredeep )
         for i = list_p, list_tam do
             local current = self.automaton.states:get( list[i] )
 
-            for event, target_list in pairs( current.event_target ) do
-                for target, _ in pairs( target_list ) do
-                    add_node_transition( current, event, target, false)
-                end
+            for k_trans, trans in current.transitions_out:ipairs() do
+                    add_node_transition( current, trans.event, trans.target, false)
             end
             first = false
             if backwaredeep then
-                for event, sources in pairs( current.event_source ) do
-                    for source, _ in pairs( sources ) do
-                        add_node_transition( source, event, current, true)
-                    end
+                for k_trans, trans in current.transitions_in:ipairs() do
+                    add_node_transition( trans.source, trans.event, current, true)
                 end
             end
         end

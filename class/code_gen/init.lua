@@ -25,6 +25,8 @@ Devices = require 'res.codegen.devices.main'
 module "CodeGen"
 --]]
 CodeGen = letk.Class( function( self, options )
+    Object.__super( self )
+    
     options             = options or {}
     --self.workspace_events = options.workspace_events
     self.automata       = options.automata
@@ -35,10 +37,10 @@ CodeGen = letk.Class( function( self, options )
     self.device         = Devices[ self.device_id ].new()
     self.custom_code    = {}
 
-	--self.automata:iremove(function(automaton) --???
-	--	return not Devices[ self.device_id ].models[ automaton.type ]
-	--end)
-	
+    --self.automata:iremove(function(automaton) --???
+    --  return not Devices[ self.device_id ].models[ automaton.type ]
+    --end)
+    
     local num_automata = self.automata:len()
     if num_automata == 0 then return end
     if num_automata == 1 then
@@ -70,57 +72,57 @@ end
 --Verifies if the file was chosen. Sets the ids from the map to the codegen.
 --@param self Codegen in which the operation is applied.
 --function CodeGen:read_event_map()
---	if not self.event_map or not self.event_map_file then return end
---	local file = io.open(self.event_map_file, 'r')
---	if file then
---		local s    = file:read('*a')
---		local data = loadstring('return ' .. s)() --This returns the event map as a table
---		if data then
---			local event_info = data.information
---			
---			--events
---			for k, e in pairs(data.events) do
---				if type(e)=='string' then
---					local event = event_info[k]
---					self.events[ k ] = {
---						name = e,
---						controllable = event.controllable,
---					}
---			        self.events_map[ e ]   = k
---			        self.event_code[ e ]   = {
---			            id           = k,
---			            input        = event.input,
---			            output       = event.output,
---			            automaton    = {},
---			            source       = event.source,
---			            controllable = event.controllable,
---			            refinement   = event.refinement,
---			        }
---				end
---			end
---			
---			--refinements
---			for k, e in pairs(data.refinements) do
---				if type(e)=='string' then
---					local event = event_info[k]
---					self.events_r[ k ] = {
---						name = e,
---						controllable = event.controllable,
---					}
---			        self.events_r_map[ e ] = k
---			        self.event_code[ e ]   = {
---			            id           = k,
---			            input        = event.input,
---			            output       = event.output,
---			            automaton    = {},
---			            source       = event.source,
---			            controllable = event.controllable,
---			            refinement   = event.refinement,
---			        }
---				end
---			end
---		end
---	end
+--  if not self.event_map or not self.event_map_file then return end
+--  local file = io.open(self.event_map_file, 'r')
+--  if file then
+--      local s    = file:read('*a')
+--      local data = loadstring('return ' .. s)() --This returns the event map as a table
+--      if data then
+--          local event_info = data.information
+--          
+--          --events
+--          for k, e in pairs(data.events) do
+--              if type(e)=='string' then
+--                  local event = event_info[k]
+--                  self.events[ k ] = {
+--                      name = e,
+--                      controllable = event.controllable,
+--                  }
+--                  self.events_map[ e ]   = k
+--                  self.event_code[ e ]   = {
+--                      id           = k,
+--                      input        = event.input,
+--                      output       = event.output,
+--                      automaton    = {},
+--                      source       = event.source,
+--                      controllable = event.controllable,
+--                      refinement   = event.refinement,
+--                  }
+--              end
+--          end
+--          
+--          --refinements
+--          for k, e in pairs(data.refinements) do
+--              if type(e)=='string' then
+--                  local event = event_info[k]
+--                  self.events_r[ k ] = {
+--                      name = e,
+--                      controllable = event.controllable,
+--                  }
+--                  self.events_r_map[ e ] = k
+--                  self.event_code[ e ]   = {
+--                      id           = k,
+--                      input        = event.input,
+--                      output       = event.output,
+--                      automaton    = {},
+--                      source       = event.source,
+--                      controllable = event.controllable,
+--                      refinement   = event.refinement,
+--                  }
+--              end
+--          end
+--      end
+--  end
 --end
 
 ---Reads the automata.
@@ -143,10 +145,10 @@ function CodeGen:read_automata()
     self:read_event_map()
     
     for k_event, event in self.workspace_events:ipairs() do
-		if event.refinement~='' then
-			self.refinements[event.refinement] = self.refinements[event.refinement] or {}
-			self.refinements[event.refinement][event.name] = true
-		end
+        if event.refinement~='' then
+            self.refinements[event.refinement] = self.refinements[event.refinement] or {}
+            self.refinements[event.refinement][event.name] = true
+        end
     end
    --]]
 
@@ -171,65 +173,65 @@ function CodeGen:read_automata()
     
 --[[ --???
     for k_event, event in self.workspace_events:ipairs() do
-		--Event is not a refinement => add to events list
-		if event.refinement=='' then
-			if not self.events_map[ event.name ] then
-				local pos = #self.events + 1
-				self.events[ pos ] = event
-				self.events_map[ event.name ]   = pos
-				self.event_code[ event.name ]   = {
-					id           = pos,
-					input        = '',
-					output       = '',
-					automaton    = {},
-					source       = "Automaton",
-					controllable = event.controllable,
-					refinement   = event.refinement,
-				}
-			end
-		end
-		
-		--Event doesn't have refinements => add to events_r list
-		if not self.refinements[event.name] then
-			if not self.events_r_map[ event.name ] then
-				local pos = #self.events_r + 1
-				self.events_r[ pos ] = event
-				self.events_r_map[ event.name ]   = pos
-				self.event_code[ event.name ]   = {
-					id           = pos,
-					input        = '',
-					output       = '',
-					automaton    = {},
-					source       = "Automaton",
-					controllable = event.controllable,
-					refinement   = event.refinement,
-				}
-			end
-		end
+        --Event is not a refinement => add to events list
+        if event.refinement=='' then
+            if not self.events_map[ event.name ] then
+                local pos = #self.events + 1
+                self.events[ pos ] = event
+                self.events_map[ event.name ]   = pos
+                self.event_code[ event.name ]   = {
+                    id           = pos,
+                    input        = '',
+                    output       = '',
+                    automaton    = {},
+                    source       = "Automaton",
+                    controllable = event.controllable,
+                    refinement   = event.refinement,
+                }
+            end
+        end
+        
+        --Event doesn't have refinements => add to events_r list
+        if not self.refinements[event.name] then
+            if not self.events_r_map[ event.name ] then
+                local pos = #self.events_r + 1
+                self.events_r[ pos ] = event
+                self.events_r_map[ event.name ]   = pos
+                self.event_code[ event.name ]   = {
+                    id           = pos,
+                    input        = '',
+                    output       = '',
+                    automaton    = {},
+                    source       = "Automaton",
+                    controllable = event.controllable,
+                    refinement   = event.refinement,
+                }
+            end
+        end
     end
 --]]
 
     --[[
     for k_automaton, automaton in self.automata:ipairs() do
-		self.atm_events[#self.atm_events + 1] = {}
-		self.atm_events_r[#self.atm_events_r + 1] = {}
-		
-		for k_event, event in automaton.events:ipairs() do
-			self.event_code[ event.name ].automaton[ k_automaton ] = event.controllable and 'c' or 'n' --Maybe this can be deleted. It's not used anywhere.
-			
-			--Event is not a refinement => add to atm_events list
-			if event.refinement=='' then
-				self.atm_events[#self.atm_events][ self.events_map[ event.name ] ] = true
-			end
-			
-			--Event doesn't have refinements => add to atm_events_r list
-			if not self.refinements[event.name] then
-				self.atm_events_r[#self.atm_events_r][ self.events_r_map[ event.name ] ] = true
-			end
-		end
+        self.atm_events[#self.atm_events + 1] = {}
+        self.atm_events_r[#self.atm_events_r + 1] = {}
+        
+        for k_event, event in automaton.events:ipairs() do
+            self.event_code[ event.name ].automaton[ k_automaton ] = event.controllable and 'c' or 'n' --Maybe this can be deleted. It's not used anywhere.
+            
+            --Event is not a refinement => add to atm_events list
+            if event.refinement=='' then
+                self.atm_events[#self.atm_events][ self.events_map[ event.name ] ] = true
+            end
+            
+            --Event doesn't have refinements => add to atm_events_r list
+            if not self.refinements[event.name] then
+                self.atm_events_r[#self.atm_events_r][ self.events_r_map[ event.name ] ] = true
+            end
+        end
     end
     --]]
-	
+    
     for k_automaton, automaton in self.automata:ipairs() do
         self.sup_events[#self.sup_events + 1] = {}
         for k_event, event in automaton.events:ipairs() do
@@ -269,9 +271,9 @@ function CodeGen:build_gui( gui )
 
     self.gui.vbox:pack_start( self.gui.hbox, true, true, 0 )
     self.gui.vbox:pack_start( self.gui.hbox_footer, false, false, 0 )
-    self.gui.hbox_footer:pack_start( self.gui.btn_load, true, true, 0 )
-    self.gui.hbox_footer:pack_start( self.gui.btn_save, true, true, 0 )
-    self.gui.hbox_footer:pack_start( self.gui.btn_execute, true, true, 0 )
+        self.gui.hbox_footer:pack_start( self.gui.btn_load, true, true, 0 )
+        self.gui.hbox_footer:pack_start( self.gui.btn_save, true, true, 0 )
+        self.gui.hbox_footer:pack_start( self.gui.btn_execute, true, true, 0 )
 
     -------------------------------------------------
     --                  TOP                        --
@@ -571,7 +573,7 @@ end
 --@see CodeGen:update_treeviews
 function CodeGen:load_project()
      local dialog = gtk.FileChooserDialog.new(
-        "Save AS", nil,gtk.FILE_CHOOSER_ACTION_SAVE,
+        "Load Project", nil,gtk.FILE_CHOOSER_ACTION_SAVE,
         "gtk-cancel", gtk.RESPONSE_CANCEL,
         "gtk-ok", gtk.RESPONSE_OK
     )
@@ -616,9 +618,9 @@ function CodeGen:generate_event_map()
     if not self.event_map or not self.event_map_file then return end
     local ev_map = {}
     --local ev_map = {
-	--	events = {},
-	--	refinements = {},
-	--	information = {},
+    --  events = {},
+    --  refinements = {},
+    --  information = {},
     --}
     
     --local event_info = ev_map.information
@@ -632,11 +634,11 @@ function CodeGen:generate_event_map()
         ev_map[ id   ] = name
         
         --event_info[ id ] = {
-		--	input        = code.input,
-		--	output       = code.output,
-		--	source       = code.source,
-		--	controllable = code.controllable,
-		--	refinement   = code.refinement,
+        --  input        = code.input,
+        --  output       = code.output,
+        --  source       = code.source,
+        --  controllable = code.controllable,
+        --  refinement   = code.refinement,
         --}
     end
     
@@ -648,11 +650,11 @@ function CodeGen:generate_event_map()
     --    ev_map.refinements[ id   ] = name
     --    
     --    event_info[ id ] = {
-	--		input        = code.input,
-	--		output       = code.output,
-	--		source       = code.source,
-	--		controllable = code.controllable,
-	--		refinement   = code.refinement,
+    --      input        = code.input,
+    --      output       = code.output,
+    --      source       = code.source,
+    --      controllable = code.controllable,
+    --      refinement   = code.refinement,
     --    }
     --end
     
@@ -663,15 +665,15 @@ end
 
 --[[
 local function clean_code(code)
-	local n
-	code = string.gsub(code, '%s+', ' ')
-	repeat
-		code, n = string.gsub(code, '\n%s\n', '\n')
-	until n==0
-	code = string.gsub(code, '\t +', '\t')
-	code = string.gsub(code, '^\n+', '')
-	code = string.gsub(code, '\n\n+$', '\n')
-	return code
+    local n
+    code = string.gsub(code, '%s+', ' ')
+    repeat
+        code, n = string.gsub(code, '\n%s\n', '\n')
+    until n==0
+    code = string.gsub(code, '\t +', '\t')
+    code = string.gsub(code, '^\n+', '')
+    code = string.gsub(code, '\n\n+$', '\n')
+    return code
 end
 --]]
 

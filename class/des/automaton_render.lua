@@ -421,7 +421,7 @@ function AutomatonRender:draw_context( cr )
                 x = states_position[source_id].x,
                 y = states_position[source_id].y,
                 r = states_position[source_id].r,
-                factor = source.target_trans_factor[ trans.target ],
+                factor = trans.source.target_trans_factor[ trans.target ],
             }
             table.insert( transitions_self[index], trans.event.name )
         end

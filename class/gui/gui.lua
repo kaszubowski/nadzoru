@@ -237,12 +237,30 @@ function Gui:remove_menu( name )
     self.menu_item[name] = nil
 end
 
+---get image from file or icon-name
+function Gui:getImage( name )
+    local f = io.open( name, 'r' )
+    if f then
+        return gtk.Image.new_from_file( name )
+    else 
+        return gtk.Image.new_from_icon_name( name )
+    end
+end
+
 function Gui:append_menu_item( menu_name, caption, hint, icon, callback, param, ... )
     local menu_item
-    if not icon then
-        menu_item = gtk.MenuItem.new_with_mnemonic( caption )
+    if icon then
+        local box = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
+            local image = self:getImage( icon )
+            local label = gtk.Label.new()
+        label:set_markup_with_mnemonic( caption )
+        label:set_justify( gtk.JUSTIFY_LEFT )
+        box:pack_start( image, false, false, 0 )
+        box:pack_start( label, false, false, 5 )
+        menu_item   = gtk.MenuItem.new()
+        menu_item:add( box )
     else
-        menu_item = gtk.MenuItem.new_with_mnemonic( caption ) --TODO
+        menu_item = gtk.MenuItem.new_with_mnemonic( caption )
     end
     menu_item:connect('activate', callback, { gui = self, param = param } )
     
@@ -260,10 +278,18 @@ end
 
 function Gui:prepend_menu_item( menu_name, caption, hint, icon, callback, param, ... )
     local menu_item
-    if not icon then
-        menu_item = gtk.MenuItem.new_with_mnemonic( caption )
+    if icon then
+        local box = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
+            local image = self:getImage( icon )
+            local label = gtk.Label.new()
+        label:set_markup_with_mnemonic( caption )
+        label:set_justify( gtk.JUSTIFY_LEFT )
+        box:pack_start( image, false, false, 0 )
+        box:pack_start( label, false, false, 5 )
+        menu_item   = gtk.MenuItem.new()
+        menu_item:add( box )
     else
-        menu_item = gtk.MenuItem.new_with_mnemonic( caption ) --TODO
+        menu_item = gtk.MenuItem.new_with_mnemonic( caption )
     end
     menu_item:connect('activate', callback, { gui = self, param = param } )
     

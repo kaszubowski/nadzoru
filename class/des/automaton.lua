@@ -76,7 +76,7 @@ Automaton = letk.Class( function( self, radius_factor )
     self.radius_factor = radius_factor or 1
     self.type          = Automaton.TYPES.NONE
 
-    self:set('file_name', '*new automaton' )
+    self:set('file_name', 'newAutomaton' )
     self:clearInfo()
 end, Object )
 
@@ -92,48 +92,9 @@ Automaton.TYPES.REF_PLANT          = { name='Ref. Plant' }
 Automaton.TYPES.REF_SPECIFICATION  = { name='Ref. Specification' }
 Automaton.TYPES.REF_SUPERVISOR     = { name='Ref. Supervisor' }
 
-
 ------------------------------------------------------------------------
 --                         Private utils                              --
 ------------------------------------------------------------------------
-
----Removes states from an automaton according to a function.
---Removes states from the state list of the automaton according to 'fn'. Removes transitions that have these states as source or target.
---@param A Automaton in which the operation is applied.
---@param fn Function used to determine which states are removed.
-function remove_states_fn( A, fn )
-        local removed_states = A.states:iremove( fn )
-        --remove in/out transition to/from bad states
-        local transitions_to_remove = {}
-        for ksrm, srm in ipairs( removed_states ) do
-            for kt, t in srm.transitions_out:ipairs() do
-                transitions_to_remove[ t ] = true
-                t.target.event_source[t.event]           = t.target.event_source[t.event] or {}
-                t.target.event_source[t.event][t.source] = nil
-            end
-            for kt, t in srm.transitions_in:ipairs() do
-                transitions_to_remove[ t ] = true
-                t.source.event_target[t.event]           = t.source.event_target[t.event] or {}
-                t.source.event_target[t.event][t.target] = nil
-            end
-        end
-        A.transitions:iremove( function( t )
-            return transitions_to_remove[ t ] or false
-        end )
-        for k_s, s in A.states:ipairs() do
-            s.transitions_in:iremove( function( t )
-                return transitions_to_remove[ t ] or false
-            end )
-            s.transitions_out:iremove( function( t )
-                return transitions_to_remove[ t ] or false
-            end )
-        end
-        for k_e, e in A.events:ipairs() do
-            e.transitions:iremove( function( t )
-                return transitions_to_remove[ t ] or false
-            end )
-        end
-end
 
 ------------------------------------------------------------------------
 --               automaton manipulation and definition                --
@@ -173,8 +134,7 @@ function Automaton:state_add( name, marked, initial, id )
     local new_state = {
         initial             = initial or false,
         marked              = marked  or false,
-        event_target        = {},
-        event_source        = {},
+        event_target        = {}, --TODO: remove and substitute any use
         transitions_in      = letk.List.new(),
         transitions_out     = letk.List.new(),
         name                = tostring( name or self:getNextAvailableNumber() ),
@@ -329,6 +289,12 @@ end
 function Automaton:state_set_position( id, x, y )
     local state = self.states:find( id )
     if not state then return end
+
+    x = tonumber(x)
+    y = tonumber(y)
+
+    if x < 10 then x = 10 end
+    if y < 10 then y = 10 end
 
     state.x = x
     state.y = y
@@ -741,7 +707,6 @@ function Automaton:transition_add( source_id, target_id, event_id, isdata, id )
     local target = not isdata and self.states:find( target_id ) or target_id
 
     source.event_target[event] = source.event_target[event] or {}
-    target.event_source[event] = target.event_source[event] or {}
     source.target_trans_factor[ target ] = source.target_trans_factor[ target ] or 2.0
 
     if not event or not source or not target then return end --some invalid state/event
@@ -749,7 +714,6 @@ function Automaton:transition_add( source_id, target_id, event_id, isdata, id )
     --Index by the table because the id can change, eg if remove a state, or event
 
     source.event_target[event][target] = true
-    target.event_source[event][source] = true
 
     local transition = {
         source = source,
@@ -837,9 +801,7 @@ function Automaton:transition_remove( id )
     trans.target.transitions_in:find_remove( trans )
     self.transitions:remove( trans_id )
     trans.source.event_target[trans.event] = trans.source.event_target[trans.event] or {}
-    trans.target.event_source[trans.event] = trans.target.event_source[trans.event] or {}
     trans.source.event_target[trans.event][trans.target] = nil
-    trans.target.event_source[trans.event][trans.source] = nil
     --source.target_trans_factor[ target ] still there
 end
 
@@ -2234,6 +2196,11 @@ function isBadState( stateG, stateK )
     return false
 end
 
+---Calculates the max controllable language of a plant and a language.
+--@param G Plant in which the operation is applied.
+--@param K Language in which the operation is applied.
+--@return An automaton S that realises the maximum controllable language.
+--@see Automaton:clone
 function Automaton.supC(G, K)
     local S                   = K:clone()
     local univocalRel, errMsg = Automaton.univocal(G, S)
@@ -2248,132 +2215,31 @@ function Automaton.supC(G, K)
     local lastNumStatesS = -1
     local numStatesS     = S.states:len()
     while lastNumStatesS ~=  numStatesS do
+        if coroutine.running() then coroutine.yield('start while') end --current number of states / initial number of states is the best guess we have of progress
         local statesToRemove = {}
         for k_stateS, stateS in S.states:ipairs() do
             local stateG = univocalRel[ stateS ]
             if isBadState( stateG, stateS ) then
                 statesToRemove[#statesToRemove + 1] = stateS
+                --~ statesToRemove[stateS] = true
             end
         end
 
+        if coroutine.running() then coroutine.yield('start while::remove') end --this is the slowest part, improve state/transition rm and also this can be used as the coroutine step indicator. (every 10 removed states yield).
         for k_s, s in ipairs( statesToRemove ) do
             S:state_remove( s )
         end
 
+        if coroutine.running() then coroutine.yield('start while::trim') end
         S:trim(true)
 
         lastNumStatesS = numStatesS
         numStatesS     = S.states:len()
+        if coroutine.running() then coroutine.yield('end while') end
     end
 
     return S
 end
-
----Calculates the max controllable language of a plant and a language.
---TODO
---@param G Plant in which the operation is applied.
---@param K Language in which the operation is applied.
---@return Max controllable language.
---@see Automaton:clone
---[[
-function Automaton.supC(G, K)
-    local allHaveInitialState, noInitialStateList = checkForInitialState( G, K )
-    if not allHaveInitialState then
-        return false, 'Automaton does not have initial state', noInitialStateList
-    end
-
-    local S          = K:clone()
-    local mapG, mapS = {}, {}
-
-    for k_s, s in G.states:ipairs() do
-        mapG[k_s] = s
-        mapG[s]   = k_s
-    end
-
-    for k_s, s in S.states:ipairs() do
-        mapS[k_s] = s
-        mapS[s]   = k_s
-    end
-
-    local count, totalc = 0, S.states:len()
-
-    local last_S_len  = -1
-    local atual_S_len = S.states:len()
-    while last_S_len ~= atual_S_len do
-        last_S_len = atual_S_len
-        -- find all (x,.) and bad states
-        local visited    = {}
-        local stack      = {{G.states:get(G.initial), S.states:get(S.initial)}}
-        local i          = 1
-        local bad_states = {}
-
-        while i > 0 do
-            --pop
-            local current = stack[ i ]
-            i             = i - 1
-            if not current[1] or not current[2] then
-                break
-            end
-
-            local id_g, id_r = mapG[ current[1] ], mapS[ current[2] ]
-            local s_g, s_r   = current[1], current[2]
-            local id     = id_g .. '_' .. id_r
-            if not visited[id] then
-                visited[id] = true
-                local S_t   = {}
-                local G_t   = {}
-                for id_t, t in s_g.transitions_out:ipairs() do
-                    G_t[t.event.name] = t.target
-                end
-                for id_t, t in s_r.transitions_out:ipairs() do
-                    S_t[t.event.name] = t.target
-                    i = i + 1
-                    stack[i] = {
-                        G_t[t.event.name] or s_g, --G
-                        t.target,                 --S
-                    }
-                end
-                for id_e, e in S.events:ipairs() do
-                    if
-                        not bad_states[ s_r ] and
-                        not e.controllable    and
-                        G_t[ e.name ]         and
-                        not S_t[ e.name ]
-                    then
-                        s_r.bad_state         = true
-                        bad_states[ s_r ]     = true
-                    end
-                end
-            end
-        end
-        --recursive check bad_states
-        i = 1
-        while i <= #bad_states do
-            local bs = bad_states[i]
-            i        = i + 1
-            for id_t, t in bs.transitions_in:ipairs() do
-                if not t.event.controllable and not t.source.bad_state then
-                    t.source.bad_state          = true
-                end
-            end
-        end
-
-        --remove bad states
-        remove_states_fn( S, function( s )
-            return s.bad_state or false
-        end )
-
-        --trim
-        S:trim( true, true )
-
-        atual_S_len = S.states:len()
-    end
-
-    --S:create_log()
-
-    return S
-end
---]]
 
 local function show_problem_result(problem_name, problem_list)
     if problem_list:len()==0 then
@@ -2893,8 +2759,10 @@ function Automaton:complement(keep)
         return
     end
 
+    --does not need a trim?
+
     local new_automaton = self:deterministic(keep)
-    local Sc, Sc_state = new_automaton:state_add('Sc', false, false )
+    local Sc, Sc_state = new_automaton:state_add('Sc', false, false ) --shall this state be market?
     local transition
 
     local flag=false
