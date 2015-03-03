@@ -184,6 +184,51 @@ function Automaton:state_remove( id )
     self.states:remove( state_id )
 end
 
+function Automaton:state_iremove( map )
+    if type( map ) ~= 'table' then return false end
+
+    --Remove states in the map from self.states
+    --Remove transitions to/from map on other states' internal
+    self.states:iremove( function( s )
+        if map[ s ] then
+            return true
+        end
+        
+        s.transitions_out:iremove( function( t )
+            if map[ t.target ] then
+                return true
+            end
+            return false
+        end )
+        s.transitions_in:iremove( function( t )
+            if map[ t.source ] then
+                return true
+            end
+            return false
+        end )
+
+        return false
+    end )
+
+    --Remove states transitions
+    for k_event, event in self.events:ipairs() do
+        event.transitions:iremove( function(t)
+            if map[t.target] or map[t.source] then
+                return true
+            end
+            return false
+        end )
+    end
+
+    --Remove transitions
+    self.transitions:iremove( function(t)
+        if map[t.target] or map[t.source] then
+            return true
+        end
+        return false
+    end )
+end
+
 ---Sets the initial state of the automaton.
 --Verifies if the state represented by 'id' exists. Sets any other state to no initial. Sets the state to initial. Sets the initial state of the automaton to the state.
 --@param self Automaton in which the operation is applied.
@@ -734,6 +779,45 @@ function Automaton:transition_add( source_id, target_id, event_id, isdata, id )
     return id, transition
 end
 
+---Removes a transition from the automaton.
+--Finds the transition represented by 'id' in the transition list. Removes that transition from the transition list of the source state, target state, event and automaton. Sets the combination event-target on the source state and event-source on the target state to nil.
+--@param self Automaton in which the operation is applied.
+--@param id Id of the transition to be removed.
+function Automaton:transition_remove( id )
+    local trans, trans_id = self.transitions:find( id )
+    if not trans then return end
+
+    trans.event.transitions:find_remove( trans )
+    trans.source.transitions_out:find_remove( trans )
+    trans.target.transitions_in:find_remove( trans )
+    self.transitions:remove( trans_id )
+    trans.source.event_target[trans.event] = trans.source.event_target[trans.event] or {}
+    trans.source.event_target[trans.event][trans.target] = nil
+    --source.target_trans_factor[ target ] still there
+end
+
+--~ ---
+--~ --CAUTION: This function will not guarantee consistence, it will remove the transitions from
+--~ function Automaton:transition_iremove( map, bySource, byTarget, byEvent )
+    --~ self.transitions
+--~ end
+
+---Changes the factor of a transition
+--Finds the transition represented by 'id'. Sets it's factor to 'factor'.
+--@param id Id of the transition.
+--@param factor New factor.
+function Automaton:transition_set_factor( id, factor )
+    local trans, trans_id = self.transitions:find( id )
+    if not trans then return end
+
+    trans.factor = factor
+
+    return true
+end
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
 --~ function Automaton:getNextStates( source, event ) for NFA
 
 --~ end 
@@ -786,36 +870,6 @@ function Automaton:getTargetEventSourceMap()
         end
     end
     return targetEventSourceMap
-end
-
----Removes a transition from the automaton.
---Finds the transition represented by 'id' in the transition list. Removes that transition from the transition list of the source state, target state, event and automaton. Sets the combination event-target on the source state and event-source on the target state to nil.
---@param self Automaton in which the operation is applied.
---@param id Id of the transition to be removed.
-function Automaton:transition_remove( id )
-    local trans, trans_id = self.transitions:find( id )
-    if not trans then return end
-
-    trans.event.transitions:find_remove( trans )
-    trans.source.transitions_out:find_remove( trans )
-    trans.target.transitions_in:find_remove( trans )
-    self.transitions:remove( trans_id )
-    trans.source.event_target[trans.event] = trans.source.event_target[trans.event] or {}
-    trans.source.event_target[trans.event][trans.target] = nil
-    --source.target_trans_factor[ target ] still there
-end
-
----Changes the factor of a transition
---Finds the transition represented by 'id'. Sets it's factor to 'factor'.
---@param id Id of the transition.
---@param factor New factor.
-function Automaton:transition_set_factor( id, factor )
-    local trans, trans_id = self.transitions:find( id )
-    if not trans then return end
-
-    trans.factor = factor
-
-    return true
 end
 
 ------------------------------------------------------------------------
@@ -2220,15 +2274,12 @@ function Automaton.supC(G, K)
         for k_stateS, stateS in S.states:ipairs() do
             local stateG = univocalRel[ stateS ]
             if isBadState( stateG, stateS ) then
-                statesToRemove[#statesToRemove + 1] = stateS
-                --~ statesToRemove[stateS] = true
+                statesToRemove[stateS] = true
             end
         end
 
         if coroutine.running() then coroutine.yield('start while::remove') end --this is the slowest part, improve state/transition rm and also this can be used as the coroutine step indicator. (every 10 removed states yield).
-        for k_s, s in ipairs( statesToRemove ) do
-            S:state_remove( s )
-        end
+        S:state_iremove( statesToRemove )
 
         if coroutine.running() then coroutine.yield('start while::trim') end
         S:trim(true)

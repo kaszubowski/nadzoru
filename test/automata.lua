@@ -132,13 +132,7 @@ describe( "Test 2", function()
     end )
     
     it("supC", function()
-        --~ local s = Automaton.supC( G, K )
-        local co = coroutine.create( Automaton.supC )
-        local status, s
-        while coroutine.status( co ) ~= 'dead' do
-            status, s = coroutine.resume( co, G, K )
-            print( s )
-        end
+        local s = Automaton.supC( G, K )
         assert.truthy( s )
 
         --~ s:minimize(true)
