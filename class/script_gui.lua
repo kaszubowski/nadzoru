@@ -3,6 +3,7 @@ ScriptGui = letk.Class( function( self, elements )
 
     self.elements  = elements
     self.scriptEnv = ScriptEnv.new( elements )
+    self.scriptEnv:setPrintCallback( self.print, self )
 end, Object )
 
 function ScriptGui:buildGui( gui )
@@ -13,10 +14,13 @@ function ScriptGui:buildGui( gui )
             --help
             --code
         self.gui.hbox_footer  = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
+            self.gui.btn_cleanInfo    = gtk.Button.new_with_label("Clean Info")
             self.gui.btn_refresh  = gtk.Button.new_with_label("Refresh Elements")
             self.gui.btn_load     = gtk.Button.new_with_label("Load Script")
             self.gui.btn_save     = gtk.Button.new_with_label("Save Script")
             self.gui.btn_run      = gtk.Button.new_with_label("Run")
+        self.gui.separator        = gtk.Separator.new(gtk.ORIENTATION_HORIZONTAL);
+        --Info
 
     --Help:
     self.gui.scroll_help         = gtk.ScrolledWindow.new()
@@ -24,12 +28,12 @@ function ScriptGui:buildGui( gui )
 
     self.gui.scroll_help:set('hscrollbar-policy', gtk.POLICY_AUTOMATIC, 'vscrollbar-policy', gtk.POLICY_AUTOMATIC)
     self.gui.scroll_help:set('width-request', 250 )
-    self.gui.help_model      = gtk.TreeStore.new("gchararray","gchararray")
+    self.gui.help_model      = gtk.TreeStore.new('gchararray','gchararray','gint')
     self.gui.help_col1       = gtk.TreeViewColumn.new_with_attributes("Script help", gtk.CellRendererText.new(), "text", 0)
     self.gui.help_selection  = self.gui.help_view:get_selection()
     
     self.gui.help_view:append_column(self.gui.help_col1)
-    self.gui.help_view:set("model", self.gui.help_model)
+    self.gui.help_view:set('model', self.gui.help_model)
     self.gui.help_selection:set_mode(gtk.SELECTION_SINGLE)
 
     --Code:
@@ -43,19 +47,30 @@ function ScriptGui:buildGui( gui )
     self.gui.code_scroll:add(self.gui.code_view)
     self.gui.code_buffer:set('language', self.gui.code_lang)
 
+    --Info:
+    self.gui.info_view     = gtk.TextView.new()
+    self.gui.info_buffer   = self.gui.info_view:get('buffer')
+    self.gui.scroll_info   = gtk.ScrolledWindow.new()
+    self.gui.scroll_info:set('hscrollbar-policy', gtk.POLICY_AUTOMATIC, 'vscrollbar-policy', gtk.POLICY_AUTOMATIC)
+    self.gui.scroll_info:add(self.gui.info_view)
+    self.gui.info_view:set_editable(false)
 
 
     self.gui.vbox:pack_start( self.gui.hbox, true, true, 0 )
         self.gui.hbox:pack_start( self.gui.scroll_help, false, false, 0 )
             self.gui.scroll_help:add(self.gui.help_view)
         self.gui.hbox:pack_start( self.gui.code_scroll, true, true, 0 )
+    self.gui.vbox:pack_start( self.gui.separator, false, false, 3 )
+    self.gui.vbox:pack_start( self.gui.scroll_info, false, false, 3 )
     self.gui.vbox:pack_start( self.gui.hbox_footer, false, false, 0 )
+        self.gui.hbox_footer:pack_start( self.gui.btn_cleanInfo, true, true, 0 )
         self.gui.hbox_footer:pack_start( self.gui.btn_refresh, true, true, 0 )
         self.gui.hbox_footer:pack_start( self.gui.btn_load, true, true, 0 )
         self.gui.hbox_footer:pack_start( self.gui.btn_save, true, true, 0 )
         self.gui.hbox_footer:pack_start( self.gui.btn_run, true, true, 0 )
 
 
+    self.gui.btn_cleanInfo:connect('clicked', self.cleanInfo, self )
     self.gui.btn_refresh:connect('clicked', self.refresh, self )
     self.gui.btn_load:connect('clicked', self.loadScript, self )
     self.gui.btn_save:connect('clicked', self.saveScript, self )
@@ -80,17 +95,32 @@ function ScriptGui:updateHelp( tbl )
     local iter     = gtk.TreeIter.new()
     
     self.gui.help_model:append( iterMain )
-    self.gui.help_model:set( iterMain, 0, "Functions", 1, '' )
-    for nameFn, fn in pairs( self.scriptEnv.fnEnv ) do
+    self.gui.help_model:set( iterMain, 0, "Functions", 1, '', 2, 0 )
+    local envFunctions = {}
+    for functionName, fn in pairs( self.scriptEnv.fnEnv ) do
+        table.insert( envFunctions, functionName )
+    end
+    table.sort( envFunctions, function(a,b)
+        return a < b
+    end )
+    for k_functionName, functionName in ipairs( envFunctions ) do
         self.gui.help_model:append(iter, iterMain)
-        self.gui.help_model:set(iter, 0, nameFn, 1, nameFn .. '() ')
+        self.gui.help_model:set(iter, 0, functionName, 1, functionName .. '()', 2, 1) --Display, insert, move cursor n positions backwards after insert
     end
 
     self.gui.help_model:append( iterMain )
-    self.gui.help_model:set( iterMain, 0, "Elements", 1, '' )
-    for elementName, el in pairs( self.scriptEnv.env ) do
+    self.gui.help_model:set( iterMain, 0, "Elements", 1, '', 2, 0 )
+    local envElements = {}
+    for elementName, element in pairs( self.scriptEnv.env ) do
+        table.insert( envElements, elementName )
+        
+    end
+    table.sort( envElements, function(a,b)
+        return a < b
+    end )
+    for k_elementName, elementName in ipairs( envElements ) do
         self.gui.help_model:append(iter, iterMain)
-        self.gui.help_model:set( iter, 0, elementName, 1, ' ' .. elementName .. ' ' )
+        self.gui.help_model:set( iter, 0, elementName, 1, ' ' .. elementName, 2, 0 )
     end
     
 end
@@ -99,11 +129,35 @@ function ScriptGui:select_help()
     local iter = gtk.TreeIter.new()
     local res, m = self.gui.help_selection:get_selected( iter )
     if res then
-        local text = m:get(iter, 1)
-        self.gui.code_buffer:insert_at_cursor( text, #text ) 
+        local text       = m:get(iter, 1)
+        self.gui.code_buffer:insert_at_cursor( text, #text )
+
+        local cursorBack = m:get(iter, 2) 
+        local cursorIterCode = gtk.TextIter.new()
+        local cursorMarkCode = self.gui.code_buffer:get_insert()
+        self.gui.code_buffer:get_iter_at_mark( cursorIterCode, cursorMarkCode  )
+        gtk.TextIter.backward_cursor_positions( cursorIterCode, cursorBack )
+        self.gui.code_buffer:place_cursor( cursorIterCode )
+
+        self.gui.code_view:grab_focus() 
     end
 end
 
+function ScriptGui:print( ... )
+    local str = { ... }
+    for k_s, s in ipairs( str ) do
+        str[ k_s ] = tostring( s )
+    end
+    str = table.concat( str, '\t' ) .. '\n'
+    local iter = gtk.TextIter.new()
+    self.gui.info_buffer:get_end_iter( iter )
+    self.gui.info_buffer:insert( iter, str, #str )
+end
+
+
+function ScriptGui:cleanInfo()
+    self.gui.info_buffer:set_text( '', 0 ) 
+end
 
 function ScriptGui:refresh()
     self.gui.help_model:clear()
@@ -160,7 +214,7 @@ end
 
 function ScriptGui:run()
     local script = self.gui.code_buffer:get( 'text' )
-    self.scriptEnv:execScript( script )
+    self.scriptEnv:execScript( script, true )
     self.gui.help_model:clear()
     self:updateHelp()
 end

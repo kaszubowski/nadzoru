@@ -65,6 +65,8 @@ tdmodularsup( TemplateModel ): [Not designed for manual invocation] Computes the
 trim( A ): Removes all states that are not both accessible and coaccessible.
 union( ... )Computes the union of the languages recognized by the given automata.
 --]]
+
+--TODO: Have a class Element that will control file names, getName, .. and other generic things for all elements
 Automaton = letk.Class( function( self, radius_factor )
     Object.__super( self )
     self.states      = letk.List.new()
@@ -1697,7 +1699,6 @@ end
 --@param keep If true, the operation is directly applied on 'self', otherwise, in a copy of it.
 --@return Accessible component of the automaton.
 --@see Automaton:clone
---@see remove_states_fn
 --@see Automaton:create_log
 function Automaton:accessible( keep )
     local newautomaton   = keep and self or self:clone()
@@ -1759,7 +1760,6 @@ end
 --@param keep If true, the operation is directly applied on 'self', otherwise, in a copy of it.
 --@return Coaccessible component of the automaton.
 --@see Automaton:clone
---@see remove_states_fn
 --@see Automaton:create_log
 function Automaton:coaccessible( keep )
     local newautomaton = keep and self or self:clone()
@@ -1788,7 +1788,7 @@ end
 --@see Automaton:state_add
 --@see Automaton:transition_add
 --@see Automaton:state_set_initial
---@see Automaton:remove_states_fn
+--@see Automaton:remove_states_fn TODO
 --@see Automaton:create_log
 function Automaton:join_no_coaccessible_states( keep )
     local newautomaton = keep and self or self:clone()
@@ -1823,9 +1823,10 @@ function Automaton:join_no_coaccessible_states( keep )
         end
     end
 
-    remove_states_fn( newautomaton, function( s )
-        return (s.no_coaccessible and not s.no_coaccessible_remove ) and true or false
-    end )
+    --TODO:
+    --~ remove_states_fn( newautomaton, function( s )
+        --~ return (s.no_coaccessible and not s.no_coaccessible_remove ) and true or false
+    --~ end )
 
     return newautomaton
 end
@@ -2723,6 +2724,7 @@ function Automaton:deterministic(keep)
         return
     end
 
+    --TODO: create new automata and import only the evets (same EventSet)
     local new_automaton
     if keep then
         new_automaton = self
@@ -2731,8 +2733,8 @@ function Automaton:deterministic(keep)
         new_automaton = self:clone()
     end
 
-    --Clear new_automaton
-    remove_states_fn(new_automaton, function() return true end)
+    --Clear new_automaton --TODO:
+    --~ remove_states_fn(new_automaton, function() return true end)
 
     local closure = {}
     local comp_state = {}
@@ -3741,4 +3743,25 @@ function Automaton:check_isomorphic( A2 )
     end
 
     return true
+end
+
+function Automaton:getName()
+    return self:get('file_name'):match('([^%.]*).-'):gsub('[^%w%_]','')
+end
+
+function Automaton:infoString()
+    local info = {}
+    local cEv, unEv, mS, unS = 0,0,0,0
+    for k_e, e in self.events:ipairs() do
+        if e.controllable then cEv = cEv + 1 else unEv = unEv + 1 end
+    end
+    for k_s, s in self.states:ipairs() do
+        if s.marked then mS = mS + 1 else unS = unS + 1 end
+    end
+    table.insert( info, string.format("Automaton: %s (%s):", self:getName() or '?', self:get('full_file_name') or '-' ) )
+    table.insert( info, string.format("    States: %i (marked: %i, unmarked: %i)", self.states:len(), mS, unS ) )
+    table.insert( info, string.format("    Events: %i (controllable: %i, uncontrollable: %i)", self.events:len(), cEv, unEv ) )
+    table.insert( info, string.format("    Transitions: %i", self.transitions:len() ) )
+
+    return table.concat( info, '\n' )
 end
