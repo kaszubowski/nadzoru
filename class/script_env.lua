@@ -26,6 +26,12 @@ ScriptEnv.Export.Automaton.synchronization = {'synchronization', 'sync'}
 ScriptEnv.Export.Automaton.trim = {'trim'}
 ScriptEnv.Export.Automaton.save_as = {'save'}
 ScriptEnv.Export.Automaton.infoString = {'info'}
+ScriptEnv.Export.Automaton.infoStringMultiple = {'infom'}
+ScriptEnv.Export.Automaton.localityString = {'localityinfo'}
+ScriptEnv.Export.Automaton.localPlant = {'localplant'}
+ScriptEnv.Export.Automaton.localTarget = {'localtarget'}
+ScriptEnv.Export.Automaton.localSupervisor = {'localsupc'}
+ScriptEnv.Export.Automaton.determinize = {'determinize'}
 
 function ScriptEnv:setPrintCallback( fn, object )
     self.print    = fn

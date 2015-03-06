@@ -833,6 +833,8 @@ function Automaton:getNextState( source, event )
     return false
 end
 
+--- The map of event's name/position to event object and event object to position
+--@treturn table  the event map
 function Automaton:getEventMap()
     local eventMap = {}
     for k_event, event in self.events:ipairs() do
@@ -852,26 +854,32 @@ function Automaton:getStateMap()
     return stateMap
 end
 
-function Automaton:getSourceEventTargetMap()
-    local sourceEventTargetMap = {}
+---calculate the transition map from the source state to the target state.
+--m[source][event][target] = true
+function Automaton:getTransitionMap()
+    local transitionMap = {}
     for k_state, state in self.states:ipairs() do
-        sourceEventTargetMap[ state ] = {}
+        transitionMap[ state ] = {}
         for k_trans, trans in state.transitions_out:ipairs() do
-            sourceEventTargetMap[ state ][ trans.event ] = trans.target
+            transitionMap[ state ][ trans.event ] = transitionMap[ state ][ trans.event ] or {}
+            transitionMap[ state ][ trans.event ][ trans.target ] = true
         end
     end
-    return sourceEventTargetMap
+    return transitionMap
 end
 
-function Automaton:getTargetEventSourceMap()
-    local targetEventSourceMap = {}
+---calculate the transition map from the target state to the source state.
+--m[target][event] = source
+function Automaton:getInvertedTransitionMap()
+    local transitionMap = {}
     for k_state, state in self.states:ipairs() do
-        targetEventSourceMap[ state ] = {}
+        transitionMap[ state ] = {}
         for k_trans, trans in state.transitions_in:ipairs() do
-            targetEventSourceMap[ state ][ trans.event ] = trans.source
+            transitionMap[ state ][ trans.event ] = transitionMap[ state ][ trans.event ] or {}
+            transitionMap[ state ][ trans.event ][trans.source ] = true
         end
     end
-    return targetEventSourceMap
+    return transitionMap
 end
 
 ------------------------------------------------------------------------
@@ -1609,18 +1617,18 @@ end
 
 -- *** Operations *** --
 
-function Automaton:check()
-    local problems = {}
-    local ok       = true
-    if self.initial then
-        problems.initial = false
-    else
-        problems.initial = true
-        ok               = false
-    end
-
-    return ok, problems
-end
+--~ function Automaton:check()
+    --~ local problems = {}
+    --~ local ok       = true
+    --~ if self.initial then
+        --~ problems.initial = false
+    --~ else
+        --~ problems.initial = true
+        --~ ok               = false
+    --~ end
+--~ 
+    --~ return ok, problems
+--~ end
 
 ---Creates a copy of the automaton.
 --Creates a new automaton and copies all states, events and transitions of 'self' to that automaton.
@@ -2263,7 +2271,6 @@ function Automaton.supC(G, K)
         return false, errMsg
     end
 
-    local sourceEventTargetmapG = G:getSourceEventTargetMap()
     local eventMapG             = G:getEventMap()
     local eventMapS             = S:getEventMap()
 
@@ -2707,6 +2714,85 @@ local function state_sum(t)
     return sum
 end
 
+function Automaton:determinize()
+    if not self.initial then return end
+
+    --~ local nfa = self:removeEmptyMoves() -- TODO
+    local dfa = Automaton.new()
+    for k_event, event in self.events:ipairs() do
+        --~ if event.name ~='&' then
+            dfa:event_add( event.name, event.observable, event.controllable, event.refinement )
+        --~ end
+    end
+
+    local dfaEventMap     = dfa:getEventMap()
+    local nfaEventMap     = self:getEventMap()
+    local nfaStateMap     = self:getStateMap()
+    local nfaTransitonMap = self:getTransitionMap()
+    local powerSetTree    = {}
+
+    local function getPowerSetDef( stateSet )
+        local stateIDs   = {}
+        local stateNames = {}
+        local statesNFA  = {}
+        for s, _ in pairs( stateSet ) do
+            stateIDs[#stateIDs +1]    = nfaStateMap[ s ]
+            stateNames[#stateNames+1] = s.name
+            statesNFA[#statesNFA+1]   = s
+        end
+        table.sort( stateIDs )
+        local def = powerSetTree
+        for k_stateID, stateID in ipairs( stateIDs ) do
+            def[ stateID ] = def[ stateID ] or {
+                ids       = stateIDs,
+                name      = table.concat( stateNames, ',' ),
+                statesNFA = statesNFA,
+            }
+            def = def[ stateID ]
+        end
+
+        return def
+    end
+
+    local initialStateNFA = self.states:find( self.initial ) 
+    local def = getPowerSetDef( { [initialStateNFA] = true } )
+    def.state = dfa:state_add( def.name,  initialStateNFA.marked, true )
+
+    local stack    = { def }
+    local stackPos = 1
+
+    while stackPos <= #stack do
+        defSource = stack[ stackPos ]
+        for k_event, event in self.events:ipairs() do
+            local sMap          = {}
+            local marked        = false
+            local anyTransition = false
+            for k_state, sourceState in ipairs( defSource.statesNFA ) do
+                if nfaTransitonMap[ sourceState ][ event ] then
+                    for targetState, _ in pairs( nfaTransitonMap[ sourceState ][ event ] ) do
+                        print(sourceState.name, event.name, targetState.name)
+                        anyTransition       = true
+                        sMap[ targetState ] = true
+                        if targetState.marked then marked = true end
+                    end
+                end
+            end
+
+            if anyTransition then
+                local defTarget = getPowerSetDef( sMap )
+                if not defTarget.state then
+                    defTarget.state = dfa:state_add( defTarget.name,  marked, false )
+                    stack[ #stack + 1 ] = defTarget
+                end
+                dfa:transition_add( defSource.state, defTarget.state, dfaEventMap[ event.name ] )
+            end
+        end
+        stackPos = stackPos + 1
+    end
+
+    return dfa
+end
+
 ---Makes the automaton deterministic.
 --Creates a new automaton. Copies all events from 'self' to the new automanton. Creates the initial state of the new automaton as the closure of the initial state of 'self'. Transforms not deterministic and emptyword transitions into deterministic transitions, creating necessary new states in the process. Removes the emptyword from the new automaton.
 --@param self Automaton in which the operation is applied.
@@ -2718,21 +2804,14 @@ end
 --@see Automaton:transition_add
 --@see Automaton:accessible
 --@see Automaton:create_log
-function Automaton:deterministic(keep)
+function Automaton:deterministic()
     if not self.initial then
         --gtk.InfoDialog.showInfo("Automaton doesn't have initial state. Operation can't be applied.")
         return
     end
 
     --TODO: create new automata and import only the evets (same EventSet)
-    local new_automaton
-    if keep then
-        new_automaton = self
-        self = self:clone()
-    else
-        new_automaton = self:clone()
-    end
-
+    --~ local new_automaton = self:clone()
     --Clear new_automaton --TODO:
     --~ remove_states_fn(new_automaton, function() return true end)
 
@@ -2778,17 +2857,18 @@ function Automaton:deterministic(keep)
         j = j + 1
     end
 
-    local events_to_remove = {}
-    for k_event, event in new_automaton.events:ipairs() do
-        if event.name=='&' then
-            events_to_remove[ #events_to_remove+1 ] = k_event
-        end
-    end
-    local diff = 0
-    for _, event in ipairs(events_to_remove) do
-        new_automaton:event_remove(event-diff)
-        diff = diff + 1
-    end
+    --Remove & events
+    --~ local events_to_remove = {}
+    --~ for k_event, event in new_automaton.events:ipairs() do
+        --~ if event.name=='&' then
+            --~ events_to_remove[ #events_to_remove+1 ] = k_event
+        --~ end
+    --~ end
+    --~ local diff = 0
+    --~ for _, event in ipairs(events_to_remove) do
+        --~ new_automaton:event_remove(event-diff)
+        --~ diff = diff + 1
+    --~ end
 
     --~ if not keep then
         --~ new_automaton:create_log()
@@ -3089,438 +3169,438 @@ end
 
 ---Creates the automaton log.
 --TODO
-function Automaton:create_log()
-    self.log = {
-        pos = 0,
-        list = letk.List.new(),
-        last = {
-            state = {},
-            event = {},
-            transition = {},
-            property = {
-                radius_factor = self.radius_factor,
-                type = self.type,
-                initial = self.initial,
-            },
-            address = {
-                state = {},
-                event = {},
-                transition = {},
-            },
-        },
-    }
+--~ function Automaton:create_log()
+    --~ self.log = {
+        --~ pos = 0,
+        --~ list = letk.List.new(),
+        --~ last = {
+            --~ state = {},
+            --~ event = {},
+            --~ transition = {},
+            --~ property = {
+                --~ radius_factor = self.radius_factor,
+                --~ type = self.type,
+                --~ initial = self.initial,
+            --~ },
+            --~ address = {
+                --~ state = {},
+                --~ event = {},
+                --~ transition = {},
+            --~ },
+        --~ },
+    --~ }
+--~ 
+    --~ --TODO: store calc properties and other state properties (see Automaton:clone)
+--~ 
+    --~ local table = self.log.last.state
+    --~ for k_state, state in self.states:ipairs() do
+        --~ table[k_state] = {
+            --~ name = state.name,
+            --~ marked = state.marked,
+            --~ x = state.x,
+            --~ y = state.y,
+        --~ }
+        --~ self.log.last.address.state[k_state] = state
+    --~ end
+--~ 
+    --~ table = self.log.last.event
+    --~ for k_event, event in self.events:ipairs() do
+        --~ table[k_event] = {
+            --~ name = event.name,
+            --~ observable = event.observable,
+            --~ controllable = event.controllable,
+            --~ refinement = event.refinement,
+        --~ }
+        --~ self.log.last.address.event[k_event] = event
+    --~ end
+--~ 
+    --~ table = self.log.last.transition
+    --~ for k_transition, transition in self.transitions:ipairs() do
+        --~ local _, source = self.states:find(transition.source)
+        --~ local _, event = self.events:find(transition.event)
+        --~ local _, target = self.states:find(transition.target)
+        --~ local factor = transition.factor
+        --~ table[k_transition] = {
+            --~ source = source,
+            --~ event = event,
+            --~ target = target,
+            --~ factor = factor,
+        --~ }
+        --~ self.log.last.address.transition[k_transition] = transition
+    --~ end
+--~ end
 
-    --TODO: store calc properties and other state properties (see Automaton:clone)
-
-    local table = self.log.last.state
-    for k_state, state in self.states:ipairs() do
-        table[k_state] = {
-            name = state.name,
-            marked = state.marked,
-            x = state.x,
-            y = state.y,
-        }
-        self.log.last.address.state[k_state] = state
-    end
-
-    table = self.log.last.event
-    for k_event, event in self.events:ipairs() do
-        table[k_event] = {
-            name = event.name,
-            observable = event.observable,
-            controllable = event.controllable,
-            refinement = event.refinement,
-        }
-        self.log.last.address.event[k_event] = event
-    end
-
-    table = self.log.last.transition
-    for k_transition, transition in self.transitions:ipairs() do
-        local _, source = self.states:find(transition.source)
-        local _, event = self.events:find(transition.event)
-        local _, target = self.states:find(transition.target)
-        local factor = transition.factor
-        table[k_transition] = {
-            source = source,
-            event = event,
-            target = target,
-            factor = factor,
-        }
-        self.log.last.address.transition[k_transition] = transition
-    end
-end
-
-local function write_log_operation(last, operations, name, range, target, new_value, address)
-    local data = {
-        name = name, --operation name
-        range = range, --states, events, etc
-        target = target, --state/event/etc id
-        old_value = last[range][target], --undo value
-        new_value = new_value, --redo value
-    }
-    operations:append(data)
-
-    if name~='remove' then
-        last[range][target] = new_value
-        if range~='property' then
-            last.address[range][target] = address
-        end
-    else
-        table.remove(last[range], target)
-        table.remove(last.address[range], target)
-    end
-
-    --print_r(data)
-end
+--~ local function write_log_operation(last, operations, name, range, target, new_value, address)
+    --~ local data = {
+        --~ name = name, --operation name
+        --~ range = range, --states, events, etc
+        --~ target = target, --state/event/etc id
+        --~ old_value = last[range][target], --undo value
+        --~ new_value = new_value, --redo value
+    --~ }
+    --~ operations:append(data)
+--~ 
+    --~ if name~='remove' then
+        --~ last[range][target] = new_value
+        --~ if range~='property' then
+            --~ last.address[range][target] = address
+        --~ end
+    --~ else
+        --~ table.remove(last[range], target)
+        --~ table.remove(last.address[range], target)
+    --~ end
+--~ 
+    --~ --print_r(data)
+--~ end
 
 ---Writes a page in the log.
 --TODO
-function Automaton:write_log(callback)
-    --print('Writing log')
+--~ function Automaton:write_log(callback)
+    --~ --print('Writing log')
+--~ 
+    --~ local backup_list = letk.List.new()
+    --~ self.log.pos = self.log.pos + 1
+    --~ while self.log.pos <= self.log.list:len() do
+        --~ backup_list:append(self.log.list:remove(self.log.pos))
+    --~ end
+--~ 
+    --~ local operations = letk.List.new()
+    --~ self.log.list:append {
+        --~ operations = operations,
+        --~ callback = callback,
+    --~ }
+--~ 
+    --~ --detect changes
+    --~ local last = self.log.last
+--~ 
+    --~ --properties
+    --~ if self.radius_factor~=last.property.radius_factor then
+        --~ write_log_operation(last, operations, 'edit', 'property', 'radius_factor', self.radius_factor)
+    --~ end
+    --~ if self.type~=last.property.type then
+        --~ write_log_operation(last, operations, 'edit', 'property', 'type', self.type)
+    --~ end
+    --~ if self.initial~=last.property.initial then
+        --~ write_log_operation(last, operations, 'edit', 'property', 'initial', self.initial)
+    --~ end
+--~ 
+    --~ --transitions
+    --~ for k_transition, transition in self.transitions:ipairs() do
+        --~ local _, source = self.states:find(transition.source)
+        --~ local _, event = self.events:find(transition.event)
+        --~ local _, target = self.states:find(transition.target)
+        --~ local factor = transition.factor
+        --~ while last.transition[k_transition] and last.address.transition[k_transition]~=transition do
+            --~ --print('transition ' .. k_transition .. ' was deleted.')
+            --~ --transition was deleted
+            --~ write_log_operation(last, operations, 'remove', 'transition', k_transition)
+        --~ end
+        --~ if not last.transition[k_transition] then
+            --~ --print('transition ' .. k_transition .. ' was created.')
+            --~ --transition was created
+            --~ write_log_operation(last, operations, 'add', 'transition', k_transition, {
+                --~ source = source,
+                --~ event = event,
+                --~ target = target,
+                --~ factor = factor,
+            --~ }, transition)
+        --~ elseif last.transition[k_transition].source~=source or last.transition[k_transition].event~=event or last.transition[k_transition].target~=target or last.transition[k_transition].factor~=factor then
+            --~ --print('transition ' .. k_transition .. ' was modified.')
+            --~ --transition was modified
+            --~ write_log_operation(last, operations, 'edit', 'transition', k_transition, {
+                --~ source = source,
+                --~ event = event,
+                --~ target = target,
+                --~ factor = factor,
+            --~ }, transition)
+        --~ end
+    --~ end
+    --~ for k_transition=self.transitions:len()+1,#last.transition do
+        --~ --print('transition ' .. k_transition .. ' was deleted.')
+        --~ --transition was deleted
+        --~ write_log_operation(last, operations, 'remove', 'transition', k_transition)
+    --~ end
+--~ 
+    --~ --states
+    --~ for k_state, state in self.states:ipairs() do
+        --~ while last.state[k_state] and last.address.state[k_state]~=state do
+            --~ --print('state ' .. k_state .. ' was deleted.')
+            --~ --state was deleted
+            --~ write_log_operation(last, operations, 'remove', 'state', k_state)
+        --~ end
+        --~ if not last.state[k_state] then
+            --~ --print('state ' .. k_state .. ' was created.')
+            --~ --state was created
+            --~ write_log_operation(last, operations, 'add', 'state', k_state, {
+                --~ name = state.name,
+                --~ marked = state.marked,
+                --~ x = state.x,
+                --~ y = state.y,
+            --~ }, state)
+        --~ elseif last.state[k_state].name~=state.name or last.state[k_state].marked~=state.marked or last.state[k_state].x~=state.x or last.state[k_state].y~=state.y then
+            --~ --print('state ' .. k_state .. ' was modified.')
+            --~ --state was modified
+            --~ write_log_operation(last, operations, 'edit', 'state', k_state, {
+                --~ name = state.name,
+                --~ marked = state.marked,
+                --~ x = state.x,
+                --~ y = state.y,
+            --~ }, state)
+        --~ end
+    --~ end
+    --~ for k_state=self.states:len()+1,#last.state do
+        --~ --print('state ' .. k_state .. ' was deleted.')
+        --~ --state was deleted
+        --~ write_log_operation(last, operations, 'remove', 'state', k_state)
+    --~ end
+--~ 
+    --~ --events
+    --~ for k_event, event in self.events:ipairs() do
+        --~ while last.event[k_event] and last.address.event[k_event]~=event do
+            --~ --print('event ' .. k_event .. ' was deleted.')
+            --~ --event was deleted
+            --~ write_log_operation(last, operations, 'remove', 'event', k_event)
+        --~ end
+        --~ if not last.event[k_event] then
+            --~ --print('event ' .. k_event .. ' was created.')
+            --~ --event was created
+            --~ write_log_operation(last, operations, 'add', 'event', k_event, {
+                --~ name = event.name,
+                --~ observable = event.observable,
+                --~ controllable = event.controllable,
+                --~ refinement = event.refinement,
+            --~ }, event)
+        --~ elseif last.event[k_event].name~=event.name or last.event[k_event].observable~=event.observable or last.event[k_event].controllable~=event.controllable or last.event[k_event].refinement~=event.refinement then
+            --~ --[[ Handled in workspace
+            --~ print('event ' .. k_event .. ' was modified.')
+            --~ --event was modified
+            --~ write_log_operation(last, operations, 'edit', 'event', k_event, {
+                --~ name = event.name,
+                --~ observable = event.observable,
+                --~ controllable = event.controllable,
+                --~ refinement = event.refinement,
+            --~ }, event)
+            --~ ]]--
+            --~ last.event[k_event].name = event.name
+            --~ last.event[k_event].observable = event.observable
+            --~ last.event[k_event].controllable = event.controllable
+            --~ last.event[k_event].refinement = event.refinement
+        --~ end
+    --~ end
+    --~ for k_event=self.events:len()+1,#last.event do
+        --~ --print('event ' .. k_event .. ' was deleted.')
+        --~ --event was deleted
+        --~ write_log_operation(last, operations, 'remove', 'event', k_event)
+    --~ end
+--~ 
+    --~ if operations:len()==0 then
+        --~ --no operations made, cancel write_log
+        --~ self.log.list:remove(self.log.pos)
+        --~ while backup_list:len()>0 do
+            --~ self.log.list:append(backup_list:remove(1))
+        --~ end
+        --~ self.log.pos = self.log.pos - 1
+        --~ --print('Log cancelled')
+    --~ else
+        --~ --print('Log written')
+    --~ end
+    --~ --print(string.rep('\n',5))
+--~ end
 
-    local backup_list = letk.List.new()
-    self.log.pos = self.log.pos + 1
-    while self.log.pos <= self.log.list:len() do
-        backup_list:append(self.log.list:remove(self.log.pos))
-    end
-
-    local operations = letk.List.new()
-    self.log.list:append {
-        operations = operations,
-        callback = callback,
-    }
-
-    --detect changes
-    local last = self.log.last
-
-    --properties
-    if self.radius_factor~=last.property.radius_factor then
-        write_log_operation(last, operations, 'edit', 'property', 'radius_factor', self.radius_factor)
-    end
-    if self.type~=last.property.type then
-        write_log_operation(last, operations, 'edit', 'property', 'type', self.type)
-    end
-    if self.initial~=last.property.initial then
-        write_log_operation(last, operations, 'edit', 'property', 'initial', self.initial)
-    end
-
-    --transitions
-    for k_transition, transition in self.transitions:ipairs() do
-        local _, source = self.states:find(transition.source)
-        local _, event = self.events:find(transition.event)
-        local _, target = self.states:find(transition.target)
-        local factor = transition.factor
-        while last.transition[k_transition] and last.address.transition[k_transition]~=transition do
-            --print('transition ' .. k_transition .. ' was deleted.')
-            --transition was deleted
-            write_log_operation(last, operations, 'remove', 'transition', k_transition)
-        end
-        if not last.transition[k_transition] then
-            --print('transition ' .. k_transition .. ' was created.')
-            --transition was created
-            write_log_operation(last, operations, 'add', 'transition', k_transition, {
-                source = source,
-                event = event,
-                target = target,
-                factor = factor,
-            }, transition)
-        elseif last.transition[k_transition].source~=source or last.transition[k_transition].event~=event or last.transition[k_transition].target~=target or last.transition[k_transition].factor~=factor then
-            --print('transition ' .. k_transition .. ' was modified.')
-            --transition was modified
-            write_log_operation(last, operations, 'edit', 'transition', k_transition, {
-                source = source,
-                event = event,
-                target = target,
-                factor = factor,
-            }, transition)
-        end
-    end
-    for k_transition=self.transitions:len()+1,#last.transition do
-        --print('transition ' .. k_transition .. ' was deleted.')
-        --transition was deleted
-        write_log_operation(last, operations, 'remove', 'transition', k_transition)
-    end
-
-    --states
-    for k_state, state in self.states:ipairs() do
-        while last.state[k_state] and last.address.state[k_state]~=state do
-            --print('state ' .. k_state .. ' was deleted.')
-            --state was deleted
-            write_log_operation(last, operations, 'remove', 'state', k_state)
-        end
-        if not last.state[k_state] then
-            --print('state ' .. k_state .. ' was created.')
-            --state was created
-            write_log_operation(last, operations, 'add', 'state', k_state, {
-                name = state.name,
-                marked = state.marked,
-                x = state.x,
-                y = state.y,
-            }, state)
-        elseif last.state[k_state].name~=state.name or last.state[k_state].marked~=state.marked or last.state[k_state].x~=state.x or last.state[k_state].y~=state.y then
-            --print('state ' .. k_state .. ' was modified.')
-            --state was modified
-            write_log_operation(last, operations, 'edit', 'state', k_state, {
-                name = state.name,
-                marked = state.marked,
-                x = state.x,
-                y = state.y,
-            }, state)
-        end
-    end
-    for k_state=self.states:len()+1,#last.state do
-        --print('state ' .. k_state .. ' was deleted.')
-        --state was deleted
-        write_log_operation(last, operations, 'remove', 'state', k_state)
-    end
-
-    --events
-    for k_event, event in self.events:ipairs() do
-        while last.event[k_event] and last.address.event[k_event]~=event do
-            --print('event ' .. k_event .. ' was deleted.')
-            --event was deleted
-            write_log_operation(last, operations, 'remove', 'event', k_event)
-        end
-        if not last.event[k_event] then
-            --print('event ' .. k_event .. ' was created.')
-            --event was created
-            write_log_operation(last, operations, 'add', 'event', k_event, {
-                name = event.name,
-                observable = event.observable,
-                controllable = event.controllable,
-                refinement = event.refinement,
-            }, event)
-        elseif last.event[k_event].name~=event.name or last.event[k_event].observable~=event.observable or last.event[k_event].controllable~=event.controllable or last.event[k_event].refinement~=event.refinement then
-            --[[ Handled in workspace
-            print('event ' .. k_event .. ' was modified.')
-            --event was modified
-            write_log_operation(last, operations, 'edit', 'event', k_event, {
-                name = event.name,
-                observable = event.observable,
-                controllable = event.controllable,
-                refinement = event.refinement,
-            }, event)
-            ]]--
-            last.event[k_event].name = event.name
-            last.event[k_event].observable = event.observable
-            last.event[k_event].controllable = event.controllable
-            last.event[k_event].refinement = event.refinement
-        end
-    end
-    for k_event=self.events:len()+1,#last.event do
-        --print('event ' .. k_event .. ' was deleted.')
-        --event was deleted
-        write_log_operation(last, operations, 'remove', 'event', k_event)
-    end
-
-    if operations:len()==0 then
-        --no operations made, cancel write_log
-        self.log.list:remove(self.log.pos)
-        while backup_list:len()>0 do
-            self.log.list:append(backup_list:remove(1))
-        end
-        self.log.pos = self.log.pos - 1
-        --print('Log cancelled')
-    else
-        --print('Log written')
-    end
-    --print(string.rep('\n',5))
-end
-
-local function undo_operation(automaton, operation)
-    local address
-    if operation.range=='property' then
-        if operation.name=='edit' then
-            if operation.target=='type' then
-                automaton.type = operation.old_value
-            end
-            if operation.target=='radius_factor' then
-                automaton.radius_factor = operation.old_value
-            end
-            if operation.target=='initial' then
-                if operation.old_value then
-                    automaton:state_set_initial(operation.old_value)
-                else
-                    automaton:state_unset_initial()
-                end
-            end
-        end
-    end
-    if operation.range=='state' then
-        if operation.name=='edit' then
-            if operation.old_value.marked then
-                automaton:state_set_marked(operation.target)
-            else
-                automaton:state_unset_marked(operation.target)
-            end
-            automaton:state_set_position(operation.target, operation.old_value.x, operation.old_value.y)
-            automaton:state_set_name(operation.target, operation.old_value.name)
-            address = automaton.log.last.address.state[operation.target]
-        end
-        if operation.name=='add' then
-            automaton:state_remove(operation.target)
-        end
-        if operation.name=='remove' then
-            _, address = automaton:state_add(operation.old_value.name, operation.old_value.marked, false, operation.target)
-            automaton:state_set_position(operation.target, operation.old_value.x, operation.old_value.y)
-        end
-    end
-    if operation.range=='event' then
-        --[[ Handled in workspace
-        if operation.name=='edit' then
-            if operation.old_value.observable then
-                automaton:event_set_observable(operation.target)
-            else
-                automaton:event_unset_observable(operation.target)
-            end
-            if operation.old_value.controllable then
-                automaton:event_set_controllable(operation.target)
-            else
-                automaton:event_unset_controllable(operation.target)
-            end
-            automaton:event_set_refinement(operation.target, operation.old_value.refinement)
-            automaton:event_set_name(operation.target, operation.old_value.name)
-            address = automaton.log.last.address.event[operation.target]
-        end
-        ]]--
-        if operation.name=='add' then
-            automaton:event_remove(operation.target)
-        end
-        if operation.name=='remove' then
-            local ew, ew_id = automaton.controller.events:find(function(event)
-                return event.name==operation.old_value.name
-            end)
-            if not ew then
-                local ref = automaton.controller.events:find(function(event)
-                    return event.name==operation.old_value.refinement
-                end)
-                ew = automaton.controller:add_event(operation.old_value.name, operation.old_value.controllable, operation.old_value.observable, ref and ref.name)
-            end
-            _, address = automaton:event_add(ew.name, ew.observable, ew.controllable, ew.refinement, ew, operation.target)
-            ew.automata[automaton] = address
-        end
-    end
-    if operation.range=='transition' then
-        if operation.name=='edit' then
-            automaton:transition_set_factor(operation.target, operation.old_value.factor)
-            address = automaton.log.last.address.transition[operation.target]
-        end
-        if operation.name=='add' then
-            automaton:transition_remove(operation.target)
-        end
-        if operation.name=='remove' then
-            _, address = automaton:transition_add(operation.old_value.source, operation.old_value.target, operation.old_value.event, false, operation.target)
-        end
-    end
-
-    --update log.last
-    if operation.name~='remove' then
-        automaton.log.last[operation.range][operation.target] = operation.old_value
-        if operation.range~='property' then
-            automaton.log.last.address[operation.range][operation.target] = address
-        end
-    else
-        table.insert(automaton.log.last[operation.range], operation.target, operation.old_value)
-        table.insert(automaton.log.last.address[operation.range], operation.target, address)
-    end
-end
-
-local function redo_operation(automaton, operation)
-    local address
-    if operation.range=='property' then
-        if operation.name=='edit' then
-            if operation.target=='type' then
-                automaton.type = operation.new_value
-            end
-            if operation.target=='radius_factor' then
-                automaton.radius_factor = operation.new_value
-            end
-            if operation.target=='initial' then
-                if operation.new_value then
-                    automaton:state_set_initial(operation.new_value)
-                else
-                    automaton:state_unset_initial()
-                end
-            end
-        end
-    end
-    if operation.range=='state' then
-        if operation.name=='edit' then
-            if operation.new_value.marked then
-                automaton:state_set_marked(operation.target)
-            else
-                automaton:state_unset_marked(operation.target)
-            end
-            automaton:state_set_position(operation.target, operation.new_value.x, operation.new_value.y)
-            automaton:state_set_name(operation.target, operation.new_value.name)
-            address = automaton.log.last.address.state[operation.target]
-        end
-        if operation.name=='add' then
-            _, address = automaton:state_add(operation.new_value.name, operation.new_value.marked, false, operation.target)
-            automaton:state_set_position(operation.target, operation.new_value.x, operation.new_value.y)
-        end
-        if operation.name=='remove' then
-            automaton:state_remove(operation.target)
-        end
-    end
-    if operation.range=='event' then
-        --[[ Handled in workspace
-        if operation.name=='edit' then
-            if operation.old_value.observable then
-                automaton:event_set_observable(operation.target)
-            else
-                automaton:event_unset_observable(operation.target)
-            end
-            if operation.old_value.controllable then
-                automaton:event_set_controllable(operation.target)
-            else
-                automaton:event_unset_controllable(operation.target)
-            end
-            automaton:event_set_refinement(operation.target, operation.old_value.refinement)
-            automaton:event_set_name(operation.target, operation.old_value.name)
-            address = automaton.log.last.address.event[operation.target]
-        end
-        ]]--
-        if operation.name=='add' then
-            local ew, ew_id = automaton.controller.events:find(function(event)
-                return event.name==operation.new_value.name
-            end)
-            if not ew then
-                local ref = automaton.controller.events:find(function(event)
-                    return event.name==operation.new_value.refinement
-                end)
-                ew = automaton.controller:add_event(operation.new_value.name, operation.new_value.controllable, operation.new_value.observable, ref and ref.name)
-            end
-            _, address = automaton:event_add(ew.name, ew.observable, ew.controllable, ew.refinement, ew, operation.target)
-            ew.automata[automaton] = address
-        end
-        if operation.name=='remove' then
-            automaton:event_remove(operation.target)
-        end
-    end
-    if operation.range=='transition' then
-        if operation.name=='edit' then
-            automaton:transition_set_factor(operation.target, operation.new_value.factor)
-            address = automaton.log.last.address.transition[operation.target]
-        end
-        if operation.name=='add' then
-            _, address = automaton:transition_add(operation.new_value.source, operation.new_value.target, operation.new_value.event, false, operation.target)
-        end
-        if operation.name=='remove' then
-            automaton:transition_remove(operation.target)
-        end
-    end
-
-    if operation.name~='remove' then
-        automaton.log.last[operation.range][operation.target] = operation.new_value
-        if operation.range~='property' then
-            automaton.log.last.address[operation.range][operation.target] = address
-        end
-    else
-        table.remove(automaton.log.last[operation.range], operation.target)
-        table.remove(automaton.log.last.address[operation.range], operation.target)
-    end
-end
+--~ local function undo_operation(automaton, operation)
+    --~ local address
+    --~ if operation.range=='property' then
+        --~ if operation.name=='edit' then
+            --~ if operation.target=='type' then
+                --~ automaton.type = operation.old_value
+            --~ end
+            --~ if operation.target=='radius_factor' then
+                --~ automaton.radius_factor = operation.old_value
+            --~ end
+            --~ if operation.target=='initial' then
+                --~ if operation.old_value then
+                    --~ automaton:state_set_initial(operation.old_value)
+                --~ else
+                    --~ automaton:state_unset_initial()
+                --~ end
+            --~ end
+        --~ end
+    --~ end
+    --~ if operation.range=='state' then
+        --~ if operation.name=='edit' then
+            --~ if operation.old_value.marked then
+                --~ automaton:state_set_marked(operation.target)
+            --~ else
+                --~ automaton:state_unset_marked(operation.target)
+            --~ end
+            --~ automaton:state_set_position(operation.target, operation.old_value.x, operation.old_value.y)
+            --~ automaton:state_set_name(operation.target, operation.old_value.name)
+            --~ address = automaton.log.last.address.state[operation.target]
+        --~ end
+        --~ if operation.name=='add' then
+            --~ automaton:state_remove(operation.target)
+        --~ end
+        --~ if operation.name=='remove' then
+            --~ _, address = automaton:state_add(operation.old_value.name, operation.old_value.marked, false, operation.target)
+            --~ automaton:state_set_position(operation.target, operation.old_value.x, operation.old_value.y)
+        --~ end
+    --~ end
+    --~ if operation.range=='event' then
+        --~ --[[ Handled in workspace
+        --~ if operation.name=='edit' then
+            --~ if operation.old_value.observable then
+                --~ automaton:event_set_observable(operation.target)
+            --~ else
+                --~ automaton:event_unset_observable(operation.target)
+            --~ end
+            --~ if operation.old_value.controllable then
+                --~ automaton:event_set_controllable(operation.target)
+            --~ else
+                --~ automaton:event_unset_controllable(operation.target)
+            --~ end
+            --~ automaton:event_set_refinement(operation.target, operation.old_value.refinement)
+            --~ automaton:event_set_name(operation.target, operation.old_value.name)
+            --~ address = automaton.log.last.address.event[operation.target]
+        --~ end
+        --~ ]]--
+        --~ if operation.name=='add' then
+            --~ automaton:event_remove(operation.target)
+        --~ end
+        --~ if operation.name=='remove' then
+            --~ local ew, ew_id = automaton.controller.events:find(function(event)
+                --~ return event.name==operation.old_value.name
+            --~ end)
+            --~ if not ew then
+                --~ local ref = automaton.controller.events:find(function(event)
+                    --~ return event.name==operation.old_value.refinement
+                --~ end)
+                --~ ew = automaton.controller:add_event(operation.old_value.name, operation.old_value.controllable, operation.old_value.observable, ref and ref.name)
+            --~ end
+            --~ _, address = automaton:event_add(ew.name, ew.observable, ew.controllable, ew.refinement, ew, operation.target)
+            --~ ew.automata[automaton] = address
+        --~ end
+    --~ end
+    --~ if operation.range=='transition' then
+        --~ if operation.name=='edit' then
+            --~ automaton:transition_set_factor(operation.target, operation.old_value.factor)
+            --~ address = automaton.log.last.address.transition[operation.target]
+        --~ end
+        --~ if operation.name=='add' then
+            --~ automaton:transition_remove(operation.target)
+        --~ end
+        --~ if operation.name=='remove' then
+            --~ _, address = automaton:transition_add(operation.old_value.source, operation.old_value.target, operation.old_value.event, false, operation.target)
+        --~ end
+    --~ end
+--~ 
+    --~ --update log.last
+    --~ if operation.name~='remove' then
+        --~ automaton.log.last[operation.range][operation.target] = operation.old_value
+        --~ if operation.range~='property' then
+            --~ automaton.log.last.address[operation.range][operation.target] = address
+        --~ end
+    --~ else
+        --~ table.insert(automaton.log.last[operation.range], operation.target, operation.old_value)
+        --~ table.insert(automaton.log.last.address[operation.range], operation.target, address)
+    --~ end
+--~ end
+--~ 
+--~ local function redo_operation(automaton, operation)
+    --~ local address
+    --~ if operation.range=='property' then
+        --~ if operation.name=='edit' then
+            --~ if operation.target=='type' then
+                --~ automaton.type = operation.new_value
+            --~ end
+            --~ if operation.target=='radius_factor' then
+                --~ automaton.radius_factor = operation.new_value
+            --~ end
+            --~ if operation.target=='initial' then
+                --~ if operation.new_value then
+                    --~ automaton:state_set_initial(operation.new_value)
+                --~ else
+                    --~ automaton:state_unset_initial()
+                --~ end
+            --~ end
+        --~ end
+    --~ end
+    --~ if operation.range=='state' then
+        --~ if operation.name=='edit' then
+            --~ if operation.new_value.marked then
+                --~ automaton:state_set_marked(operation.target)
+            --~ else
+                --~ automaton:state_unset_marked(operation.target)
+            --~ end
+            --~ automaton:state_set_position(operation.target, operation.new_value.x, operation.new_value.y)
+            --~ automaton:state_set_name(operation.target, operation.new_value.name)
+            --~ address = automaton.log.last.address.state[operation.target]
+        --~ end
+        --~ if operation.name=='add' then
+            --~ _, address = automaton:state_add(operation.new_value.name, operation.new_value.marked, false, operation.target)
+            --~ automaton:state_set_position(operation.target, operation.new_value.x, operation.new_value.y)
+        --~ end
+        --~ if operation.name=='remove' then
+            --~ automaton:state_remove(operation.target)
+        --~ end
+    --~ end
+    --~ if operation.range=='event' then
+        --~ --[[ Handled in workspace
+        --~ if operation.name=='edit' then
+            --~ if operation.old_value.observable then
+                --~ automaton:event_set_observable(operation.target)
+            --~ else
+                --~ automaton:event_unset_observable(operation.target)
+            --~ end
+            --~ if operation.old_value.controllable then
+                --~ automaton:event_set_controllable(operation.target)
+            --~ else
+                --~ automaton:event_unset_controllable(operation.target)
+            --~ end
+            --~ automaton:event_set_refinement(operation.target, operation.old_value.refinement)
+            --~ automaton:event_set_name(operation.target, operation.old_value.name)
+            --~ address = automaton.log.last.address.event[operation.target]
+        --~ end
+        --~ ]]--
+        --~ if operation.name=='add' then
+            --~ local ew, ew_id = automaton.controller.events:find(function(event)
+                --~ return event.name==operation.new_value.name
+            --~ end)
+            --~ if not ew then
+                --~ local ref = automaton.controller.events:find(function(event)
+                    --~ return event.name==operation.new_value.refinement
+                --~ end)
+                --~ ew = automaton.controller:add_event(operation.new_value.name, operation.new_value.controllable, operation.new_value.observable, ref and ref.name)
+            --~ end
+            --~ _, address = automaton:event_add(ew.name, ew.observable, ew.controllable, ew.refinement, ew, operation.target)
+            --~ ew.automata[automaton] = address
+        --~ end
+        --~ if operation.name=='remove' then
+            --~ automaton:event_remove(operation.target)
+        --~ end
+    --~ end
+    --~ if operation.range=='transition' then
+        --~ if operation.name=='edit' then
+            --~ automaton:transition_set_factor(operation.target, operation.new_value.factor)
+            --~ address = automaton.log.last.address.transition[operation.target]
+        --~ end
+        --~ if operation.name=='add' then
+            --~ _, address = automaton:transition_add(operation.new_value.source, operation.new_value.target, operation.new_value.event, false, operation.target)
+        --~ end
+        --~ if operation.name=='remove' then
+            --~ automaton:transition_remove(operation.target)
+        --~ end
+    --~ end
+--~ 
+    --~ if operation.name~='remove' then
+        --~ automaton.log.last[operation.range][operation.target] = operation.new_value
+        --~ if operation.range~='property' then
+            --~ automaton.log.last.address[operation.range][operation.target] = address
+        --~ end
+    --~ else
+        --~ table.remove(automaton.log.last[operation.range], operation.target)
+        --~ table.remove(automaton.log.last.address[operation.range], operation.target)
+    --~ end
+--~ end
 
 ---Undoes last modification to the automaton.
 --TODO
@@ -3746,22 +3826,119 @@ function Automaton:check_isomorphic( A2 )
 end
 
 function Automaton:getName()
-    return self:get('file_name'):match('([^%.]*).-'):gsub('[^%w%_]','')
+    local name = self:get('file_name'):match('([^%.]*).-'):gsub('[^%w%_]','')
+    return name
+end
+
+-- Local Modular ---------------------------------------------------------------
+
+---Get the list of local plants (Automata) for the specification.
+--The locality is a set of any automata in ... (G) that has at list one event in self (E)
+--@param ... plant automata
+--@return <table> local plants
+function Automaton:locality( ... )
+    local eventMap = self:getEventMap()
+    local locality = {}
+
+    for k_g, g in ipairs{ ... } do
+        for k_e, e in g.events:ipairs() do
+            if eventMap[ e.name ] then
+                table.insert( locality, g )
+                break
+            end
+        end
+    end
+    
+    return locality
+end
+
+function Automaton:localPlant( ... )
+    local locality    = self:locality( ... )
+
+    if #locality == 0 then return end
+    if #locality == 1 then return locality[1] end
+    return Automaton.synchronization( unpack( locality ) )
+end
+
+function Automaton:localTarget( ... )
+    local Gl = self:localPlant( ... )
+    if not Gl then return end
+
+    return Automaton.synchronization( self, Gl ), Gl
+end
+
+function Automaton:localSupervisor( ... )
+    local Kl, Gl = self:localTarget( ... )
+    local Sl = Automaton.supC( Gl, Kl )
+
+    return Sl, Kl, Gl
+end
+
+-- Information Strings ---------------------------------------------------------------------
+
+
+function Automaton:localityString( ... )
+    local localityStr = {}
+    local locality    = self:locality( ... )
+
+    for k_l, l in ipairs( locality ) do
+        table.insert( localityStr, l:getName() )
+    end
+
+    return table.concat( localityStr, ", " )
+end
+
+function Automaton:getInfo()
+    local info = {
+        name = self:getName() or '?',
+        file = self:get('full_file_name') or '-',
+        states = self.states:len(),
+        markedStates = 0,
+        unmarkedStates = 0,
+        events = self.events:len(),
+        controllableEvents = 0,
+        uncontrollableEvents = 0,
+        transitions = self.transitions:len(),
+    }
+    for k_e, e in self.events:ipairs() do
+        if e.controllable then info.controllableEvents = info.controllableEvents + 1 else info.uncontrollableEvents = info.uncontrollableEvents + 1 end
+    end
+    for k_s, s in self.states:ipairs() do
+        if s.marked then info.markedStates = info.markedStates + 1 else info.unmarkedStates = info.unmarkedStates + 1 end
+    end
+
+    return info
 end
 
 function Automaton:infoString()
-    local info = {}
-    local cEv, unEv, mS, unS = 0,0,0,0
-    for k_e, e in self.events:ipairs() do
-        if e.controllable then cEv = cEv + 1 else unEv = unEv + 1 end
-    end
-    for k_s, s in self.states:ipairs() do
-        if s.marked then mS = mS + 1 else unS = unS + 1 end
-    end
-    table.insert( info, string.format("Automaton: %s (%s):", self:getName() or '?', self:get('full_file_name') or '-' ) )
-    table.insert( info, string.format("    States: %i (marked: %i, unmarked: %i)", self.states:len(), mS, unS ) )
-    table.insert( info, string.format("    Events: %i (controllable: %i, uncontrollable: %i)", self.events:len(), cEv, unEv ) )
-    table.insert( info, string.format("    Transitions: %i", self.transitions:len() ) )
+    local infoStr = {}
+    local info = self:getInfo()
+    table.insert( infoStr, string.format("Automaton: %s (%s):", info.name, info.file ) )
+    table.insert( infoStr, string.format("    States: %i (marked: %i, unmarked: %i)", info.states, info.markedStates, info.unmarkedStates ) )
+    table.insert( infoStr, string.format("    Events: %i (controllable: %i, uncontrollable: %i)", info.events, info.controllableEvents, info.uncontrollableEvents ) )
+    table.insert( infoStr, string.format("    Transitions: %i", info.transitions ) )
 
-    return table.concat( info, '\n' )
+    return table.concat( infoStr, "\n" )
+end
+
+--Todo some event union, intersection info (common events, ...)
+function Automaton:infoStringMultiple( ... )
+    local states, markedStates, unmarkedStates, transitions = 0,0,0,0
+    local names = {}
+    local automata = { self, ... }
+    for k_a, a in ipairs( automata ) do
+        local info = a:getInfo() 
+        names[ #names + 1 ] = info.name
+        states         = states + info.states
+        markedStates   = markedStates + info.markedStates
+        unmarkedStates = unmarkedStates + info.unmarkedStates
+        transitions    = transitions + info.transitions
+    end
+
+    local infoStr = {}
+    table.insert( infoStr, string.format("Automata: %s:", table.concat(names, ", ") ) )
+    table.insert( infoStr, string.format("    States: %i (marked: %i, unmarked: %i)", states, markedStates, unmarkedStates ) )
+    table.insert( infoStr, string.format("    Transitions: %i", transitions ) )
+
+    return table.concat( infoStr, "\n" )
 end

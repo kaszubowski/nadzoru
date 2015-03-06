@@ -1,0 +1,561 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>Reference</title>
+    <link rel="stylesheet" href="../ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>ldoc</h1>
+
+<ul>
+  <li><a href="../index.html">Index</a></li>
+</ul>
+
+<h2>Contents</h2>
+<ul>
+<li><a href="#Functions">Functions</a></li>
+</ul>
+
+
+<h2>Modules</h2>
+<ul class="$(kind=='Topics' and '' or 'nowrap'">
+  <li><a href="../modules/chooser.html">chooser</a></li>
+  <li><a href="../modules/code_gen.html">code_gen</a></li>
+  <li><a href="../modules/des.automata_group.html">des.automata_group</a></li>
+  <li><a href="../modules/des.automaton.html">des.automaton</a></li>
+  <li><a href="../modules/des.automaton_editor.html">des.automaton_editor</a></li>
+  <li><a href="../modules/des.automaton_render.html">des.automaton_render</a></li>
+  <li><strong>des.graphviz_simulator</strong></li>
+  <li><a href="../modules/des.simulator.html">des.simulator</a></li>
+  <li><a href="../modules/gl_render.gl_render.html">gl_render.gl_render</a></li>
+  <li><a href="../modules/gui.gui.html">gui.gui</a></li>
+  <li><a href="../modules/gui.property_editor.html">gui.property_editor</a></li>
+  <li><a href="../modules/gui.selector.html">gui.selector</a></li>
+  <li><a href="../modules/gui.treeview.html">gui.treeview</a></li>
+  <li><a href="../modules/object.html">object</a></li>
+  <li><a href="../modules/scada.component.alarm.html">scada.component.alarm</a></li>
+  <li><a href="../modules/scada.component.base.html">scada.component.base</a></li>
+  <li><a href="../modules/scada.component.buffer.html">scada.component.buffer</a></li>
+  <li><a href="../modules/scada.component.conveyor1.html">scada.component.conveyor1</a></li>
+  <li><a href="../modules/scada.component.conveyor2.html">scada.component.conveyor2</a></li>
+  <li><a href="../modules/scada.component.generic_machine.html">scada.component.generic_machine</a></li>
+  <li><a href="../modules/scada.component.label.html">scada.component.label</a></li>
+  <li><a href="../modules/scada.component.sensor.html">scada.component.sensor</a></li>
+  <li><a href="../modules/scada.component.simple_silo.html">scada.component.simple_silo</a></li>
+  <li><a href="../modules/scada.editor.html">scada.editor</a></li>
+  <li><a href="../modules/scada.plant.html">scada.plant</a></li>
+  <li><a href="../modules/scada.plant_simulator.html">scada.plant_simulator</a></li>
+  <li><a href="../modules/scada.server.html">scada.server</a></li>
+  <li><a href="../modules/scada.view.html">scada.view</a></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+<h1>Module <code>des.graphviz_simulator</code></h1>
+<p>Shows informations about the automaton.</p>
+<p>
+Shows the number of states, events and transitions of the automaton.</p>
+
+
+<h2><a href="#Functions">Functions</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#info.accessible">info.accessible (self)</a></td>
+	<td class="summary">Shows informations about the no accessible states of the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#info.coaccessible">info.coaccessible (self)</a></td>
+	<td class="summary">Shows informations about the no coaccessible states of the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#info.choice_problem">info.choice_problem (self)</a></td>
+	<td class="summary">Shows informations about the choice problem states of the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#info.avalanche_effect">info.avalanche_effect (self)</a></td>
+	<td class="summary">Shows informations about the avalanche effect states of the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#info.inexact_synchronization">info.inexact_synchronization (self)</a></td>
+	<td class="summary">TODO
+TODO</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#info.simultaneity">info.simultaneity (self)</a></td>
+	<td class="summary">TODO
+TODO</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GraphvizSimulator.info">GraphvizSimulator.info (self)</a></td>
+	<td class="summary">TODO
+TODO</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GraphvizSimulator.statejump_cb">GraphvizSimulator.statejump_cb (self)</a></td>
+	<td class="summary">TODO
+TODO</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GraphvizSimulator.state_change">GraphvizSimulator.state_change (self, ud_treepath, ud_treeviewcolumn)</a></td>
+	<td class="summary">TODO
+TODO</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GraphvizSimulator:drawing_area_expose">GraphvizSimulator:drawing_area_expose (self, cr)</a></td>
+	<td class="summary">TODO
+TODO</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GraphvizSimulator:draw">GraphvizSimulator:draw (self)</a></td>
+	<td class="summary">TODO
+TODO</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GraphvizSimulator:update_treeview">GraphvizSimulator:update_treeview (self)</a></td>
+	<td class="summary">TODO
+TODO</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#get_state_color">get_state_color (s, current)</a></td>
+	<td class="summary">Returns the color of the state according to its properties.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GraphvizSimulator:generate_graphviz">GraphvizSimulator:generate_graphviz (self, deep, backwaredeep)</a></td>
+	<td class="summary">TODO
+TODO</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#GraphvizSimulator:destroy">GraphvizSimulator:destroy (self)</a></td>
+	<td class="summary">TODO
+TODO</td>
+	</tr>
+</table>
+
+<br/>
+<br/>
+
+
+    <h2><a name="Functions"></a>Functions</h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "info.accessible"></a>
+    <strong>info.accessible (self)</strong>
+    </dt>
+    <dd>
+    Shows informations about the no accessible states of the automaton.
+Verifies if the no accessible states have already been calculated. If they weren't, just shows a message saying that. Otherwise, shows the number of no accessible states and the index of each one.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         TODO
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "info.coaccessible"></a>
+    <strong>info.coaccessible (self)</strong>
+    </dt>
+    <dd>
+    Shows informations about the no coaccessible states of the automaton.
+Verifies if the no coaccessible states have already been calculated. If they weren't, just shows a message saying that. Otherwise, shows the number of no coaccessible states and the index of each one.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         TODO
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "info.choice_problem"></a>
+    <strong>info.choice_problem (self)</strong>
+    </dt>
+    <dd>
+    Shows informations about the choice problem states of the automaton.
+Verifies if the choice problem states have already been calculated. If they weren't, just shows a message saying that. Otherwise, shows the number of choice problem states and the index of each one.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         TODO
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "info.avalanche_effect"></a>
+    <strong>info.avalanche_effect (self)</strong>
+    </dt>
+    <dd>
+    Shows informations about the avalanche effect states of the automaton.
+Verifies if the avalanche effect states have already been calculated. If they weren't, just shows a message saying that. Otherwise, shows the number of avalanche effect states and the index of each one.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         TODO
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "info.inexact_synchronization"></a>
+    <strong>info.inexact_synchronization (self)</strong>
+    </dt>
+    <dd>
+    TODO
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         TODO
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "info.simultaneity"></a>
+    <strong>info.simultaneity (self)</strong>
+    </dt>
+    <dd>
+    TODO
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         TODO
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "GraphvizSimulator.info"></a>
+    <strong>GraphvizSimulator.info (self)</strong>
+    </dt>
+    <dd>
+    TODO
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         TODO
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+         <li><a href="../modules/des.graphviz_simulator.html#info.accessible">info.accessible</a></li>
+         <li><a href="../modules/des.graphviz_simulator.html#info.coaccessible">info.coaccessible</a></li>
+         <li><a href="../modules/des.graphviz_simulator.html#info.choice_problem">info.choice_problem</a></li>
+         <li><a href="../modules/des.graphviz_simulator.html#info.avalanche_effect">info.avalanche_effect</a></li>
+         <li><a href="../modules/des.graphviz_simulator.html#info.inexact_synchronization">info.inexact_synchronization</a></li>
+         <li><a href="../modules/des.graphviz_simulator.html#info.simultaneity">info.simultaneity</a></li>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "GraphvizSimulator.statejump_cb"></a>
+    <strong>GraphvizSimulator.statejump_cb (self)</strong>
+    </dt>
+    <dd>
+    TODO
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         TODO
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+         <li><a href="../modules/des.graphviz_simulator.html#GraphvizSimulator:update_treeview">GraphvizSimulator:update_treeview</a></li>
+         <li><a href="../modules/des.graphviz_simulator.html#GraphvizSimulator:draw">GraphvizSimulator:draw</a></li>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "GraphvizSimulator.state_change"></a>
+    <strong>GraphvizSimulator.state_change (self, ud_treepath, ud_treeviewcolumn)</strong>
+    </dt>
+    <dd>
+    TODO
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         TODO
+        </li>
+        <li><span class="parameter">ud_treepath</span>
+         TODO
+        </li>
+        <li><span class="parameter">ud_treeviewcolumn</span>
+         TODO
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Always true.
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "GraphvizSimulator:drawing_area_expose"></a>
+    <strong>GraphvizSimulator:drawing_area_expose (self, cr)</strong>
+    </dt>
+    <dd>
+    TODO
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         TODO
+        </li>
+        <li><span class="parameter">cr</span>
+         TODO
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Always false.
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "GraphvizSimulator:draw"></a>
+    <strong>GraphvizSimulator:draw (self)</strong>
+    </dt>
+    <dd>
+    TODO
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         TODO
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="../modules/des.graphviz_simulator.html#GraphvizSimulator:generate_graphviz">GraphvizSimulator:generate_graphviz</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "GraphvizSimulator:update_treeview"></a>
+    <strong>GraphvizSimulator:update_treeview (self)</strong>
+    </dt>
+    <dd>
+    TODO
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         TODO
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        TODO
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "get_state_color"></a>
+    <strong>get_state_color (s, current)</strong>
+    </dt>
+    <dd>
+    Returns the color of the state according to its properties.
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">s</span>
+         State whose color is returned.
+        </li>
+        <li><span class="parameter">current</span>
+         Specifies if the state is the current.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Color of the state.
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "GraphvizSimulator:generate_graphviz"></a>
+    <strong>GraphvizSimulator:generate_graphviz (self, deep, backwaredeep)</strong>
+    </dt>
+    <dd>
+    TODO
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         TODO
+        </li>
+        <li><span class="parameter">deep</span>
+         TODO
+        </li>
+        <li><span class="parameter">backwaredeep</span>
+         TODO
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        TODO
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "GraphvizSimulator:destroy"></a>
+    <strong>GraphvizSimulator:destroy (self)</strong>
+    </dt>
+    <dd>
+    TODO
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         TODO
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+</dl>
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.3</a></i>
+<i style="float:right;">Last updated 2015-03-05 05:09:25 </i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>

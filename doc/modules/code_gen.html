@@ -1,0 +1,507 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>Reference</title>
+    <link rel="stylesheet" href="../ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>ldoc</h1>
+
+<ul>
+  <li><a href="../index.html">Index</a></li>
+</ul>
+
+<h2>Contents</h2>
+<ul>
+<li><a href="#Functions">Functions</a></li>
+<li><a href="#Fields">Fields</a></li>
+</ul>
+
+
+<h2>Modules</h2>
+<ul class="$(kind=='Topics' and '' or 'nowrap'">
+  <li><a href="../modules/chooser.html">chooser</a></li>
+  <li><strong>code_gen</strong></li>
+  <li><a href="../modules/des.automata_group.html">des.automata_group</a></li>
+  <li><a href="../modules/des.automaton.html">des.automaton</a></li>
+  <li><a href="../modules/des.automaton_editor.html">des.automaton_editor</a></li>
+  <li><a href="../modules/des.automaton_render.html">des.automaton_render</a></li>
+  <li><a href="../modules/des.graphviz_simulator.html">des.graphviz_simulator</a></li>
+  <li><a href="../modules/des.simulator.html">des.simulator</a></li>
+  <li><a href="../modules/gl_render.gl_render.html">gl_render.gl_render</a></li>
+  <li><a href="../modules/gui.gui.html">gui.gui</a></li>
+  <li><a href="../modules/gui.property_editor.html">gui.property_editor</a></li>
+  <li><a href="../modules/gui.selector.html">gui.selector</a></li>
+  <li><a href="../modules/gui.treeview.html">gui.treeview</a></li>
+  <li><a href="../modules/object.html">object</a></li>
+  <li><a href="../modules/scada.component.alarm.html">scada.component.alarm</a></li>
+  <li><a href="../modules/scada.component.base.html">scada.component.base</a></li>
+  <li><a href="../modules/scada.component.buffer.html">scada.component.buffer</a></li>
+  <li><a href="../modules/scada.component.conveyor1.html">scada.component.conveyor1</a></li>
+  <li><a href="../modules/scada.component.conveyor2.html">scada.component.conveyor2</a></li>
+  <li><a href="../modules/scada.component.generic_machine.html">scada.component.generic_machine</a></li>
+  <li><a href="../modules/scada.component.label.html">scada.component.label</a></li>
+  <li><a href="../modules/scada.component.sensor.html">scada.component.sensor</a></li>
+  <li><a href="../modules/scada.component.simple_silo.html">scada.component.simple_silo</a></li>
+  <li><a href="../modules/scada.editor.html">scada.editor</a></li>
+  <li><a href="../modules/scada.plant.html">scada.plant</a></li>
+  <li><a href="../modules/scada.plant_simulator.html">scada.plant_simulator</a></li>
+  <li><a href="../modules/scada.server.html">scada.server</a></li>
+  <li><a href="../modules/scada.view.html">scada.view</a></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+<h1>Module <code>code_gen</code></h1>
+<p>Executes the code generation.</p>
+<p>
+Reads the automata and build the gui.</p>
+
+
+<h2><a href="#Functions">Functions</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#CodeGen:read_automata">CodeGen:read_automata (self)</a></td>
+	<td class="summary">Reads the automata.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#CodeGen:build_gui">CodeGen:build_gui (self, gui)</a></td>
+	<td class="summary">Builds the CodeGen gui.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#CodeGen:update_treeviews">CodeGen:update_treeviews (self)</a></td>
+	<td class="summary">TODO
+TODO</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#CodeGen:change_event_input">CodeGen:change_event_input (self)</a></td>
+	<td class="summary">TODO
+TODO</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#CodeGen:change_event_output">CodeGen:change_event_output (self)</a></td>
+	<td class="summary">TODO
+TODO</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#CodeGen:change_code_input">CodeGen:change_code_input (self)</a></td>
+	<td class="summary">TODO
+TODO</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#CodeGen:change_code_output">CodeGen:change_code_output (self)</a></td>
+	<td class="summary">TODO
+TODO</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#CodeGen:save_project">CodeGen:save_project (self)</a></td>
+	<td class="summary">Opens the window to save the code project to a file.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#CodeGen:load_project">CodeGen:load_project (self)</a></td>
+	<td class="summary">Opens the window to load the code project from a file.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#CodeGen:generate_event_map">CodeGen:generate_event_map (self)</a></td>
+	<td class="summary">Generates the event map.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#CodeGen.generate">CodeGen.generate (results, numresults, selector, self)</a></td>
+	<td class="summary">Generates the code.</td>
+	</tr>
+</table>
+<h2><a href="#Fields">Fields</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#self">self</a></td>
+	<td class="summary">Reads the event map file.</td>
+	</tr>
+</table>
+
+<br/>
+<br/>
+
+
+    <h2><a name="Functions"></a>Functions</h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "CodeGen:read_automata"></a>
+    <strong>CodeGen:read_automata (self)</strong>
+    </dt>
+    <dd>
+    Reads the automata.
+Reads the event map. For each automaton, sets the event ids from the events that are not mapped yet to the codegen.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         CodeGen in which the operation is applied.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "CodeGen:build_gui"></a>
+    <strong>CodeGen:build_gui (self, gui)</strong>
+    </dt>
+    <dd>
+    Builds the CodeGen gui.
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Codegen in which the operation is applied.
+        </li>
+        <li><span class="parameter">gui</span>
+         TODO
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="../modules/code_gen.html#CodeGen:update_treeviews">CodeGen:update_treeviews</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "CodeGen:update_treeviews"></a>
+    <strong>CodeGen:update_treeviews (self)</strong>
+    </dt>
+    <dd>
+    TODO
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         TODO
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "CodeGen:change_event_input"></a>
+    <strong>CodeGen:change_event_input (self)</strong>
+    </dt>
+    <dd>
+    TODO
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         TODO
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "CodeGen:change_event_output"></a>
+    <strong>CodeGen:change_event_output (self)</strong>
+    </dt>
+    <dd>
+    TODO
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         TODO
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "CodeGen:change_code_input"></a>
+    <strong>CodeGen:change_code_input (self)</strong>
+    </dt>
+    <dd>
+    TODO
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         TODO
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "CodeGen:change_code_output"></a>
+    <strong>CodeGen:change_code_output (self)</strong>
+    </dt>
+    <dd>
+    TODO
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         TODO
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "CodeGen:save_project"></a>
+    <strong>CodeGen:save_project (self)</strong>
+    </dt>
+    <dd>
+    Opens the window to save the code project to a file.
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Codegen to be saved.
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "CodeGen:load_project"></a>
+    <strong>CodeGen:load_project (self)</strong>
+    </dt>
+    <dd>
+    Opens the window to load the code project from a file.
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Codegen in which the file will be loaded.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="../modules/code_gen.html#CodeGen:update_treeviews">CodeGen:update_treeviews</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "CodeGen:generate_event_map"></a>
+    <strong>CodeGen:generate_event_map (self)</strong>
+    </dt>
+    <dd>
+    Generates the event map.
+Verifies if the file was chosen. Maps the events from the CodeGen to the map.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         CodeGen in which the operation is applied.
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "CodeGen.generate"></a>
+    <strong>CodeGen.generate (results, numresults, selector, self)</strong>
+    </dt>
+    <dd>
+    Generates the code.
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">results</span>
+         TODO
+        </li>
+        <li><span class="parameter">numresults</span>
+         TODO
+        </li>
+        <li><span class="parameter">selector</span>
+         TODO
+        </li>
+        <li><span class="parameter">self</span>
+         TODO
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="../modules/code_gen.html#CodeGen:generate_event_map">CodeGen:generate_event_map</a>
+    </ul>
+
+
+</dd>
+</dl>
+    <h2><a name="Fields"></a>Fields</h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "self"></a>
+    <strong>self</strong>
+    </dt>
+    <dd>
+    Reads the event map file.
+Verifies if the file was chosen. Sets the ids from the map to the codegen.
+
+
+    <ul>
+        <li><span class="parameter">self</span>
+         Codegen in which the operation is applied.
+function CodeGen:read_event_map()
+  if not self.event_map or not self.event_map_file then return end
+  local file = io.open(self.event_map_file, 'r')
+  if file then
+      local s    = file:read('*a')
+      local data = loadstring('return ' .. s)() --This returns the event map as a table
+      if data then
+          local event_info = data.information
+
+          --events
+          for k, e in pairs(data.events) do
+              if type(e)=='string' then
+                  local event = event_info[k]
+                  self.events[ k ] = {
+                      name = e,
+                      controllable = event.controllable,
+                  }
+                  self.events_map[ e ]   = k
+                  self.event_code[ e ]   = {
+                      id           = k,
+                      input        = event.input,
+                      output       = event.output,
+                      automaton    = {},
+                      source       = event.source,
+                      controllable = event.controllable,
+                      refinement   = event.refinement,
+                  }
+              end
+          end
+
+          --refinements
+          for k, e in pairs(data.refinements) do
+              if type(e)=='string' then
+                  local event = event_info[k]
+                  self.events_r[ k ] = {
+                      name = e,
+                      controllable = event.controllable,
+                  }
+                  self.events_r_map[ e ] = k
+                  self.event_code[ e ]   = {
+                      id           = k,
+                      input        = event.input,
+                      output       = event.output,
+                      automaton    = {},
+                      source       = event.source,
+                      controllable = event.controllable,
+                      refinement   = event.refinement,
+                  }
+              end
+          end
+      end
+  end
+end
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+</dl>
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.3</a></i>
+<i style="float:right;">Last updated 2015-03-05 05:09:25 </i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>

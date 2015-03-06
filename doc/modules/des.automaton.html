@@ -1,0 +1,2516 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>Reference</title>
+    <link rel="stylesheet" href="../ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>ldoc</h1>
+
+<ul>
+  <li><a href="../index.html">Index</a></li>
+</ul>
+
+<h2>Contents</h2>
+<ul>
+<li><a href="#Functions">Functions</a></li>
+<li><a href="#Fields">Fields</a></li>
+</ul>
+
+
+<h2>Modules</h2>
+<ul class="$(kind=='Topics' and '' or 'nowrap'">
+  <li><a href="../modules/chooser.html">chooser</a></li>
+  <li><a href="../modules/code_gen.html">code_gen</a></li>
+  <li><a href="../modules/des.automata_group.html">des.automata_group</a></li>
+  <li><strong>des.automaton</strong></li>
+  <li><a href="../modules/des.automaton_editor.html">des.automaton_editor</a></li>
+  <li><a href="../modules/des.automaton_render.html">des.automaton_render</a></li>
+  <li><a href="../modules/des.graphviz_simulator.html">des.graphviz_simulator</a></li>
+  <li><a href="../modules/des.simulator.html">des.simulator</a></li>
+  <li><a href="../modules/gl_render.gl_render.html">gl_render.gl_render</a></li>
+  <li><a href="../modules/gui.gui.html">gui.gui</a></li>
+  <li><a href="../modules/gui.property_editor.html">gui.property_editor</a></li>
+  <li><a href="../modules/gui.selector.html">gui.selector</a></li>
+  <li><a href="../modules/gui.treeview.html">gui.treeview</a></li>
+  <li><a href="../modules/object.html">object</a></li>
+  <li><a href="../modules/scada.component.alarm.html">scada.component.alarm</a></li>
+  <li><a href="../modules/scada.component.base.html">scada.component.base</a></li>
+  <li><a href="../modules/scada.component.buffer.html">scada.component.buffer</a></li>
+  <li><a href="../modules/scada.component.conveyor1.html">scada.component.conveyor1</a></li>
+  <li><a href="../modules/scada.component.conveyor2.html">scada.component.conveyor2</a></li>
+  <li><a href="../modules/scada.component.generic_machine.html">scada.component.generic_machine</a></li>
+  <li><a href="../modules/scada.component.label.html">scada.component.label</a></li>
+  <li><a href="../modules/scada.component.sensor.html">scada.component.sensor</a></li>
+  <li><a href="../modules/scada.component.simple_silo.html">scada.component.simple_silo</a></li>
+  <li><a href="../modules/scada.editor.html">scada.editor</a></li>
+  <li><a href="../modules/scada.plant.html">scada.plant</a></li>
+  <li><a href="../modules/scada.plant_simulator.html">scada.plant_simulator</a></li>
+  <li><a href="../modules/scada.server.html">scada.server</a></li>
+  <li><a href="../modules/scada.view.html">scada.view</a></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+<h1>Module <code>des.automaton</code></h1>
+<p>Private utils                              --</p>
+<p></p>
+
+
+<h2><a href="#Functions">Functions</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:clearInfo">Automaton:clearInfo ()</a></td>
+	<td class="summary">automaton manipulation and definition                --</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:getNextAvailableNumber">Automaton:getNextAvailableNumber (self)</a></td>
+	<td class="summary">We check all states' numbers that can be converted to number,
+then we mark the used one and return the first unused (the first hole in the table)</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:state_add">Automaton:state_add (self, name, marked, initial, id)</a></td>
+	<td class="summary">Adds a new state to the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:state_remove">Automaton:state_remove (self, id)</a></td>
+	<td class="summary">Removes a state from the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:state_set_initial">Automaton:state_set_initial (self, id)</a></td>
+	<td class="summary">Sets the initial state of the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:state_unset_initial">Automaton:state_unset_initial (self)</a></td>
+	<td class="summary">Unsets the initial state of the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:state_set_marked">Automaton:state_set_marked (self, id)</a></td>
+	<td class="summary">Sets a state of the automaton to marked.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:state_unset_marked">Automaton:state_unset_marked (self, id)</a></td>
+	<td class="summary">Sets a state of the automaton to unmarked.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:state_get_marked">Automaton:state_get_marked (self, id)</a></td>
+	<td class="summary">Return if a state of the automaton is marked or not.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:state_set_name">Automaton:state_set_name (self, id, name)</a></td>
+	<td class="summary">Sets the name of a state of the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:state_set_position">Automaton:state_set_position (self, id, x, y)</a></td>
+	<td class="summary">Sets the position of a state of the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:state_get_position">Automaton:state_get_position (self, id)</a></td>
+	<td class="summary">Returns the position of a state of the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:state_set_radius">Automaton:state_set_radius (self, id, r)</a></td>
+	<td class="summary">Sets the radius of a state of the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:state_get_radius">Automaton:state_get_radius (self, id)</a></td>
+	<td class="summary">Returns the radius of a state of the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:position_states">Automaton:position_states ()</a></td>
+	<td class="summary">Position the states of the automaton in an intelligent way.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:event_add">Automaton:event_add (self, name, observable, controllable, refinement, id)</a></td>
+	<td class="summary">Adds a new event to the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:event_remove">Automaton:event_remove (self, id)</a></td>
+	<td class="summary">Removes an event from the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:event_set_observable">Automaton:event_set_observable (self, id)</a></td>
+	<td class="summary">Sets an event of the automaton to observable.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:event_get_observable">Automaton:event_get_observable (self, id)</a></td>
+	<td class="summary">Verifies if an event of the automaton is observable.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:event_unset_observable">Automaton:event_unset_observable (self, id)</a></td>
+	<td class="summary">Sets an event of the automaton to unobservable.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:event_set_controllable">Automaton:event_set_controllable (self, id)</a></td>
+	<td class="summary">Sets an event of the automaton to controllable.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:event_unset_controllable">Automaton:event_unset_controllable (self, id)</a></td>
+	<td class="summary">Sets an event of the automaton to uncontrollable.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:event_get_controllable">Automaton:event_get_controllable (self, id)</a></td>
+	<td class="summary">Verifies if an event of the automaton is controllable.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:event_set_name">Automaton:event_set_name (self, id, name)</a></td>
+	<td class="summary">Sets the name of an event of the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:event_set_refinement">Automaton:event_set_refinement (self, id, ref)</a></td>
+	<td class="summary">Sets the refinement of an event of the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:transition_add">Automaton:transition_add (self, source_id, target_id, event_id, isdata, id)</a></td>
+	<td class="summary">Adds a transition to the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:transition_remove">Automaton:transition_remove (self, id)</a></td>
+	<td class="summary">Removes a transition from the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:transition_set_factor">Automaton:transition_set_factor (id, factor)</a></td>
+	<td class="summary">Changes the factor of a transition
+Finds the transition represented by 'id'.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:IDES_import">Automaton:IDES_import (self, file_name, get_layout)</a></td>
+	<td class="summary">Imports an automaton from IDES.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:IDES_export">Automaton:IDES_export (self, file_name)</a></td>
+	<td class="summary">Exports the automaton to IDES.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:TCT_import">Automaton:TCT_import (file_name, workspace_events)</a></td>
+	<td class="summary">Imports an automaton from TCT.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:TCT_export">Automaton:TCT_export (file_name, workspace_events)</a></td>
+	<td class="summary">Exports an automaton to TCT.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:save_serialize">Automaton:save_serialize (self)</a></td>
+	<td class="summary">Serializes the automaton, so it can be saved.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:save">Automaton:save (self)</a></td>
+	<td class="summary">Saves the automaton in its current file.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:save_as">Automaton:save_as (self, file_name)</a></td>
+	<td class="summary">Saves the automaton to a file.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:load_file">Automaton:load_file (self, file_name)</a></td>
+	<td class="summary">Loads the automaton from a file.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:state_len">Automaton:state_len (self)</a></td>
+	<td class="summary">Returns number of states in the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:event_len">Automaton:event_len (self)</a></td>
+	<td class="summary">Returns number of events in the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:event_get">Automaton:event_get (self, ev_num)</a></td>
+	<td class="summary">Returns an event from the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:event_get_name">Automaton:event_get_name (self, ev_num)</a></td>
+	<td class="summary">Returns the name of an event from the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:transition_len">Automaton:transition_len (self)</a></td>
+	<td class="summary">Returns number of transitions in the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:clone">Automaton:clone (self)</a></td>
+	<td class="summary">Creates a copy of the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:checkAccessible">Automaton:checkAccessible ()</a></td>
+	<td class="summary"></td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:accessible">Automaton:accessible (self, keep)</a></td>
+	<td class="summary">Calculates the accessible component of the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:checkCoaccessible">Automaton:checkCoaccessible ()</a></td>
+	<td class="summary"></td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:coaccessible">Automaton:coaccessible (self, remove_states, keep)</a></td>
+	<td class="summary">Calculates the coaccessible component of the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:join_no_coaccessible_states">Automaton:join_no_coaccessible_states (self, keep)</a></td>
+	<td class="summary">Joins in one unique state every no coaccessible state of the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:trim">Automaton:trim (self, remove_states, keep)</a></td>
+	<td class="summary">Calculates the trim component of the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:selfloop">Automaton:selfloop (self, keep, ...)</a></td>
+	<td class="summary">Creates self-loops in automaton 'self' according to the events in automata '...'.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:synchronization">Automaton:synchronization (self, ...)</a></td>
+	<td class="summary">Calculates the synchronization/parallel composition of the automata '...' and 'self'.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:product">Automaton:product (self, ...)</a></td>
+	<td class="summary">Calculates the product/intersection/meet of the automata '...' and 'self'.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:projection">Automaton:projection (...)</a></td>
+	<td class="summary">Calculates the projection of the sequence of some pre selected events.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#isBadState">isBadState (stateG, stateK)</a></td>
+	<td class="summary">check if stateK is a bad state considering its univocal state in G, stateG.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton.supC">Automaton.supC (G, K)</a></td>
+	<td class="summary">Calculates the max controllable language of a plant and a language.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:check_choice_problem">Automaton:check_choice_problem (self, keep)</a></td>
+	<td class="summary">Verifies if the automaton has the choice problem.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:check_avalanche_effect">Automaton:check_avalanche_effect (self, keep, uncontrollable_only)</a></td>
+	<td class="summary">Verifies if the automaton has the avalanche effect.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:check_inexact_synchronization">Automaton:check_inexact_synchronization (self, keep)</a></td>
+	<td class="summary">Verifies if the automaton has the inexact synchronization problem.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:check_simultaneity">Automaton:check_simultaneity (self, keep)</a></td>
+	<td class="summary">Verifies if the automaton has the simultaneity problem.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:deterministic">Automaton:deterministic (self, keep)</a></td>
+	<td class="summary">Makes the automaton deterministic.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:complement">Automaton:complement (self, keep)</a></td>
+	<td class="summary">Calculates the complement of the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:minimize">Automaton:minimize (self, keep)</a></td>
+	<td class="summary">Minimizes the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:mask">Automaton:mask (self, keep, masks)</a></td>
+	<td class="summary">Masks the refined events of the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:distinguish">Automaton:distinguish (self, keep, masks)</a></td>
+	<td class="summary">Distinguishes the events of the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:create_log">Automaton:create_log ()</a></td>
+	<td class="summary">Creates the automaton log.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:write_log">Automaton:write_log (callback)</a></td>
+	<td class="summary">Writes a page in the log.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:undo">Automaton:undo ()</a></td>
+	<td class="summary">Undoes last modification to the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:redo">Automaton:redo ()</a></td>
+	<td class="summary">Redoes last modification to the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:set_radius_factor">Automaton:set_radius_factor (f)</a></td>
+	<td class="summary">Sets the radius factor property of the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:check">Automaton:check (self)</a></td>
+	<td class="summary">Checks problems in the automaton, printing relevant information.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#Automaton:check_isomorphic">Automaton:check_isomorphic (A2)</a></td>
+	<td class="summary">Check if two automata are isomorphic, to check if they are similar you first need to minimize it.</td>
+	</tr>
+</table>
+<h2><a href="#Fields">Fields</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#self">self</a></td>
+	<td class="summary">Sets the reference of an event of the automaton.</td>
+	</tr>
+</table>
+
+<br/>
+<br/>
+
+
+    <h2><a name="Functions"></a>Functions</h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "Automaton:clearInfo"></a>
+    <strong>Automaton:clearInfo ()</strong>
+    </dt>
+    <dd>
+    automaton manipulation and definition                --
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:getNextAvailableNumber"></a>
+    <strong>Automaton:getNextAvailableNumber (self)</strong>
+    </dt>
+    <dd>
+    We check all states' numbers that can be converted to number,
+then we mark the used one and return the first unused (the first hole in the table)
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        A number representing the first available number to name a state.
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:state_add"></a>
+    <strong>Automaton:state_add (self, name, marked, initial, id)</strong>
+    </dt>
+    <dd>
+    Adds a new state to the automaton.
+Creates a state with no transitions, with properties according to the arguments 'name', 'marked' and 'initial' (if name is not provided, it will be a number relative to the number of states of the automaton). Inserts the new state in the automaton. If initial is true, the initial state of the automaton is set to the new state.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">name</span>
+         Name of the new state.
+        </li>
+        <li><span class="parameter">marked</span>
+         If true, the new state is marked.
+        </li>
+        <li><span class="parameter">initial</span>
+         If true, the new state becomes the initial state.
+        </li>
+        <li><span class="parameter">id</span>
+         Forced id of the state.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+        <li>
+        Id of the new state.</li>
+        <li>
+        New state itself.</li>
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="../modules/des.automaton.html#Automaton:state_set_initial">Automaton:state_set_initial</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:state_remove"></a>
+    <strong>Automaton:state_remove (self, id)</strong>
+    </dt>
+    <dd>
+    Removes a state from the automaton.
+Verifies if the state represented by 'id' exists. Removes from the automaton every transition that has this state as soruce or target. Removes the state from the state list of the automaton.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">id</span>
+         Id of the state to be removed.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="../modules/des.automaton.html#Automaton:transition_remove">Automaton:transition_remove</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:state_set_initial"></a>
+    <strong>Automaton:state_set_initial (self, id)</strong>
+    </dt>
+    <dd>
+    Sets the initial state of the automaton.
+Verifies if the state represented by 'id' exists. Sets any other state to no initial. Sets the state to initial. Sets the initial state of the automaton to the state.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">id</span>
+         Id of the state to be set.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        True if no problems occurred, false/nil otherwise.
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:state_unset_initial"></a>
+    <strong>Automaton:state_unset_initial (self)</strong>
+    </dt>
+    <dd>
+    Unsets the initial state of the automaton.
+Sets all states initial property to false. Unsets the initial state of the automaton.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        True if no problems occurred, false/nil otherwise.
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:state_set_marked"></a>
+    <strong>Automaton:state_set_marked (self, id)</strong>
+    </dt>
+    <dd>
+    Sets a state of the automaton to marked.
+Verifies if the state represented by 'id' exists. Sets the state to marked.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">id</span>
+         Id of the state to be set.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        True if no problems occurred, false/nil otherwise.
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:state_unset_marked"></a>
+    <strong>Automaton:state_unset_marked (self, id)</strong>
+    </dt>
+    <dd>
+    Sets a state of the automaton to unmarked.
+Verifies if the state represented by 'id' exists. Sets the state to unmarked.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">id</span>
+         Id of the state to be set.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        True if no problems occurred, false/nil otherwise.
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:state_get_marked"></a>
+    <strong>Automaton:state_get_marked (self, id)</strong>
+    </dt>
+    <dd>
+    Return if a state of the automaton is marked or not.
+Verifies if the state represented by 'id' exists. Returns its marked property.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">id</span>
+         Id of the state to be verified.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        True if the state is marked, false/nil otherwise.
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:state_set_name"></a>
+    <strong>Automaton:state_set_name (self, id, name)</strong>
+    </dt>
+    <dd>
+    Sets the name of a state of the automaton.
+Verifies if the state represented by 'id' exists. Sets its name to 'name'.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">id</span>
+         Id of the state to be set.
+        </li>
+        <li><span class="parameter">name</span>
+         New name of the state.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        True if no problems occurred, false/nil otherwise.
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:state_set_position"></a>
+    <strong>Automaton:state_set_position (self, id, x, y)</strong>
+    </dt>
+    <dd>
+    Sets the position of a state of the automaton.
+Verifies if the state represented by 'id' exists. Sets its x coordinate to 'x' and its y coordinate to 'y'.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">id</span>
+         Id of the state whose position is set.
+        </li>
+        <li><span class="parameter">x</span>
+         New x coordinate of the state.
+        </li>
+        <li><span class="parameter">y</span>
+         New y coordinate of the state.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        True if no problems occurred, false/nil otherwise.
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:state_get_position"></a>
+    <strong>Automaton:state_get_position (self, id)</strong>
+    </dt>
+    <dd>
+    Returns the position of a state of the automaton.
+Verifies if the state represented by 'id' exists. Returns its x and y coordinates.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">id</span>
+         Id of the state whose position is returned.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+        <li>
+        X coordinate of the state.</li>
+        <li>
+        Y coordinate of the state.</li>
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:state_set_radius"></a>
+    <strong>Automaton:state_set_radius (self, id, r)</strong>
+    </dt>
+    <dd>
+    Sets the radius of a state of the automaton.
+Verifies if the state represented by 'id' exists. Sets its radius to 'r'.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">id</span>
+         Id of the state to be set.
+        </li>
+        <li><span class="parameter">r</span>
+         New radius of the state.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        True if no problems occurred, false/nil otherwise.
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:state_get_radius"></a>
+    <strong>Automaton:state_get_radius (self, id)</strong>
+    </dt>
+    <dd>
+    Returns the radius of a state of the automaton.
+Verifies if the state represented by 'id' exists. Returns its radius.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">id</span>
+         Id of the state whose radius is returned.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Radius of the state.
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:position_states"></a>
+    <strong>Automaton:position_states ()</strong>
+    </dt>
+    <dd>
+    Position the states of the automaton in an intelligent way.
+Defines constants to the forces. Treats each state of the automaton as a node and each transition as an edge. Creates repulsion forces between nodes and attraction forces based on the edges and the distance from a node to the center of the screen. When the simulation is steady (or an iteration limit is reached), sets the states positions to the nodes positions.
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:event_add"></a>
+    <strong>Automaton:event_add (self, name, observable, controllable, refinement, id)</strong>
+    </dt>
+    <dd>
+    Adds a new event to the automaton.
+Creates a event that is not in any transitions, with properties according to the arguments 'name', 'observable' and 'controllable'. Inserts the new event in the automaton.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">name</span>
+         Name of the new event.
+        </li>
+        <li><span class="parameter">observable</span>
+         If true, the new event is observable.
+        </li>
+        <li><span class="parameter">controllable</span>
+         If true, the new event is controllable.
+        </li>
+        <li><span class="parameter">refinement</span>
+         Name of the event refined by the new event.
+        </li>
+        <li><span class="parameter">id</span>
+         Forced id of the event.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+        <li>
+        Id of the new event.</li>
+        <li>
+        New event itself.</li>
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:event_remove"></a>
+    <strong>Automaton:event_remove (self, id)</strong>
+    </dt>
+    <dd>
+    Removes an event from the automaton.
+Verifies if the event identified by 'id' exists. Removes any transition with this event from the automaton. Removes the event from the event list of the automaton.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">id</span>
+         Id of the event to be removed.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="../modules/des.automaton.html#Automaton:transition_remove">Automaton:transition_remove</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:event_set_observable"></a>
+    <strong>Automaton:event_set_observable (self, id)</strong>
+    </dt>
+    <dd>
+    Sets an event of the automaton to observable.
+Verifies if the event represented by 'id' exists. Sets it to observable.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">id</span>
+         Id of the event to be set.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        True if no problems occurred, false/nil otherwise.
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:event_get_observable"></a>
+    <strong>Automaton:event_get_observable (self, id)</strong>
+    </dt>
+    <dd>
+    Verifies if an event of the automaton is observable.
+Verifies if the event represented by 'id' exists. Returns its observable property.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">id</span>
+         Id of the event to be verified.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        True if the event is observable. False/nil otherwise.
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:event_unset_observable"></a>
+    <strong>Automaton:event_unset_observable (self, id)</strong>
+    </dt>
+    <dd>
+    Sets an event of the automaton to unobservable.
+Verifies if the event represented by 'id' exists. Sets it to unobservable.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">id</span>
+         Id of the event to be set.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        True if no problems occurred, false/nil otherwise.
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:event_set_controllable"></a>
+    <strong>Automaton:event_set_controllable (self, id)</strong>
+    </dt>
+    <dd>
+    Sets an event of the automaton to controllable.
+Verifies if the event represented by 'id' exists. Sets it to controllable.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">id</span>
+         Id of the event to be set.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        True if no problems occurred, false/nil otherwise.
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:event_unset_controllable"></a>
+    <strong>Automaton:event_unset_controllable (self, id)</strong>
+    </dt>
+    <dd>
+    Sets an event of the automaton to uncontrollable.
+Verifies if the event represented by 'id' exists. Sets it to controllable.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">id</span>
+         Id of the event to be set.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        True if no problems occurred, false/nil otherwise.
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:event_get_controllable"></a>
+    <strong>Automaton:event_get_controllable (self, id)</strong>
+    </dt>
+    <dd>
+    Verifies if an event of the automaton is controllable.
+Verifies if the event represented by 'id' exists. Returns its controllable property.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">id</span>
+         Id of the event to be verified.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        True if the event is controllable. False/nil otherwise.
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:event_set_name"></a>
+    <strong>Automaton:event_set_name (self, id, name)</strong>
+    </dt>
+    <dd>
+    Sets the name of an event of the automaton.
+Verifies if the event identified by 'id' exists. Filters 'name', removing any characters that are not alphanumeric, "_", or "&". If 'name' has the susbstring "&" or "EMPTYWORD", it is set to "&". The event name is set to 'name'.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">id</span>
+         Id of the event to be set.
+        </li>
+        <li><span class="parameter">name</span>
+         New name of the event.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        True if no problems occurred, false/nil otherwise.
+TODO: do not allow to use names already used
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:event_set_refinement"></a>
+    <strong>Automaton:event_set_refinement (self, id, ref)</strong>
+    </dt>
+    <dd>
+    Sets the refinement of an event of the automaton.
+Verifies if the event identified by 'id' exists. Filters 'ref', removing any characters that are not alphanumeric, "_", or "&". If 'ref' has the susbstring "&" or "EMPTYWORD", it is set to "&". The event refinement is set to 'ref'.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">id</span>
+         Id of the event to be set.
+        </li>
+        <li><span class="parameter">ref</span>
+         New refinement of the event.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        True if no problems occurred, false/nil otherwise.
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:transition_add"></a>
+    <strong>Automaton:transition_add (self, source_id, target_id, event_id, isdata, id)</strong>
+    </dt>
+    <dd>
+    Adds a transition to the automaton.
+Searchs fot the states represented by 'source_id' and 'target_id' and for the event represented by 'event_id'. If 'isdata' is true, the ids are treated as the states/event themselves. Sets the combination event-target on the source state and event-source on the target state to true. Adds the transition to the transition lists of the source state, target state and event.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">source_id</span>
+         Id of the source state.
+        </li>
+        <li><span class="parameter">target_id</span>
+         Id of the target state.
+        </li>
+        <li><span class="parameter">event_id</span>
+         Id of the event used in the transition.
+        </li>
+        <li><span class="parameter">isdata</span>
+         If true, the id's are interpreted as id's. Otherwise, they are interpreted as what they represent (e.g. state_id represents a state).
+        </li>
+        <li><span class="parameter">id</span>
+         Forced id of the transition.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+        <li>
+        Id of the new transition.</li>
+        <li>
+        New transition itself.</li>
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:transition_remove"></a>
+    <strong>Automaton:transition_remove (self, id)</strong>
+    </dt>
+    <dd>
+    Removes a transition from the automaton.
+Finds the transition represented by 'id' in the transition list. Removes that transition from the transition list of the source state, target state, event and automaton. Sets the combination event-target on the source state and event-source on the target state to nil.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">id</span>
+         Id of the transition to be removed.
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:transition_set_factor"></a>
+    <strong>Automaton:transition_set_factor (id, factor)</strong>
+    </dt>
+    <dd>
+    Changes the factor of a transition
+Finds the transition represented by 'id'.  Sets it's factor to 'factor'.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">id</span>
+         Id of the transition.
+        </li>
+        <li><span class="parameter">factor</span>
+         New factor.
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:IDES_import"></a>
+    <strong>Automaton:IDES_import (self, file_name, get_layout)</strong>
+    </dt>
+    <dd>
+    Imports an automaton from IDES.
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">file_name</span>
+         Name of the file to be imported.
+        </li>
+        <li><span class="parameter">get_layout</span>
+         For some reason, it is always set to true. TODO
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Imported automaton.
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <li><a href="../modules/des.automaton.html#Automaton:state_add">Automaton:state_add</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:state_set_initial">Automaton:state_set_initial</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:state_set_marked">Automaton:state_set_marked</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:event_add">Automaton:event_add</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:event_set_observable">Automaton:event_set_observable</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:event_set_controllable">Automaton:event_set_controllable</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:transition_add">Automaton:transition_add</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:state_set_position">Automaton:state_set_position</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:state_set_name">Automaton:state_set_name</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:event_set_name">Automaton:event_set_name</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:create_log">Automaton:create_log</a></li>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:IDES_export"></a>
+    <strong>Automaton:IDES_export (self, file_name)</strong>
+    </dt>
+    <dd>
+    Exports the automaton to IDES.
+Verifies if 'file_name' has sulfix .xmd, if not, adds it. Opens the file and writes the header. For each state, writes its id, name and properties initial and marked. For each event, writes its id, name and properties controllable and observable. For each transition, writes its id, source, target and event. Then, for each state, writes its radius, x and y. For each transition, writes its source, target and control coordinates.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">file_name</span>
+         Name of the file to be exported.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+        <li>
+        True if no problems occurred, false otherwise.</li>
+        <li>
+        Ids of any errors that occurred.</li>
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:TCT_import"></a>
+    <strong>Automaton:TCT_import (file_name, workspace_events)</strong>
+    </dt>
+    <dd>
+    Imports an automaton from TCT.
+Verifies if the file 'file_name' exists. Parses the file. Copies the states, events and transitions from the file to the automaton.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">file_name</span>
+         Name of the file to be imported.
+        </li>
+        <li><span class="parameter">workspace_events</span>
+         Workspace events list.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+         <li><a href="../modules/des.automaton.html#Automaton:state_add">Automaton:state_add</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:state_set_initial">Automaton:state_set_initial</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:state_set_marked">Automaton:state_set_marked</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:event_add">Automaton:event_add</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:transition_add">Automaton:transition_add</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:create_log">Automaton:create_log</a></li>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:TCT_export"></a>
+    <strong>Automaton:TCT_export (file_name, workspace_events)</strong>
+    </dt>
+    <dd>
+    Exports an automaton to TCT.
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">file_name</span>
+         Name of the file to be exported.
+        </li>
+        <li><span class="parameter">workspace_events</span>
+         Workspace events list.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:save_serialize"></a>
+    <strong>Automaton:save_serialize (self)</strong>
+    </dt>
+    <dd>
+    Serializes the automaton, so it can be saved.
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton to be serialized.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Serialized automaton.
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:save"></a>
+    <strong>Automaton:save (self)</strong>
+    </dt>
+    <dd>
+    Saves the automaton in its current file.
+Gets the file of the automaton. If it hasn't the format .nza, this format is added. Saves the automaton to the file.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton to be saved.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+        <li>
+        True if no problems occurred, false otherwise.</li>
+        <li>
+        Ids of any errors that occurred.</li>
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="../modules/des.automaton.html#Automaton:save_serialize">Automaton:save_serialize</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:save_as"></a>
+    <strong>Automaton:save_as (self, file_name)</strong>
+    </dt>
+    <dd>
+    Saves the automaton to a file.
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton to be saved.
+        </li>
+        <li><span class="parameter">file_name</span>
+         Name of the file where the automaton will be saved.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+        <li>
+        True if no problems occurred, false otherwise.</li>
+        <li>
+        Ids of any errors that occurred.</li>
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="../modules/des.automaton.html#Automaton:save_serialize">Automaton:save_serialize</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:load_file"></a>
+    <strong>Automaton:load_file (self, file_name)</strong>
+    </dt>
+    <dd>
+    Loads the automaton from a file.
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton where informations will be loaded.
+        </li>
+        <li><span class="parameter">file_name</span>
+         Name of the file to be loaded.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+         <li><a href="../modules/des.automaton.html#Automaton:state_add">Automaton:state_add</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:event_add">Automaton:event_add</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:transition_add">Automaton:transition_add</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:create_log">Automaton:create_log</a></li>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:state_len"></a>
+    <strong>Automaton:state_len (self)</strong>
+    </dt>
+    <dd>
+    Returns number of states in the automaton.
+Returns the number of elements in the state list of the automaton.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Number of states in the automaton.
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:event_len"></a>
+    <strong>Automaton:event_len (self)</strong>
+    </dt>
+    <dd>
+    Returns number of events in the automaton.
+Returns the number of elements in the event list of the automaton.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Number of events in the automaton.
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:event_get"></a>
+    <strong>Automaton:event_get (self, ev_num)</strong>
+    </dt>
+    <dd>
+    Returns an event from the automaton.
+Returns the ev_num-th element in the event list of the automaton.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">ev_num</span>
+         Number of the event to be returned.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        An event from the automaton.
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:event_get_name"></a>
+    <strong>Automaton:event_get_name (self, ev_num)</strong>
+    </dt>
+    <dd>
+    Returns the name of an event from the automaton.
+Returns the name of the ev_num-th element in the event list of the automaton.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">ev_num</span>
+         Number of the event whose number is returned.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Name of an event from the automaton.
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:transition_len"></a>
+    <strong>Automaton:transition_len (self)</strong>
+    </dt>
+    <dd>
+    Returns number of transitions in the automaton.
+Returns the number of elements in the event list of the automaton.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Number of transitions in the automaton.
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:clone"></a>
+    <strong>Automaton:clone (self)</strong>
+    </dt>
+    <dd>
+    Creates a copy of the automaton.
+Creates a new automaton and copies all states, events and transitions of 'self' to that automaton.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton to be cloned.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+        <li>
+        Copy of the automaton.</li>
+        <li>
+        <boolean> is the automaton accessible</li>
+        <li>
+        <number> amount of no accessible states in the automaton</li>
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <li><a href="../modules/des.automaton.html#Automaton:state_add">Automaton:state_add</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:event_add">Automaton:event_add</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:transition_add">Automaton:transition_add</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:create_log">Automaton:create_log</a></li>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:checkAccessible"></a>
+    <strong>Automaton:checkAccessible ()</strong>
+    </dt>
+    <dd>
+
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+        <li>
+        <boolean> is the automaton accessible</li>
+        <li>
+        <number> amount of no accessible states in the automaton</li>
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:accessible"></a>
+    <strong>Automaton:accessible (self, keep)</strong>
+    </dt>
+    <dd>
+    Calculates the accessible component of the automaton.
+All states of the automaton are initialized as no accessible. Accessible states are recursively calculated. If 'remove_states' is true, no accessible states are removed.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">keep</span>
+         If true, the operation is directly applied on 'self', otherwise, in a copy of it.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+        <li>
+        Accessible component of the automaton.</li>
+        <li>
+        <boolean> is the automaton accessible</li>
+        <li>
+        <number> amount of no accessible states in the automaton</li>
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <li><a href="../modules/des.automaton.html#Automaton:clone">Automaton:clone</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:create_log">Automaton:create_log</a></li>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:checkCoaccessible"></a>
+    <strong>Automaton:checkCoaccessible ()</strong>
+    </dt>
+    <dd>
+
+
+
+
+    <h3>Returns:</h3>
+    <ol>
+        <li>
+        <boolean> is the automaton accessible</li>
+        <li>
+        <number> amount of no accessible states in the automaton</li>
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:coaccessible"></a>
+    <strong>Automaton:coaccessible (self, remove_states, keep)</strong>
+    </dt>
+    <dd>
+    Calculates the coaccessible component of the automaton.
+All states of the automaton are initialized as no coaccessible. Coaccessible states are recursively calculated. If 'remove_states' is true, no coaccessible states are removed.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">remove_states</span>
+         If true, no coaccessible states of the automaton are removed.
+        </li>
+        <li><span class="parameter">keep</span>
+         If true, the operation is directly applied on 'self', otherwise, in a copy of it.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Coaccessible component of the automaton.
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <li><a href="../modules/des.automaton.html#Automaton:clone">Automaton:clone</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:create_log">Automaton:create_log</a></li>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:join_no_coaccessible_states"></a>
+    <strong>Automaton:join_no_coaccessible_states (self, keep)</strong>
+    </dt>
+    <dd>
+    Joins in one unique state every no coaccessible state of the automaton.
+Calculates the coaccessible component of the automaton using function 'Automaton:coaccessible', but doesn't remove no coaccessible states. Creates a new state that will join all no coaccessible states. For every transition from a no coaccessible state to a no coaccessible state, adds a self-loop with this transition in the new state. For every transition from a coaccessible state to a no coaccessible state, adds this transition to that coaccessible state, having the new state as target. If the initial state is no coaccessible, makes the new state state become the initial state. Removes all no coaccessible states, except the new state.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">keep</span>
+         If true, the operation is directly applied on 'self', otherwise, in a copy of it.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Automaton with unique no coaccessible state.
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <li><a href="../modules/des.automaton.html#Automaton:coaccessible">Automaton:coaccessible</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:state_add">Automaton:state_add</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:transition_add">Automaton:transition_add</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:state_set_initial">Automaton:state_set_initial</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:create_log">Automaton:create_log</a></li>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:trim"></a>
+    <strong>Automaton:trim (self, remove_states, keep)</strong>
+    </dt>
+    <dd>
+    Calculates the trim component of the automaton.
+Calculates the coaccessible component of the automaton using function 'Automaton:coaccessible'. Calculates the accessible component of the automaton using function 'Automaton:accessible'. If 'remove_states' is true, no coaccessible or no accessible states are removed.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">remove_states</span>
+         If true, no coaccessible or no accessible states of the automaton are removed.
+        </li>
+        <li><span class="parameter">keep</span>
+         If true, the operation is directly applied on 'self', otherwise, in a copy of it.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Trim component of the automaton.
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <li><a href="../modules/des.automaton.html#Automaton:coaccessible">Automaton:coaccessible</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:accessible">Automaton:accessible</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:create_log">Automaton:create_log</a></li>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:selfloop"></a>
+    <strong>Automaton:selfloop (self, keep, ...)</strong>
+    </dt>
+    <dd>
+    Creates self-loops in automaton 'self' according to the events in automata '...'.
+Maps all events of 'self'. For each event that is not in 'self' and is in at least one of the other automata, adds that event to the resulting automaton and creates a self-loop with this event in all states of the resulting automaton.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">keep</span>
+         If true, the operation is directly applied on 'self', otherwise, in a copy of it.
+        </li>
+        <li><span class="parameter">...</span>
+         Automata whose events are used to create the self-loops.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Automaton with self-loops.
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <li><a href="../modules/des.automaton.html#Automaton:clone">Automaton:clone</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:event_add">Automaton:event_add</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:transition_add">Automaton:transition_add</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:create_log">Automaton:create_log</a></li>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:synchronization"></a>
+    <strong>Automaton:synchronization (self, ...)</strong>
+    </dt>
+    <dd>
+    Calculates the synchronization/parallel composition of the automata '...' and 'self'.
+Creates self-loops in the automata. Calculates the product of the automata using 'Automaton:product'.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">...</span>
+         Automata in which the operation is applied.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Synchronized automaton.
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <li><a href="../modules/des.automaton.html#Automaton:clone">Automaton:clone</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:product">Automaton:product</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:create_log">Automaton:create_log</a></li>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:product"></a>
+    <strong>Automaton:product (self, ...)</strong>
+    </dt>
+    <dd>
+    Calculates the product/intersection/meet of the automata '...' and 'self'.
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">...</span>
+         Automata in which the operation is applied.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Product automaton.
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <li><a href="../modules/des.automaton.html#Automaton:event_add">Automaton:event_add</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:state_add">Automaton:state_add</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:create_log">Automaton:create_log</a></li>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:projection"></a>
+    <strong>Automaton:projection (...)</strong>
+    </dt>
+    <dd>
+    Calculates the projection of the sequence of some pre selected events.   .
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">...</span>
+
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "isBadState"></a>
+    <strong>isBadState (stateG, stateK)</strong>
+    </dt>
+    <dd>
+    check if stateK is a bad state considering its univocal state in G, stateG.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">stateG</span>
+         the state in the plant G that is univocal for the stateK.
+        </li>
+        <li><span class="parameter">stateK</span>
+         the state to be checked if it is a bad state.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        boolean, true is stateK is a bad state, false otherwise.
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton.supC"></a>
+    <strong>Automaton.supC (G, K)</strong>
+    </dt>
+    <dd>
+    Calculates the max controllable language of a plant and a language.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">G</span>
+         Plant in which the operation is applied.
+        </li>
+        <li><span class="parameter">K</span>
+         Language in which the operation is applied.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        An automaton S that realises the maximum controllable language.
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="../modules/des.automaton.html#Automaton:clone">Automaton:clone</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:check_choice_problem"></a>
+    <strong>Automaton:check_choice_problem (self, keep)</strong>
+    </dt>
+    <dd>
+    Verifies if the automaton has the choice problem.
+For each state that has at least two transitions with controllable events, verifies if after the occurrence of an controllable event in this state, any other controllable event from the original state can still occur, reaching the same target state.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">keep</span>
+         If true, the operation is directly applied on 'self', otherwise, in a copy of it.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Automaton with choice problem checked.
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <li><a href="../modules/des.automaton.html#Automaton:clone">Automaton:clone</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:create_log">Automaton:create_log</a></li>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:check_avalanche_effect"></a>
+    <strong>Automaton:check_avalanche_effect (self, keep, uncontrollable_only)</strong>
+    </dt>
+    <dd>
+    Verifies if the automaton has the avalanche effect.
+For each state that has a transition that is not a self-loop, verifies if the target state from that transition has another no self-loop transition with that event.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">keep</span>
+         If true, the operation is directly applied on 'self', otherwise, in a copy of it.
+        </li>
+        <li><span class="parameter">uncontrollable_only</span>
+         If true, only the uncontrollable events are considered in the checking.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Automaton with avalanche effect checked.
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <li><a href="../modules/des.automaton.html#Automaton:clone">Automaton:clone</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:create_log">Automaton:create_log</a></li>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:check_inexact_synchronization"></a>
+    <strong>Automaton:check_inexact_synchronization (self, keep)</strong>
+    </dt>
+    <dd>
+    Verifies if the automaton has the inexact synchronization problem.
+For each state that has at least one transitions with an uncontrollable event and one transition with a controllable event, verifies if after the occurrence of an event in this state, any other event (of a different type) from the original state can still occur, reaching the same target state.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">keep</span>
+         If true, the operation is directly applied on 'self', otherwise, in a copy of it.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Automaton with inexact synchronization checked.
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <li><a href="../modules/des.automaton.html#Automaton:clone">Automaton:clone</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:create_log">Automaton:create_log</a></li>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:check_simultaneity"></a>
+    <strong>Automaton:check_simultaneity (self, keep)</strong>
+    </dt>
+    <dd>
+    Verifies if the automaton has the simultaneity problem.
+For each state that has at least two transitions with uncontrollable events, verifies if after the occurrence of an uncontrollable event in this state, any other uncontrollable event can still occur, reaching the same target state.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">keep</span>
+         If true, the operation is directly applied on 'self', otherwise, in a copy of it.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Automaton with simultaneity checked.
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <li><a href="../modules/des.automaton.html#Automaton:clone">Automaton:clone</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:create_log">Automaton:create_log</a></li>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:deterministic"></a>
+    <strong>Automaton:deterministic (self, keep)</strong>
+    </dt>
+    <dd>
+    Makes the automaton deterministic.
+Creates a new automaton. Copies all events from 'self' to the new automanton. Creates the initial state of the new automaton as the closure of the initial state of 'self'. Transforms not deterministic and emptyword transitions into deterministic transitions, creating necessary new states in the process. Removes the emptyword from the new automaton.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">keep</span>
+         If true, the operation is directly applied on 'self', otherwise, in a copy of it.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Deterministic automaton.
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <li><a href="../modules/des.automaton.html#Automaton:clone">Automaton:clone</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:state_add">Automaton:state_add</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:transition_remove">Automaton:transition_remove</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:transition_add">Automaton:transition_add</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:accessible">Automaton:accessible</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:create_log">Automaton:create_log</a></li>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:complement"></a>
+    <strong>Automaton:complement (self, keep)</strong>
+    </dt>
+    <dd>
+    Calculates the complement of the automaton.
+Uses 'Automaton:deterministic' to make the automaton deterministic. Creates a new state. For every state, inverts its marked property and for each event that is not on that state, creates a transition with this event, having the new state as target. If no new transition have been created, the new state is removed.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">keep</span>
+         If true, the operation is directly applied on 'self', otherwise, in a copy of it.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Complement of the automaton.
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <li><a href="../modules/des.automaton.html#Automaton:deterministic">Automaton:deterministic</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:state_add">Automaton:state_add</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:transition_add">Automaton:transition_add</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:create_log">Automaton:create_log</a></li>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:minimize"></a>
+    <strong>Automaton:minimize (self, keep)</strong>
+    </dt>
+    <dd>
+    Minimizes the automaton.
+Uses 'Automaton:deterministic' to make the automaton deterministic. Removes useless states using 'Automaton:trim'. Creates a new state. For every state, for each event that is not on that state, creates a transition with this event, having the new state as target. If no new transition have been created, the new state is removed. Creates the distinction matrix, marking trivially distinct pairs of states. For each pair in the matrix, verifies if it's states can be equivalent and, if not, marks it. If this depends on other pair(s) of states, store this pair for further analysis. Unifies non-marked pairs of states. Applies 'Automaton:trim' again to remove useless states.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">keep</span>
+         If true, the operation is directly applied on 'self', otherwise, in a copy of it.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Minimized automaton.
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <li><a href="../modules/des.automaton.html#Automaton:deterministic">Automaton:deterministic</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:trim">Automaton:trim</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:state_add">Automaton:state_add</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:state_remove">Automaton:state_remove</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:state_set_initial">Automaton:state_set_initial</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:transition_add">Automaton:transition_add</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:transition_remove">Automaton:transition_remove</a></li>
+         <li><a href="../modules/des.automaton.html#Automaton:create_log">Automaton:create_log</a></li>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:mask"></a>
+    <strong>Automaton:mask (self, keep, masks)</strong>
+    </dt>
+    <dd>
+    Masks the refined events of the automaton.
+For each mask, find its refinements and replaces them by the mask.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">keep</span>
+         If true, the operation is directly applied on 'self', otherwise, in a copy of it.
+        </li>
+        <li><span class="parameter">masks</span>
+         Event masks whose refinements shall be replaced.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Masked automaton.
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:distinguish"></a>
+    <strong>Automaton:distinguish (self, keep, masks)</strong>
+    </dt>
+    <dd>
+    Distinguishes the events of the automaton.
+For each refinement, find its mask and replaces it by the refinements.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">keep</span>
+         If true, the operation is directly applied on 'self', otherwise, in a copy of it.
+        </li>
+        <li><span class="parameter">masks</span>
+         Event refinements whose masks shall be replaced.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        Distinguished automaton.
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:create_log"></a>
+    <strong>Automaton:create_log ()</strong>
+    </dt>
+    <dd>
+    Creates the automaton log.
+TODO
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:write_log"></a>
+    <strong>Automaton:write_log (callback)</strong>
+    </dt>
+    <dd>
+    Writes a page in the log.
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">callback</span>
+        print('Writing log')
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:undo"></a>
+    <strong>Automaton:undo ()</strong>
+    </dt>
+    <dd>
+    Undoes last modification to the automaton.
+TODO
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:redo"></a>
+    <strong>Automaton:redo ()</strong>
+    </dt>
+    <dd>
+    Redoes last modification to the automaton.
+TODO
+
+
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:set_radius_factor"></a>
+    <strong>Automaton:set_radius_factor (f)</strong>
+    </dt>
+    <dd>
+    Sets the radius factor property of the automaton.
+Changes the radius factor to 'f'.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">f</span>
+         New radius factor.
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:check"></a>
+    <strong>Automaton:check (self)</strong>
+    </dt>
+    <dd>
+    Checks problems in the automaton, printing relevant information.
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton to be checked.
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "Automaton:check_isomorphic"></a>
+    <strong>Automaton:check_isomorphic (A2)</strong>
+    </dt>
+    <dd>
+    Check if two automata are isomorphic, to check if they are similar you first need to minimize it.
+Only works for DFA (convert to DFA if it is NFA first)
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">A2</span>
+
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+</dl>
+    <h2><a name="Fields"></a>Fields</h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "self"></a>
+    <strong>self</strong>
+    </dt>
+    <dd>
+    Sets the reference of an event of the automaton.
+Verifies if the event identified by 'id' exists. Gets the current reference of the event. Verifies if the new reference exists in the workspace. Sets the reference and copies its properties to the event.
+
+
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton in which the operation is applied.
+        </li>
+        <li><span class="parameter">id</span>
+         Id of the event to be set.
+        </li>
+        <li><span class="parameter">ref</span>
+         New refinement of the event.
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+</dl>
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.3</a></i>
+<i style="float:right;">Last updated 2015-03-05 05:09:25 </i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>

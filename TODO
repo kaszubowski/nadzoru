@@ -1,36 +1,73 @@
 Task:
     -> change os.execute to lua file system
         -> change linux only path to images
-    -> remove loaded automatons
+50% -> remove loaded element(automata,group,scadaPlant,EventSet)
+        --BUG: need to check each tab and see if the element is in use, if so warning the user (abort or close tabs)
+
+    -> create a Element base class Object <-- Element <-- (Automaton, ScadaPlant, EventSet, ... )
+    -> DFA, NFA, EFA (Epsilon transitios Automaton)
+    -> EventSet class (new element)
+    -> Word class (EventString ???) (new element), represents a string of events
+
+    ->Cleanup code (improve the code standard)
+    
+    ->documentation (ldoc), add documentation comments
 
 Features:
     ->Operations
-90%    ->Automaton Editor
-		--show forbiden events ???? like: (---->) in red
-    ->Simulator - PIC serial Communication and Integration
+    
+90% ->Automaton Editor
+        --show forbiden events ???? like: (---->) in red (Needs to know univocal calculation)
+        
     ->I18N (use user locate)
-	-> Review algorithms
+    
+30% -> Review algorithms and create unit test
+            + product OK
+            + selfloop OK
+            + sync OK
+            + accessive, coaccessive, trim, OK
+            + univocal, supC OK
+            + manipulation ([add/remove][state,event,transition], clone) OK
+            +IDES_import OK
+            +check_isomorphic OK
+
+            -IDES_export, TCT_[import,export]
+            -check_avalanche_effect
+            -check_choice_problem
+            -check_inexact_synchronization
+            -check_simultaneity
+            -complement
+            -deterministic
+            -distinguish
+            -join_no_coaccessible_states
+            -mask
+            --minimize
+            -projection
+            -redo,undo and related...
+
+    -> Script[Gui,Env] separate operations and string returned information in separated groups ( Functions( Operations,Informations,Auxiliar ), Elements(Automata,EventSet) ),
+            
 
 SCADA
-	-> server
-		-- serial
-		-- ethernet
-	-> data acquisition board
-		-- serial
-		-- ethernet
-	-> plant:clone()
-		-- use the clone insted change the original plant, so the View won't change the plant
-			-- after each update in plant (by the editor) inform each clone to update, so you can
-			edit the plant while the plant is executing, but the execute can NOT change the original plant
-	-> editor help: show the rendered automata in code editor help
-	-> View: alarm
-	-> Scada plant render: add scroll
-		--need all components send 'h' and 'w' (eg conveyor2)
-	-> View:Simulator : see the automata simulator in SCADA:PLant:Simulator
-	-> components:
-		-Button and integratiom
-		-Subtitle
-		-Alarm (sound??? -- default sound on/off) (put backgound in RED ???)
+    -> server
+        -- serial
+        -- ethernet
+    -> data acquisition board
+        -- serial
+        -- ethernet
+    -> plant:clone()
+        -- use the clone insted change the original plant, so the View won't change the plant
+            -- after each update in plant (by the editor) inform each clone to update, so you can
+            edit the plant while the plant is executing, but the execute can NOT change the original plant
+    -> editor help: show the rendered automata in code editor help
+    -> View: alarm
+    -> Scada plant render: add scroll
+        --need all components send 'h' and 'w' (eg conveyor2)
+    -> View:Simulator : see the automata simulator in SCADA:PLant:Simulator
+    -> components:
+        -Button and integratiom
+        -Subtitle
+        -Alarm (sound??? -- default sound on/off) (put backgound in RED ???)
 
 MES
 

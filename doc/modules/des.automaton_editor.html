@@ -1,0 +1,964 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>Reference</title>
+    <link rel="stylesheet" href="../ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>ldoc</h1>
+
+<ul>
+  <li><a href="../index.html">Index</a></li>
+</ul>
+
+<h2>Contents</h2>
+<ul>
+<li><a href="#Functions">Functions</a></li>
+</ul>
+
+
+<h2>Modules</h2>
+<ul class="$(kind=='Topics' and '' or 'nowrap'">
+  <li><a href="../modules/chooser.html">chooser</a></li>
+  <li><a href="../modules/code_gen.html">code_gen</a></li>
+  <li><a href="../modules/des.automata_group.html">des.automata_group</a></li>
+  <li><a href="../modules/des.automaton.html">des.automaton</a></li>
+  <li><strong>des.automaton_editor</strong></li>
+  <li><a href="../modules/des.automaton_render.html">des.automaton_render</a></li>
+  <li><a href="../modules/des.graphviz_simulator.html">des.graphviz_simulator</a></li>
+  <li><a href="../modules/des.simulator.html">des.simulator</a></li>
+  <li><a href="../modules/gl_render.gl_render.html">gl_render.gl_render</a></li>
+  <li><a href="../modules/gui.gui.html">gui.gui</a></li>
+  <li><a href="../modules/gui.property_editor.html">gui.property_editor</a></li>
+  <li><a href="../modules/gui.selector.html">gui.selector</a></li>
+  <li><a href="../modules/gui.treeview.html">gui.treeview</a></li>
+  <li><a href="../modules/object.html">object</a></li>
+  <li><a href="../modules/scada.component.alarm.html">scada.component.alarm</a></li>
+  <li><a href="../modules/scada.component.base.html">scada.component.base</a></li>
+  <li><a href="../modules/scada.component.buffer.html">scada.component.buffer</a></li>
+  <li><a href="../modules/scada.component.conveyor1.html">scada.component.conveyor1</a></li>
+  <li><a href="../modules/scada.component.conveyor2.html">scada.component.conveyor2</a></li>
+  <li><a href="../modules/scada.component.generic_machine.html">scada.component.generic_machine</a></li>
+  <li><a href="../modules/scada.component.label.html">scada.component.label</a></li>
+  <li><a href="../modules/scada.component.sensor.html">scada.component.sensor</a></li>
+  <li><a href="../modules/scada.component.simple_silo.html">scada.component.simple_silo</a></li>
+  <li><a href="../modules/scada.editor.html">scada.editor</a></li>
+  <li><a href="../modules/scada.plant.html">scada.plant</a></li>
+  <li><a href="../modules/scada.plant_simulator.html">scada.plant_simulator</a></li>
+  <li><a href="../modules/scada.server.html">scada.server</a></li>
+  <li><a href="../modules/scada.view.html">scada.view</a></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+<h1>Module <code>des.automaton_editor</code></h1>
+<p>Updates the list of events.</p>
+<p>
+Clears the event treeview. For each event in the automaton, draws a row with its name. Resizes the treeview to fit the event names. Updates equivalent treeviews.</p>
+
+
+<h2><a href="#Functions">Functions</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#AutomatonEditor:edit_state">AutomatonEditor:edit_state (self, state)</a></td>
+	<td class="summary">Opens the window for editing a state.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#AutomatonEditor:edit_transition">AutomatonEditor:edit_transition (self, source, target)</a></td>
+	<td class="summary">Opens the window for editing a transition.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#AutomatonEditor:toolbar_set_unset_operation">AutomatonEditor:toolbar_set_unset_operation (self, mode)</a></td>
+	<td class="summary">Sets a mode to active, deactivating the others.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#AutomatonEditor:set_act_save">AutomatonEditor:set_act_save (self)</a></td>
+	<td class="summary">Tries to save the automaton to its current file, showing error messages if necessary.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#AutomatonEditor:set_act_save_as">AutomatonEditor:set_act_save_as (self)</a></td>
+	<td class="summary">Opens the window for saving an automaton to a file.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#AutomatonEditor:set_act_ides_export">AutomatonEditor:set_act_ides_export (self)</a></td>
+	<td class="summary">Opens the window for exporting an automaton to IDES.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#AutomatonEditor:set_act_tct_export">AutomatonEditor:set_act_tct_export (self)</a></td>
+	<td class="summary">Opens the window for exporting an automaton to TCT.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#AutomatonEditor:set_act_png">AutomatonEditor:set_act_png (self)</a></td>
+	<td class="summary">Opens the window for creating a png of the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#AutomatonEditor:set_act_edit">AutomatonEditor:set_act_edit (self)</a></td>
+	<td class="summary">Sets mode to 'edit'.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#AutomatonEditor:set_act_move">AutomatonEditor:set_act_move (self)</a></td>
+	<td class="summary">Sets mode to 'move'.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#AutomatonEditor:set_act_move_motion">AutomatonEditor:set_act_move_motion (self)</a></td>
+	<td class="summary">Sets mode to 'move_motion'.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#AutomatonEditor:set_act_state">AutomatonEditor:set_act_state (self)</a></td>
+	<td class="summary">Sets mode to 'state'.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#AutomatonEditor:set_act_state_n">AutomatonEditor:set_act_state_n (self)</a></td>
+	<td class="summary">Sets mode to 'n-state'
+ Sets mode to 'n-state'</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#AutomatonEditor:set_act_state_y">AutomatonEditor:set_act_state_y (self)</a></td>
+	<td class="summary">Sets mode to 'y-state'
+ Sets mode to 'y-state'</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#AutomatonEditor:set_act_initial">AutomatonEditor:set_act_initial (self)</a></td>
+	<td class="summary">Sets mode to 'initial'.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#AutomatonEditor:set_act_marked">AutomatonEditor:set_act_marked (self)</a></td>
+	<td class="summary">Sets mode to 'marked'.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#AutomatonEditor:set_act_transition">AutomatonEditor:set_act_transition (self)</a></td>
+	<td class="summary">Sets mode to 'transition'.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#AutomatonEditor:set_act_delete">AutomatonEditor:set_act_delete (self)</a></td>
+	<td class="summary">Sets mode to 'delete'.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#AutomatonEditor:set_act_position_states">AutomatonEditor:set_act_position_states (self)</a></td>
+	<td class="summary">Position states of the automaton.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#AutomatonEditor:drawing_area_move_motion">AutomatonEditor:drawing_area_move_motion (self, event)</a></td>
+	<td class="summary">Handles mouse moving in the editor.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#AutomatonEditor:drawing_area_press">AutomatonEditor:drawing_area_press (self, event)</a></td>
+	<td class="summary">Handles mouse click in the editor.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#AutomatonEditor:drawing_area_release">AutomatonEditor:drawing_area_release (self)</a></td>
+	<td class="summary">Handles mouse release in the editor.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#AutomatonEditor:toggle_controllable">AutomatonEditor:toggle_controllable (self, row_id)</a></td>
+	<td class="summary">Toggles the controllable property of an event.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#AutomatonEditor:toggle_observable">AutomatonEditor:toggle_observable (self, row_id)</a></td>
+	<td class="summary">Toggles the observable property of an event.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#AutomatonEditor:edit_event">AutomatonEditor:edit_event (self, row_id, new_name)</a></td>
+	<td class="summary">Changes the name of an event.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#AutomatonEditor:add_event">AutomatonEditor:add_event (self)</a></td>
+	<td class="summary">Adds a new event to the editor.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#AutomatonEditor:delete_event">AutomatonEditor:delete_event (self)</a></td>
+	<td class="summary">Deletes an event from the editor.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#AutomatonEditor:change_radius_factor">AutomatonEditor:change_radius_factor (self, factor)</a></td>
+	<td class="summary">Changes radius factor.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#AutomatonEditor:renumber_states">AutomatonEditor:renumber_states (self)</a></td>
+	<td class="summary">Renames all states with their ids.</td>
+	</tr>
+</table>
+
+<br/>
+<br/>
+
+
+    <h2><a name="Functions"></a>Functions</h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "AutomatonEditor:edit_state"></a>
+    <strong>AutomatonEditor:edit_state (self, state)</strong>
+    </dt>
+    <dd>
+    Opens the window for editing a state.
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton editor in which the operation is applied.
+        </li>
+        <li><span class="parameter">state</span>
+         State to be edited.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "AutomatonEditor:edit_transition"></a>
+    <strong>AutomatonEditor:edit_transition (self, source, target)</strong>
+    </dt>
+    <dd>
+    Opens the window for editing a transition.
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton editor in which the operation is applied.
+        </li>
+        <li><span class="parameter">source</span>
+         Source state of the transition.
+        </li>
+        <li><span class="parameter">target</span>
+         Target state of the transition.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "AutomatonEditor:toolbar_set_unset_operation"></a>
+    <strong>AutomatonEditor:toolbar_set_unset_operation (self, mode)</strong>
+    </dt>
+    <dd>
+    Sets a mode to active, deactivating the others.
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton editor in which the operation is applied.
+        </li>
+        <li><span class="parameter">mode</span>
+         Mode to be activated.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "AutomatonEditor:set_act_save"></a>
+    <strong>AutomatonEditor:set_act_save (self)</strong>
+    </dt>
+    <dd>
+    Tries to save the automaton to its current file, showing error messages if necessary.
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton editor in which the operation is applied.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="../modules/des.automaton_editor.html#AutomatonEditor:set_act_save_as">AutomatonEditor:set_act_save_as</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "AutomatonEditor:set_act_save_as"></a>
+    <strong>AutomatonEditor:set_act_save_as (self)</strong>
+    </dt>
+    <dd>
+    Opens the window for saving an automaton to a file.
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton editor in which the operation is applied.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "AutomatonEditor:set_act_ides_export"></a>
+    <strong>AutomatonEditor:set_act_ides_export (self)</strong>
+    </dt>
+    <dd>
+    Opens the window for exporting an automaton to IDES.
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton editor in which the operation is applied.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "AutomatonEditor:set_act_tct_export"></a>
+    <strong>AutomatonEditor:set_act_tct_export (self)</strong>
+    </dt>
+    <dd>
+    Opens the window for exporting an automaton to TCT.
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton editor in which the operation is applied.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "AutomatonEditor:set_act_png"></a>
+    <strong>AutomatonEditor:set_act_png (self)</strong>
+    </dt>
+    <dd>
+    Opens the window for creating a png of the automaton.
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton editor in which the operation is applied.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "AutomatonEditor:set_act_edit"></a>
+    <strong>AutomatonEditor:set_act_edit (self)</strong>
+    </dt>
+    <dd>
+    Sets mode to 'edit'.
+Sets mode to 'edit'.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton editor in which the operation is applied.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="../modules/des.automaton_editor.html#AutomatonEditor:toolbar_set_unset_operation">AutomatonEditor:toolbar_set_unset_operation</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "AutomatonEditor:set_act_move"></a>
+    <strong>AutomatonEditor:set_act_move (self)</strong>
+    </dt>
+    <dd>
+    Sets mode to 'move'.
+Sets mode to 'move'.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton editor in which the operation is applied.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="../modules/des.automaton_editor.html#AutomatonEditor:toolbar_set_unset_operation">AutomatonEditor:toolbar_set_unset_operation</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "AutomatonEditor:set_act_move_motion"></a>
+    <strong>AutomatonEditor:set_act_move_motion (self)</strong>
+    </dt>
+    <dd>
+    Sets mode to 'move_motion'.
+Sets mode to 'move_motion'.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton editor in which the operation is applied.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="../modules/des.automaton_editor.html#AutomatonEditor:toolbar_set_unset_operation">AutomatonEditor:toolbar_set_unset_operation</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "AutomatonEditor:set_act_state"></a>
+    <strong>AutomatonEditor:set_act_state (self)</strong>
+    </dt>
+    <dd>
+    Sets mode to 'state'.
+Sets mode to 'state'.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton editor in which the operation is applied.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="../modules/des.automaton_editor.html#AutomatonEditor:toolbar_set_unset_operation">AutomatonEditor:toolbar_set_unset_operation</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "AutomatonEditor:set_act_state_n"></a>
+    <strong>AutomatonEditor:set_act_state_n (self)</strong>
+    </dt>
+    <dd>
+    Sets mode to 'n-state'
+ Sets mode to 'n-state'
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton editor in which the operation is applied.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="../modules/des.automaton_editor.html#AutomatonEditor:toolbar_set_unset_operation">AutomatonEditor:toolbar_set_unset_operation</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "AutomatonEditor:set_act_state_y"></a>
+    <strong>AutomatonEditor:set_act_state_y (self)</strong>
+    </dt>
+    <dd>
+    Sets mode to 'y-state'
+ Sets mode to 'y-state'
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton editor in which the operation is applied.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="../modules/des.automaton_editor.html#AutomatonEditor:toolbar_set_unset_operation">AutomatonEditor:toolbar_set_unset_operation</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "AutomatonEditor:set_act_initial"></a>
+    <strong>AutomatonEditor:set_act_initial (self)</strong>
+    </dt>
+    <dd>
+    Sets mode to 'initial'.
+Sets mode to 'initial'.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton editor in which the operation is applied.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="../modules/des.automaton_editor.html#AutomatonEditor:toolbar_set_unset_operation">AutomatonEditor:toolbar_set_unset_operation</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "AutomatonEditor:set_act_marked"></a>
+    <strong>AutomatonEditor:set_act_marked (self)</strong>
+    </dt>
+    <dd>
+    Sets mode to 'marked'.
+Sets mode to 'marked'.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton editor in which the operation is applied.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="../modules/des.automaton_editor.html#AutomatonEditor:toolbar_set_unset_operation">AutomatonEditor:toolbar_set_unset_operation</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "AutomatonEditor:set_act_transition"></a>
+    <strong>AutomatonEditor:set_act_transition (self)</strong>
+    </dt>
+    <dd>
+    Sets mode to 'transition'.
+Sets mode to 'transition'.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton editor in which the operation is applied.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="../modules/des.automaton_editor.html#AutomatonEditor:toolbar_set_unset_operation">AutomatonEditor:toolbar_set_unset_operation</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "AutomatonEditor:set_act_delete"></a>
+    <strong>AutomatonEditor:set_act_delete (self)</strong>
+    </dt>
+    <dd>
+    Sets mode to 'delete'.
+Sets mode to 'delete'.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton editor in which the operation is applied.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="../modules/des.automaton_editor.html#AutomatonEditor:toolbar_set_unset_operation">AutomatonEditor:toolbar_set_unset_operation</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "AutomatonEditor:set_act_position_states"></a>
+    <strong>AutomatonEditor:set_act_position_states (self)</strong>
+    </dt>
+    <dd>
+    Position states of the automaton.
+Position states of the automaton. Updates the screen.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         AutomatonEditor in which the operation is applied.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "AutomatonEditor:drawing_area_move_motion"></a>
+    <strong>AutomatonEditor:drawing_area_move_motion (self, event)</strong>
+    </dt>
+    <dd>
+    Handles mouse moving in the editor.
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         AutomatonEditor in which the operation is applied.
+        </li>
+        <li><span class="parameter">event</span>
+         Mouse move event.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "AutomatonEditor:drawing_area_press"></a>
+    <strong>AutomatonEditor:drawing_area_press (self, event)</strong>
+    </dt>
+    <dd>
+    Handles mouse click in the editor.
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         AutomatonEditor in which the operation is applied.
+        </li>
+        <li><span class="parameter">event</span>
+         Mouse click event.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+         <li><a href="../modules/des.automaton_editor.html#AutomatonEditor:edit_state">AutomatonEditor:edit_state</a></li>
+         <li><a href="../modules/des.automaton_editor.html#AutomatonEditor:edit_transition">AutomatonEditor:edit_transition</a></li>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "AutomatonEditor:drawing_area_release"></a>
+    <strong>AutomatonEditor:drawing_area_release (self)</strong>
+    </dt>
+    <dd>
+    Handles mouse release in the editor.
+TODO
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         AutomatonEditor in which the operation is applied.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "AutomatonEditor:toggle_controllable"></a>
+    <strong>AutomatonEditor:toggle_controllable (self, row_id)</strong>
+    </dt>
+    <dd>
+    Toggles the controllable property of an event.
+Not necessary anymore due to the workspace
+If the event is controllable, sets it to uncontrollable, otherwise, sets it to controllable. Updates the list of events. Updates the screen.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton editor in which the operation is applied.
+        </li>
+        <li><span class="parameter">row_id</span>
+         Row of the event.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "AutomatonEditor:toggle_observable"></a>
+    <strong>AutomatonEditor:toggle_observable (self, row_id)</strong>
+    </dt>
+    <dd>
+    Toggles the observable property of an event.
+If the event is observable, sets it to unobservable, otherwise, sets it to observable. Updates the list of events. Updates the screen.ss
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton editor in which the operation is applied.
+        </li>
+        <li><span class="parameter">row_id</span>
+         Row of the event.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "AutomatonEditor:edit_event"></a>
+    <strong>AutomatonEditor:edit_event (self, row_id, new_name)</strong>
+    </dt>
+    <dd>
+    Changes the name of an event.
+Change the event name to 'new_name'. Updates the list of events. Updates the screen.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton editor in which the operation is applied.
+        </li>
+        <li><span class="parameter">row_id</span>
+         Row of the event.
+        </li>
+        <li><span class="parameter">new_name</span>
+         New name of the event.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "AutomatonEditor:add_event"></a>
+    <strong>AutomatonEditor:add_event (self)</strong>
+    </dt>
+    <dd>
+    Adds a new event to the editor.
+Adds an event to the automaton. Updates the list of events.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton editor in which the operation is applied.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "AutomatonEditor:delete_event"></a>
+    <strong>AutomatonEditor:delete_event (self)</strong>
+    </dt>
+    <dd>
+    Deletes an event from the editor.
+Removes the selected events from the automaton. Updates the list of events. Updates the screen.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton editor in which the operation is applied.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "AutomatonEditor:change_radius_factor"></a>
+    <strong>AutomatonEditor:change_radius_factor (self, factor)</strong>
+    </dt>
+    <dd>
+    Changes radius factor.
+Sets the radius factor of the automaton.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton Editor in which the operation is applied.
+        </li>
+        <li><span class="parameter">factor</span>
+         New factor.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "AutomatonEditor:renumber_states"></a>
+    <strong>AutomatonEditor:renumber_states (self)</strong>
+    </dt>
+    <dd>
+    Renames all states with their ids.
+For each state, changes it's name do it's id.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">self</span>
+         Automaton Editor in which the operation is applied.
+        </li>
+    </ul>
+
+
+
+    <h3>See also:</h3>
+    <ul>
+    </ul>
+
+
+</dd>
+</dl>
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.3</a></i>
+<i style="float:right;">Last updated 2015-03-05 05:09:25 </i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>

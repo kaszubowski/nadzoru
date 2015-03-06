@@ -516,7 +516,7 @@ end
 --@see Object:get
 function AutomatonEditor:set_act_save_as()
     local dialog = gtk.FileChooserDialog.new(
-        "Save AS", nil,gtk.FILE_CHOOSER_ACTION_SAVE,
+        "Save AS", self.gui.window, gtk.FILE_CHOOSER_ACTION_SAVE,
         "gtk-cancel", gtk.RESPONSE_CANCEL,
         "gtk-ok", gtk.RESPONSE_OK
     )
@@ -546,7 +546,7 @@ end
 --@see Object:get
 function AutomatonEditor:set_act_ides_export()
     local dialog = gtk.FileChooserDialog.new(
-        "IDES Export", nil,gtk.FILE_CHOOSER_ACTION_SAVE,
+        "IDES Export", self.gui.window, gtk.FILE_CHOOSER_ACTION_SAVE,
         "gtk-cancel", gtk.RESPONSE_CANCEL,
         "gtk-ok", gtk.RESPONSE_OK
     )
@@ -578,7 +578,7 @@ end
 --@see Object:get
 function AutomatonEditor:set_act_tct_export()
     local dialog = gtk.FileChooserDialog.new(
-        "TCT Export", nil,gtk.FILE_CHOOSER_ACTION_SAVE,
+        "TCT Export", self.gui.window, gtk.FILE_CHOOSER_ACTION_SAVE,
         "gtk-cancel", gtk.RESPONSE_CANCEL,
         "gtk-ok", gtk.RESPONSE_OK
     )
@@ -611,7 +611,7 @@ end
 --@see AutomatonRender:draw_context
 function AutomatonEditor:set_act_png()
     local dialog = gtk.FileChooserDialog.new(
-        "Save AS", nil,gtk.FILE_CHOOSER_ACTION_SAVE,
+        "Save AS", self.gui.window, gtk.FILE_CHOOSER_ACTION_SAVE,
         "gtk-cancel", gtk.RESPONSE_CANCEL,
         "gtk-ok", gtk.RESPONSE_OK
     )

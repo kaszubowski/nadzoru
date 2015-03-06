@@ -86,6 +86,7 @@ Controller = letk.Class( function( self )
 
     self.gui:run()
     self:build()
+
 end, Object )
 
 ---Creates all Nadzoru's menus.
@@ -184,31 +185,18 @@ function Controller:element_add( new_element )
     self.elements:append( new_element )
 end
 
---local space_things = {
-   -- ['xmd'] = { name = 'IDES Automaton'         , class = Automaton     , load = 'IDES_import' , save = 'IDES_export' },
-   -- ['ads'] = { name = 'TCT Automaton'          , class = Automaton     , load = 'TCT_import'  , save = 'TCT_export'  },
-   -- ['nza'] = { name = 'Nadzoru Automaton'      , class = Automaton     , load = 'load_file'   , save = 'save'        },
-   -- ['nag'] = { name = 'Nadzoru Automata Group' , class = AutomataGroup , load = 'load_file'   , save = 'save'        },
-   -- ['nsp'] = { name = 'Nadzoru Scada Plant'    , class = ScadaPlant    , load = 'load_file'   , save = 'save'         , elements  = true },
---}
-
-local space_things = {
-    ['xmd'] = { class = Automaton     , fn = 'IDES_import' },
-    ['nza'] = { class = Automaton     , fn = 'load_file'   },
-    ['nag'] = { class = AutomataGroup , fn = 'load_file'   },
-    --~ ['nsp'] = { class = ScadaPlant    , fn = 'load_file', elements = true },
+local extension_class_map = {
+    ['nza'] = { name = 'Nadzoru Automaton'     , class = Automaton     , load = 'load_file'  , save = 'save'        },
+    ['xmd'] = { name = 'IDES Automaton'        , class = Automaton     , load = 'IDES_import', save = 'IDES_export' },
+    ['ads'] = { name = 'TCT Automaton'         , class = Automaton     , load = 'TCT_import' , save = 'TCT_export'  },
+    ['nag'] = { name = 'Nadzoru Automata Group', class = AutomataGroup , load = 'load_file'  , save =  'save'       },
+    --~ ['nsp'] = { name = 'Nadzoru Scada Plant'    , class = ScadaPlant    , load = 'load_file'   , save = 'save', variables={'elements'} },
 }
-
---local space_map = {
---  ['automaton'] = 'nza',
---  ['automatagroup'] = 'nag',
---  ['scadaplant'] = 'nsp',
---}
 
 function Controller:save_workspace( file_name )
     local data = {}
     for k, e in self.elements:ipairs() do
-        local file_type   = e:get('file_type')
+        local file_type      = e:get('file_type')
         local full_file_name = e:get('full_file_name')
         data[#data + 1] = {
             file_type      = file_type,
@@ -233,15 +221,23 @@ function Controller:load_workspace( file_name )
         local data = loadstring('return ' .. s)()
         if data then
             for k, e in ipairs( data ) do
-                if e.file_type and space_things[ e.file_type ] then
-                    local ElementClass = space_things[ e.file_type ].class
-                    local new_element  = ElementClass.new()
-                    if space_things[ e.file_type ].elements then
-                        new_element[space_things[ e.file_type ].fn ]( e.full_file_name, self.elements  )
-                    else
-                        new_element[space_things[ e.file_type ].fn ]( e.full_file_name )
+                if e.file_type and e.full_file_name then
+                    local def = extension_class_map[ e.file_type ]
+                    if def then
+                        local ElementClass = def.class
+                        local new_element  = ElementClass.new()
+                        if def.variables then
+                            local vars = {}
+                            for k_varName, varName in ipairs( def.variables ) do
+                                vars[ k_varName ] = self[ varName ]
+                            end
+                            new_element[ def.load ]( e.full_file_name, unpack( vars )   )
+                        else
+                            new_element[ def.load ]( e.full_file_name )
+                        end
+                        
+                        self:element_add( new_element )
                     end
-                    self:element_add( new_element )
                 end
             end
         end
@@ -251,14 +247,14 @@ end
 --[[
 ---Saves the workspace to a file.
 --Creates a chooser that asks if the user is sure about saving. Opens the file chooser. Adds the string ".nzw" to the end of the file. Saves all automata, automata group and Scada plants opened in the program. Saves the workspace events. Changes the name of the program to show the name of the workspace.
---@param data TODO
+--@param self
 --@see Chooser:run
 --@see Automaton:IDES_export
 --@see Automaton:TCT_export
 --@see Automaton:save
 --@see AutomataGroup:save
 --@see ScadaPlant:save
-function Controller.save_workspace( data )
+function Controller:save_workspace()
     Chooser.new{
         title = 'nadzoru',
         message = '\n\tEverything will be saved. Are you sure?\t\n',
@@ -270,8 +266,8 @@ function Controller.save_workspace( data )
                     "gtk-cancel", gtk.RESPONSE_CANCEL,
                     "gtk-ok", gtk.RESPONSE_OK
                 )
-                if data.param.file_name then
-                    dialog:set_current_folder(string.match(data.param.file_name, '(.-)[^\\]+%.nzw$'))
+                if self.file_name then
+                    dialog:set_current_folder(string.match(self.file_name, '(.-)[^\\]+%.nzw$'))
                 end
                 local filter = gtk.FileFilter.new()
                 filter:add_pattern("*.nzw")
@@ -287,13 +283,13 @@ function Controller.save_workspace( data )
                     end
                     local saving_data = {}
                     saving_data.full_file_name = file_name
-                    for k, e in data.param.elements:ipairs() do
+                    for k, e in self.elements:ipairs() do
                         local file_type   = e:get('file_type') or space_map[ e.__TYPE ]
                         local full_file_name = e:get('full_file_name')
                         
                         --Try to save
                         local status, err, err_list
-                        status, err, err_list = e[ space_things[file_type].save ]( e )
+                        status, err, err_list = e[ extension_class_map[file_type].save ]( e )
                         if not status then
                             if err == err_list.NO_FILE_NAME then
                                 gtk.InfoDialog.showInfo( "ERROR saving Workspace: Save models before saving workspace." )
@@ -307,7 +303,7 @@ function Controller.save_workspace( data )
                         }
                     end
                     saving_data.events = {}
-                    for k_event, event in data.param.events:ipairs() do
+                    for k_event, event in self.events:ipairs() do
                         saving_data.events[k_event] = {
                             name = event.name,
                             controllable = event.controllable,
@@ -321,8 +317,8 @@ function Controller.save_workspace( data )
                     if f then
                         f:write( letk.serialize(saving_data) )
                         f:close()
-                        data.param.file_name = file_name
-                        data.param.gui.window:set("title", "nadzoru: " .. string.match(file_name, '[^\\]+%.nzw$'))
+                        self.file_name = file_name
+                        self.gui.window:set("title", "nadzoru: " .. string.match(file_name, '[^\\]+%.nzw$'))
                         gtk.InfoDialog.showInfo( "Workspace saved!" )
                     else
                         gtk.InfoDialog.showInfo( "ERROR saving Workspace: " .. (err or '') )
@@ -352,12 +348,12 @@ end
 
 ---Loads a workspace from a file.
 --Opens the file chooser. Clears the workspace. Loads the workspace events. Loads automata, automata group and Scada plants. Changes the name of the program to show the name of the workspace.
---@param data TODO
+--@param self
 --@see Controller:element_add
---@see Controller.add_event
---@see Controller.add_event
---@see Controller.add_events_from_automaton
---@see Controller.create_automaton_tab
+--@see Controller:add_event
+--@see Controller:add_event
+--@see Controller:add_events_from_automaton
+--@see Controller:create_automaton_tab
 --@see Automaton:IDES_import
 --@see Automaton:TCT_import
 --@see Automaton:load
@@ -365,7 +361,7 @@ end
 --@see AutomataGroup:start_automaton_window
 --@see AutomataGroup:update_automaton_window
 --@see ScadaPlant:load
-function Controller.load_workspace( data )
+function Controller:load_workspace()
     local dialog = gtk.FileChooserDialog.new(
         "Load", nil,gtk.FILE_CHOOSER_ACTION_LOAD,
         "gtk-cancel", gtk.RESPONSE_CANCEL,
@@ -386,17 +382,17 @@ function Controller.load_workspace( data )
             local loading_data = loadstring('return ' .. s)()
             if loading_data then
                 --clear workspace
-                data.param.elements:iremove( function() return true end )
-                data.param.events:iremove( function() return true end )
-                data.param.simulators:iremove( function() return true end )
-                data.param.active_automaton = nil
-                while data.gui.tab:len()>0 do
-                    data.gui:remove_tab(0)
+                self.elements:iremove( function() return true end )
+                self.events:iremove( function() return true end )
+                self.simulators:iremove( function() return true end )
+                self.active_automaton = nil
+                while self.gui.tab:len()>0 do
+                    self.gui:remove_tab(0)
                 end
                 
                 --load new workspace
                 for k_event, event in ipairs(loading_data.events) do
-                    local new_event = Controller.add_event(data.param, event.name, event.controllable, event.observable, event.refinement)
+                    local new_event = self:add_event(event.name, event.controllable, event.observable, event.refinement)
                     if event.level then
                         new_event.level = event.level
                     end
@@ -410,29 +406,29 @@ function Controller.load_workspace( data )
                 
                 for k, e in ipairs( loading_data ) do
                     e.full_file_name = e.full_file_name:gsub('^' .. old_prefix, new_prefix)
-                    if e.file_type and space_things[ e.file_type ] then
-                        local ElementClass = space_things[ e.file_type ].class
+                    if e.file_type and extension_class_map[ e.file_type ] then
+                        local ElementClass = extension_class_map[ e.file_type ].class
                         local new_element  = ElementClass.new()
-                        if space_things[ e.file_type ].elements then
-                            new_element[space_things[ e.file_type ].load ]( new_element, e.full_file_name, data.param.elements )
+                        if extension_class_map[ e.file_type ].elements then
+                            new_element[extension_class_map[ e.file_type ].load ]( new_element, e.full_file_name, self.elements )
                         else
-                            new_element[space_things[ e.file_type ].load ]( new_element, e.full_file_name )
+                            new_element[extension_class_map[ e.file_type ].load ]( new_element, e.full_file_name )
                         end
-                        data.param:element_add( new_element )
+                        self:element_add( new_element )
                         if e.file_type=='nza' or e.file_type=='xmd' or e.file_type=='ADS' then
-                            Controller.add_events_from_automaton( data.param, new_element)
-                            Controller.create_automaton_tab( data, new_element ) --start editing automaton
-                            new_element.controller = data.param
+                            self:add_events_from_automaton( new_element)
+                            self:create_automaton_tab( new_element ) --start editing automaton
+                            new_element.controller = self
                         end
                         if e.file_type=='nag' then
-                            local AG_editor = AutomataGroupEditor.new( data.gui, new_element, data.param.elements )
+                            local AG_editor = AutomataGroupEditor.new( self.gui, new_element, self.elements )
                             AG_editor:start_automaton_window()
                             AG_editor:update_automaton_window()
                         end
                     end
                 end
-                data.param.file_name = file_name
-                data.param.gui.window:set("title", "nadzoru: " .. string.match(file_name, '[^\\]+%.nzw$'))
+                self.file_name = file_name
+                self.gui.window:set("title", "nadzoru: " .. string.match(file_name, '[^\\]+%.nzw$'))
                 gtk.InfoDialog.showInfo( "Workspace loaded!" )
             end
         else
@@ -451,11 +447,10 @@ end
 
 ---Creates a new automaton tab. If the automaton has too many states, asks the user if he wants to do so.
 --Verifies if the automaton has less than 100 states. If it has, creates a tab for the automaton. Otherwise, creates a chooser to ask if the user wants to open a tab.
---@param gui Gui in which the tab is added.
 --@param new_automaton Automaton whose tab is created.
 --@see Chooser:run
 --[[
-function Controller.create_automaton_tab( data, new_automaton )
+function Controller:create_automaton_tab( new_automaton )
     if new_automaton.states:len()==0 and new_automaton:get('file_name') == "*new automaton" then
         local window       = gtk.Window.new(gtk.WINDOW_TOPLEVEL)
         local zbox         = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
@@ -496,13 +491,13 @@ function Controller.create_automaton_tab( data, new_automaton )
             if #name>0 then
                 window:destroy()
                 new_automaton:set('file_name', name )
-                AutomatonEditor.new( data.gui, new_automaton )
+                AutomatonEditor.new( self.gui, new_automaton )
             end
         end)
 
         window:show_all()
     elseif new_automaton.states:len()<100  then
-        AutomatonEditor.new( data.gui, new_automaton )
+        AutomatonEditor.new( self.gui, new_automaton )
     else
         Chooser.new{
             title = 'nadzoru',
@@ -510,7 +505,7 @@ function Controller.create_automaton_tab( data, new_automaton )
             choices = {'Yes', 'No'},
             callbacks = {
                 function()
-                    AutomatonEditor.new( data.gui, new_automaton )
+                    AutomatonEditor.new( self.gui, new_automaton )
                 end,
             }
         }
@@ -520,31 +515,35 @@ end
 --]]
 
 ---Creates a new automaton.
---Creates an automaton. Adds it to the elements list. Opens a tab for it.
---@param data TODO
+--Creates an automaton. Adds it to the elements list. Opens a tab for edit it.
 --@see Controller:element_add
---@see Controller.create_automaton_tab
-function Controller.create_new_automaton( data )
+--@see AutomatonEditor
+--@see Automaton.new
+function Controller:create_new_automaton()
     local new_automaton = Automaton.new()
-    data.param:element_add( new_automaton )
-    AutomatonEditor.new( data.gui, new_automaton )
-    ---Controller.create_automaton_tab( data, new_automaton)    --start editing automaton
-    
+    self:element_add( new_automaton )
+    AutomatonEditor.new( self.gui, new_automaton )
 end
 
 ---Loads an automaton from a file.
 --Opens a file chooser. Loads the selected automata and adds them to the elements list. Adds their events to the workspace events. Creates tabs for them.
---@param data TODO
+--@param self
 --@see Automaton:load_file
---@see Controller.add_events_from_automaton
+--@see Controller:add_events_from_automaton
 --@see Controller:element_add
---@see Controller.create_automaton_tab
-function Controller.open_automaton( data )
+--@see Controller:create_automaton_tab
+function Controller:open_automaton()
+    --Predefined values for use as response ids: gtk.RESPONSE_OK,gtk.RESPONSE_CANCEL
+    --All predefined values are negative, GTK+ leaves positive values for application-defined response ids.
     local dialog = gtk.FileChooserDialog.new(
-        "Select the file", nil, gtk.FILE_CHOOSER_ACTION_OPEN,
+        "Select the file", self.gui.window, gtk.FILE_CHOOSER_ACTION_OPEN,
         "gtk-cancel", gtk.RESPONSE_CANCEL,
-        "gtk-ok", gtk.RESPONSE_OK
+        "gtk-ok", gtk.RESPONSE_OK,
+        "gtk-edit", 1
     )
+    if self.gui.dialogCurrentFolder then
+        dialog:set_current_folder( self.gui.dialogCurrentFolder )
+    end
     local filter = gtk.FileFilter.new()
     filter:add_pattern("*.nza")
     filter:set_name("Nadzoru automaton")
@@ -553,26 +552,28 @@ function Controller.open_automaton( data )
     local response = dialog:run()
     dialog:hide()
     local filenames = dialog:get_filenames()
-    if response == gtk.RESPONSE_OK and filenames then
+    if (response == gtk.RESPONSE_OK or response == 1) and filenames then
         for k_filename, filename in ipairs( filenames ) do
             local new_automaton = Automaton.new()
             new_automaton:load_file( filename )
-            data.param:element_add( new_automaton )
-            ---Controller.add_events_from_automaton( data.param, new_automaton)
-            ---Controller.create_automaton_tab( data, new_automaton ) --start editing automaton
+            self:element_add( new_automaton )
+            if response == 1 then
+                AutomatonEditor.new( self.gui, new_automaton )
+            end
         end
+        self.gui.dialogCurrentFolder = dialog:get_current_folder()
     end
 end
 
 ---Clones an automaton.
 --Creates a selector showing all automata. Clones the selected automaton. Adss the clone to the elements list. Creates a tab for it.
 --TODO CHECK
---@param data TODO
+--@param self
 --@see Automaton:clone
 --@see Selector:add_combobox
 --@see Selector:run
---@see Controller.create_automaton_tab
-function Controller.clone_automaton( data )
+--@see Controller:create_automaton_tab
+function Controller:clone_automaton()
     Selector.new({
         title = 'nadzoru',
         success_fn = function( results, numresult )
@@ -580,13 +581,13 @@ function Controller.clone_automaton( data )
             if automaton then
                 local new_automaton = automaton:clone()
                 new_automaton:set('file_name', 'clone(' .. automaton:get('file_name') .. ')')
-                data.param.elements:append( new_automaton )
-                ---Controller.create_automaton_tab( data, new_automaton ) --start editing automaton
+                self.elements:append( new_automaton )
+                ---self:create_automaton_tab( new_automaton ) --start editing automaton
             end
         end,
     })
     :add_combobox{
-        list = data.param.elements,
+        list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
@@ -601,26 +602,26 @@ end
 ---Removes automata from the list of editable automata.
 --Creates a selector showing all automata. Removes the selected automata from the elements list. Closes the all removed automata tabs.
 --TODO CHECK
---@param data TODO
+--@param self
 --@see Selector:add_multipler
 --@see Selector:run
 --@see Gui:remove_tab
-function Controller.remove_automaton( data )
+function Controller:remove_automaton()
     Selector.new({
         title = 'Select automata to remove',
         success_fn = function( results, numresult )
             local tabs_to_remove = {}
             for automaton_id, automaton in ipairs(results[1]) do
-                for atm_id, atm in data.param.elements:ipairs() do
+                for atm_id, atm in self.elements:ipairs() do
                     if atm==automaton then
-                        for k_event, event in data.param.events:ipairs() do
+                        for k_event, event in self.events:ipairs() do
                             event.automata[atm] = nil
                         end
-                        data.param.elements:remove( atm_id )
+                        self.elements:remove( atm_id )
                         break
                     end
                 end
-                ---for tab_id, tab in data.gui.tab:ipairs() do
+                ---for tab_id, tab in self.gui.tab:ipairs() do
                 --- if tab.content.automaton==automaton then
                 ---     tabs_to_remove[ #tabs_to_remove+1 ] = tab_id
                 ---     --no 'break' because can be more than one
@@ -629,13 +630,13 @@ function Controller.remove_automaton( data )
             end
             ---local diff = 1
             ---for _, tab in ipairs(tabs_to_remove) do
-            --- data.gui:remove_tab(tab-diff)
+            --- self.gui:remove_tab(tab-diff)
             --- diff = diff + 1
             ---end
         end,
     })
     :add_multipler{
-        list = data.param.elements,
+        list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
@@ -649,17 +650,21 @@ end
 
 ---Imports an IDES automaton.
 --Opens a file chooser. Imports the selected automaton. Adss the automaton to the elements list. Creates a tab for it.
---@param data TODO
+--@param self
 --@see Automaton:IDES_import
 --@see Controller:element_add
---@see Controller.add_events_from_automaton
---@see Controller.create_automaton_tab
-function Controller.import_ides( data )
+--@see Controller:add_events_from_automaton
+--@see Controller:create_automaton_tab
+function Controller:import_ides()
     local dialog = gtk.FileChooserDialog.new(
-        "Select the file", nil, gtk.FILE_CHOOSER_ACTION_OPEN,
+        "Select the file", self.gui.window, gtk.FILE_CHOOSER_ACTION_OPEN,
         "gtk-cancel", gtk.RESPONSE_CANCEL,
-        "gtk-ok", gtk.RESPONSE_OK
+        "gtk-ok", gtk.RESPONSE_OK,
+        "gtk-edit", 1
     )
+    if self.gui.dialogCurrentFolder then
+        dialog:set_current_folder( self.gui.dialogCurrentFolder )
+    end
     local filter = gtk.FileFilter.new()
     filter:add_pattern("*.xmd")
     filter:set_name("IDES3 automaton")
@@ -668,31 +673,37 @@ function Controller.import_ides( data )
     local response = dialog:run()
     dialog:hide()
     local filenames = dialog:get_filenames()
-    if response == gtk.RESPONSE_OK and filenames then
+    if (response == gtk.RESPONSE_OK or response == 1) and filenames then
         for k_filename, filename in ipairs( filenames ) do
             local new_automaton = Automaton.new()
             new_automaton:IDES_import( filename )
-            data.param:element_add( new_automaton )
-            ---Controller.add_events_from_automaton( data.param, new_automaton)
-            ---Controller.create_automaton_tab( data, new_automaton ) --start editing automaton
+            self:element_add( new_automaton )
+            if response == 1 then
+                AutomatonEditor.new( self.gui, new_automaton )
+            end
         end
+        self.gui.dialogCurrentFolder = dialog:get_current_folder()
     end
 end
 
 ---Imports an TCT automaton.
 --Opens a file chooser. Imports the selected automaton. Adss the automaton to the elements list. Creates a tab for it.
 --TODO CHECK
---@param data TODO
+--@param self
 --@see Automaton:TCT_import
 --@see Controller:element_add
---@see Controller.add_events_from_automaton
---@see Controller.create_automaton_tab
-function Controller.import_tct( data )
+--@see Controller:add_events_from_automaton
+--@see Controller:create_automaton_tab
+function Controller:import_tct()
     local dialog = gtk.FileChooserDialog.new(
-        "Select the file", nil, gtk.FILE_CHOOSER_ACTION_OPEN,
+        "Select the file", self.gui.window, gtk.FILE_CHOOSER_ACTION_OPEN,
         "gtk-cancel", gtk.RESPONSE_CANCEL,
-        "gtk-ok", gtk.RESPONSE_OK
+        "gtk-ok", gtk.RESPONSE_OK,
+        "gtk-edit", 1
     )
+    if self.gui.dialogCurrentFolder then
+        dialog:set_current_folder( self.gui.dialogCurrentFolder )
+    end
     local filter = gtk.FileFilter.new()
     filter:add_pattern("*.ads")
     filter:set_name("TCT automaton")
@@ -701,37 +712,39 @@ function Controller.import_tct( data )
     local response = dialog:run()
     dialog:hide()
     local filenames = dialog:get_filenames()
-    if response == gtk.RESPONSE_OK and filenames then
+    if (response == gtk.RESPONSE_OK or response == 1)and filenames then
         for k_filename, filename in ipairs( filenames ) do
-            local new_automaton = Automaton.new( data.param )
+            local new_automaton = Automaton.new( self )
             new_automaton:TCT_import( filename )
-            data.param:element_add( new_automaton )
-            ---Controller.add_events_from_automaton( data.param, new_automaton)
-            ---Controller.create_automaton_tab( data, new_automaton ) --start editing automaton
+            self:element_add( new_automaton )
+            if response == 1 then
+                AutomatonEditor.new( self.gui, new_automaton )
+            end
         end
+        self.gui.dialogCurrentFolder = dialog:get_current_folder()
     end
 end
 
 ---Creates a graphviz simulation.
 --Creates a selector showing all automata. If the selected automaton has more than zero states, creates a simulator for it and adds the simulator in the simulators list. Otherwise, shows a message indicating that the automaton jas no states.
---@param data TODO
+--@param self
 --@see Object:bind
 --@see Selector:add_combobox
 --@see Selector:run
-function Controller.simulate_graphviz( data )
+function Controller:simulate_graphviz()
     Selector.new({
         title = 'Select automaton to simulate',
         success_fn = function( results, numresult )
             local automaton = results[1]
             if automaton then
                 if automaton.states:len()>0 then
-                    local graphvizsimulator = GraphvizSimulator.new( data.gui, automaton )
-                    data.param.simulators:add(graphvizsimulator)
-                    --data.param.simulators[ graphvizsimulator ] = true
+                    local graphvizsimulator = GraphvizSimulator.new( self.gui, automaton )
+                    self.simulators:add(graphvizsimulator)
+                    --self.simulators[ graphvizsimulator ] = true
                     graphvizsimulator:bind('destroy', function( graphvizsimulator, controller)
-                        data.param.simulators:remove(graphvizsimulator)
+                        self.simulators:remove(graphvizsimulator)
                         --controller.simulators[ graphvizsimulator ] = nil
-                    end, data.param )
+                    end, self )
                 else
                     gtk.InfoDialog.showInfo("Automaton doesn't have any states. Simulation can't be run.")
                 end
@@ -739,7 +752,7 @@ function Controller.simulate_graphviz( data )
         end,
     })
     :add_combobox{
-        list = data.param.elements,
+        list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
@@ -753,21 +766,21 @@ end
 
 ---Creates a plant simulation.
 --TODO
---@param data TODO
+--@param self
 --@see Selector:add_combobox
 --@see Selector:run
-function Controller.simulate_plant( data )
+function Controller:simulate_plant()
     Selector.new({
         title = 'Select automaton to simulate',
         success_fn = function( results, numresult )
             local automaton = results[1]
             if automaton then
-                PlantSimulator.new( data.gui, automaton )
+                PlantSimulator.new( self.gui, automaton )
             end
         end,
     })
     :add_combobox{
-        list = data.param.simulators,
+        list = self.simulators,
         text_fn  = function( a )
             return a.automaton:get( 'file_name' )
         end,
@@ -778,23 +791,23 @@ end
 
 ---Starts editing an automaton.
 --Creates a selector showing all automata. Opens a tab for the selected automaton.
---@param data TODO
+--@param self
 --@see Selector:add_combobox
 --@see Selector:run
---@see Controller.create_automaton_tab
-function Controller.automaton_edit( data )
+--@see Controller:create_automaton_tab
+function Controller:automaton_edit()
     Selector.new({
         title = 'Select automaton to edit',
         success_fn = function( results, numresult )
             local automaton = results[1]
             if automaton then
-                AutomatonEditor.new( data.gui, automaton )
-                ---Controller.create_automaton_tab( data, automaton )
+                AutomatonEditor.new( self.gui, automaton )
+                ---self:create_automaton_tab( automaton )
             end
         end,
     })
     :add_combobox{
-        list = data.param.elements,
+        list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
@@ -808,19 +821,19 @@ end
 
 ---Starts code generation.
 --TODO
---@param data TODO
+--@param self
 --@see Selector:add_combobox
 --@see Codegen:execute
 --@see Selector:add_multipler
 --@see Selector:add_file
 --@see Selector:run
-function Controller.script_operation( data )
-    local scriptGui = ScriptGui.new( data.param.elements )
-    scriptGui:buildGui( data.param.gui )
+function Controller:script_operation()
+    local scriptGui = ScriptGui.new( self.elements )
+    scriptGui:buildGui( self.gui )
 end
 
 
-function Controller.code_gen_dfa( data )
+function Controller:code_gen_dfa()
     local devices_list = {}
     for id, device in pairs(CodeGenDevices) do
         if device.display then
@@ -849,13 +862,13 @@ function Controller.code_gen_dfa( data )
                     event_map_file = event_map_file
                 }
                 if cg then
-                    cg:execute( data.gui )
+                    cg:execute( self.gui )
                 end
             end
         end,
     })
     :add_multipler{
-        list = data.param.elements,
+        list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
@@ -892,13 +905,13 @@ end
 
 ---Creates the accessible automaton of a chosen automaton.
 --TODO
---@param data TODO
+--@param self
 --@see Automaton:accessible
 --@see Selector:add_combobox
 --@see Selector:add_checkbox
 --@see Selector:run
---@see Controller.create_automaton_tab
-function Controller.operations_accessible( data )
+--@see Controller:create_automaton_tab
+function Controller:operations_accessible()
     Selector.new({
         title = 'nadzoru',
         success_fn = function( results, numresult )
@@ -908,14 +921,14 @@ function Controller.operations_accessible( data )
                 local new_automaton = automaton:accessible( results[2], keep )
                 if new_automaton and not keep then
                     new_automaton:set('file_name', 'accessible(' .. automaton:get('file_name') .. ')')
-                    data.param.elements:append( new_automaton )
-                    ---Controller.create_automaton_tab( data, new_automaton ) --start editing automaton
+                    self.elements:append( new_automaton )
+                    ---self:create_automaton_tab( new_automaton ) --start editing automaton
                 end
             end
         end,
     })
     :add_combobox{
-        list = data.param.elements,
+        list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
@@ -932,13 +945,13 @@ end
 
 ---Creates the coaccessible automaton of a chosen automaton.
 --TODO
---@param data TODO
+--@param self
 --@see Automaton:coaccessible
 --@see Selector:add_combobox
 --@see Selector:add_checkbox
 --@see Selector:run
---@see Controller.create_automaton_tab
-function Controller.operations_coaccessible( data )
+--@see Controller:create_automaton_tab
+function Controller:operations_coaccessible()
     Selector.new({
         title = 'nadzoru',
         success_fn = function( results, numresult )
@@ -948,14 +961,14 @@ function Controller.operations_coaccessible( data )
                 local new_automaton = automaton:coaccessible( results[2], keep )
                 if not keep then
                     new_automaton:set('file_name', 'coaccessible(' .. automaton:get('file_name') .. ')')
-                    data.param.elements:append( new_automaton )
-                    ---Controller.create_automaton_tab( data, new_automaton ) --start editing automaton
+                    self.elements:append( new_automaton )
+                    ---self:create_automaton_tab( new_automaton ) --start editing automaton
                 end
             end
         end,
     })
     :add_combobox{
-        list = data.param.elements,
+        list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
@@ -972,12 +985,12 @@ end
 
 ---Creates an automaton that joins in one unique state every no coaccessible state of a chosen automaton.
 --TODO
---@param data TODO
+--@param self
 --@see Automaton:join_no_coaccessible_states
 --@see Selector:add_combobox
 --@see Selector:run
---@see Controller.create_automaton_tab
-function Controller.operations_join_no_coaccessible( data )
+--@see Controller:create_automaton_tab
+function Controller:operations_join_no_coaccessible()
      Selector.new({
         title = 'nadzoru',
         success_fn = function( results, numresult )
@@ -985,13 +998,13 @@ function Controller.operations_join_no_coaccessible( data )
             if automaton then
                 local new_automaton = automaton:join_no_coaccessible_states( false )
                 new_automaton:set('file_name', 'join_no_coaccessible(' .. automaton:get('file_name') .. ')')
-                data.param.elements:append( new_automaton )
-                ---Controller.create_automaton_tab( data, new_automaton ) --start editing automaton
+                self.elements:append( new_automaton )
+                ---self:create_automaton_tab( new_automaton ) --start editing automaton
             end
         end,
     })
     :add_combobox{
-        list = data.param.elements,
+        list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
@@ -1005,13 +1018,13 @@ end
 
 ---Creates the trim automaton of a chosen automaton.
 --TODO
---@param data TODO
+--@param self
 --@see Automaton:trim
 --@see Selector:add_combobox
 --@see Selector:add_checkbox
 --@see Selector:run
---@see Controller.create_automaton_tab
-function Controller.operations_trim( data )
+--@see Controller:create_automaton_tab
+function Controller:operations_trim()
      Selector.new({
         title = "nadzoru",
         success_fn = function( results, numresult )
@@ -1021,14 +1034,14 @@ function Controller.operations_trim( data )
                 local new_automaton = automaton:trim( results[2], keep )
                 if new_automaton and not keep then
                     new_automaton:set('file_name', 'trim(' .. automaton:get('file_name') .. ')')
-                    data.param.elements:append( new_automaton )
-                    ---Controller.create_automaton_tab( data, new_automaton ) --start editing automaton
+                    self.elements:append( new_automaton )
+                    ---self:create_automaton_tab( new_automaton ) --start editing automaton
                 end
             end
         end,
     })
     :add_combobox{
-        list = data.param.elements,
+        list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
@@ -1045,13 +1058,13 @@ end
 
 ---Creates the selflooped automaton of a chosen automaton with chosen automata.
 --TODO
---@param data TODO
+--@param self
 --@see Automaton:selfloop
 --@see Selector:add_combobox
 --@see Selector:add_multipler
 --@see Selector:run
---@see Controller.create_automaton_tab
-function Controller.operations_selfloop( data )
+--@see Controller:create_automaton_tab
+function Controller:operations_selfloop()
      Selector.new({
         title = 'nadzoru',
         success_fn = function( results, numresult )
@@ -1059,13 +1072,13 @@ function Controller.operations_selfloop( data )
             if automaton then
                 local new_automaton = automaton:selfloop( false, unpack( results[2] ) )
                 new_automaton:set('file_name', 'selfloop(' .. automaton:get('file_name') .. ', ...' .. ')')
-                data.param.elements:append( new_automaton )
-                ---Controller.create_automaton_tab( data, new_automaton ) --start editing automaton
+                self.elements:append( new_automaton )
+                ---self:create_automaton_tab( new_automaton ) --start editing automaton
             end
         end,
     })
     :add_combobox{
-        list = data.param.elements,
+        list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
@@ -1075,7 +1088,7 @@ function Controller.operations_selfloop( data )
         text = "Automaton:"
     }
     :add_multipler{
-        list = data.param.elements,
+        list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
@@ -1089,12 +1102,12 @@ end
 
 ---Creates the synchronized automaton of chosen automata.
 --TODO
---@param data TODO
+--@param self
 --@see Automaton:synchronization
 --@see Selector:add_multipler
 --@see Selector:run
---@see Controller.create_automaton_tab
-function Controller.operations_synchronization( data )
+--@see Controller:create_automaton_tab
+function Controller:operations_synchronization()
     Selector.new({
         title = 'nadzoru',
         success_fn = function( results, numresult )
@@ -1103,14 +1116,14 @@ function Controller.operations_synchronization( data )
                 local new_automaton = Automaton.synchronization( unpack( automatons ) )
                 if new_automaton then
                     new_automaton:set('file_name', 'synchronization(' .. '...' .. ')')
-                    data.param.elements:append( new_automaton )
-                    ---Controller.create_automaton_tab( data, new_automaton ) --start editing automaton
+                    self.elements:append( new_automaton )
+                    ---self:create_automaton_tab( new_automaton ) --start editing automaton
                 end
             end
         end,
     })
     :add_multipler{
-        list = data.param.elements,
+        list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
@@ -1124,12 +1137,12 @@ end
 
 ---Creates the product automaton of chosen automata.
 --TODO
---@param data TODO
+--@param self
 --@see Automaton:product
 --@see Selector:add_multipler
 --@see Selector:run
---@see Controller.create_automaton_tab
-function Controller.operations_product( data )
+--@see Controller:create_automaton_tab
+function Controller:operations_product()
     Selector.new({
         title = 'nadzoru',
         success_fn = function( results, numresult )
@@ -1138,14 +1151,14 @@ function Controller.operations_product( data )
                 local new_automaton = Automaton.product( unpack( automatons ) )
                 if new_automaton then
                     new_automaton:set('file_name', 'product(' .. '...' .. ')')
-                    data.param.elements:append( new_automaton )
-                    ---Controller.create_automaton_tab( data, new_automaton ) --start editing automaton
+                    self.elements:append( new_automaton )
+                    ---self:create_automaton_tab( new_automaton ) --start editing automaton
                 end
             end
         end,
     })
     :add_multipler{
-        list = data.param.elements,
+        list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
@@ -1159,12 +1172,12 @@ end
 
 ---Creates the product automaton of chosen automata.
 --TODO
---@param data TODO
+--@param self
 --@see Automaton:product
 --@see Selector:add_multipler
 --@see Selector:run
---@see Controller.create_automaton_tab
-function Controller.operations_projection( data )
+--@see Controller:create_automaton_tab
+function Controller:operations_projection()
     Selector.new({
         title = 'nadzoru',
         success_fn = function( results, numresult )
@@ -1173,14 +1186,14 @@ function Controller.operations_projection( data )
                 local new_automaton = automaton:projection( unpack( automaton ))
                 if new_automaton and not keep then
                     new_automaton:set('file_name', 'projection(' .. automaton:get('file_name') .. ')')
-                    data.param.elements:append( new_automaton )
-                    ---Controller.create_automaton_tab( data, new_automaton ) --start editing automaton
+                    self.elements:append( new_automaton )
+                    ---self:create_automaton_tab( new_automaton ) --start editing automaton
                 end
             end
         end,
     })
    :add_combobox{
-        list = data.param.elements,
+        list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
@@ -1190,7 +1203,7 @@ function Controller.operations_projection( data )
         text = "Automaton:"
     }
     :add_multipler{
-        list = data.param.events,
+        list = self.events,
         text_fn  = function( a )
             return a.name
         end,
@@ -1203,12 +1216,12 @@ function Controller.operations_projection( data )
 end
 ---Creates the max controllable language automaton of chosen automata.
 --TODO
---@param data TODO
+--@param self
 --@see Automaton.supC
 --@see Selector:add_combobox
 --@see Selector:run
---@see Controller.create_automaton_tab
-function Controller.operations_supc( data )
+--@see Controller:create_automaton_tab
+function Controller:operations_supc()
      Selector.new({
         title = 'nadzoru',
         success_fn = function( results, numresult )
@@ -1218,14 +1231,14 @@ function Controller.operations_supc( data )
                 local new_automaton = Automaton.supC(g, k)
                 if new_automaton then
                     new_automaton:set( 'file_name', 'supC(' .. ')' )
-                    data.param.elements:append( new_automaton )
-                    ---Controller.create_automaton_tab( data, new_automaton ) --start editing automaton
+                    self.elements:append( new_automaton )
+                    ---self:create_automaton_tab( new_automaton ) --start editing automaton
                 end
             end
         end,
     })
     :add_combobox{
-        list = data.param.elements,
+        list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
@@ -1235,7 +1248,7 @@ function Controller.operations_supc( data )
         text = 'G:'
     }
     :add_combobox{
-        list = data.param.elements,
+        list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
@@ -1249,15 +1262,15 @@ end
 
 ---Creates the automaton with masked events of a chosen automaton.
 --TODO CHECK
---@param data TODO
+--@param self
 --@see Automaton:mask
 --@see Selector:add_combobox
 --@see Selector:add_multipler
 --@see Selector:run
---@see Controller.create_automaton_tab
-function Controller.operations_mask( data )
+--@see Controller:create_automaton_tab
+function Controller:operations_mask()
     local masks = {}
-    for k_event, event in data.param.events:ipairs() do
+    for k_event, event in self.events:ipairs() do
         if event.refinement~='' then
             masks[ event.refinement ] = true
         end
@@ -1270,13 +1283,13 @@ function Controller.operations_mask( data )
             if automaton and #results[2]>0 then
                 local new_automaton = automaton:mask( false, results[2] )
                 new_automaton:set('file_name', 'mask(' .. automaton:get('file_name') .. ', ...' .. ')')
-                data.param.elements:append( new_automaton )
-                Controller.create_automaton_tab( data, new_automaton ) --start editing automaton
+                self.elements:append( new_automaton )
+                self:create_automaton_tab( new_automaton ) --start editing automaton
             end
         end,
     })
     :add_combobox{
-        list = data.param.elements,
+        list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
@@ -1286,7 +1299,7 @@ function Controller.operations_mask( data )
         text = "Automaton:"
     }
     :add_multipler{
-        list = data.param.events,
+        list = self.events,
         text_fn  = function( a )
             return a.name
         end,
@@ -1300,13 +1313,13 @@ end
 
 ---Creates the automaton with distinghuished events of a chosen automaton.
 --TODO CHECK
---@param data TODO
+--@param self
 --@see Automaton:distinguish
 --@see Selector:add_combobox
 --@see Selector:add_multipler
 --@see Selector:run
---@see Controller.create_automaton_tab
-function Controller.operations_distinguish( data )
+--@see Controller:create_automaton_tab
+function Controller:operations_distinguish()
      Selector.new({
         title = 'nadzoru',
         success_fn = function( results, numresult )
@@ -1314,13 +1327,13 @@ function Controller.operations_distinguish( data )
             if automaton and #results[2]>0 then
                 local new_automaton = automaton:distinguish( false, results[2] )
                 new_automaton:set('file_name', 'distinguish(' .. automaton:get('file_name') .. ', ...' .. ')')
-                data.param.elements:append( new_automaton )
-                Controller.create_automaton_tab( data, new_automaton ) --start editing automaton
+                self.elements:append( new_automaton )
+                self:create_automaton_tab( new_automaton ) --start editing automaton
             end
         end,
     })
     :add_combobox{
-        list = data.param.elements,
+        list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
@@ -1330,7 +1343,7 @@ function Controller.operations_distinguish( data )
         text = "Automaton:"
     }
     :add_multipler{
-        list = data.param.events,
+        list = self.events,
         text_fn  = function( a )
             return a.name
         end,
@@ -1344,14 +1357,14 @@ end
 
 ---Checks all the problems of a chosen automaton.
 --TODO CHECK
---@param data TODO
+--@param self
 --@see Automaton:check_choice_problem
 --@see Automaton:check_avalanche_effect
 --@see Automaton:check_inexact_synchronization
 --@see Automaton:check_simultaneity
 --@see Selector:add_combobox
 --@see Selector:run
-function Controller.operations_check_all( data )
+function Controller:operations_check_all()
     Selector.new({
         title = 'nadzoru',
         success_fn = function( results, numresult )
@@ -1365,7 +1378,7 @@ function Controller.operations_check_all( data )
         end,
     })
     :add_combobox{
-        list = data.param.elements,
+        list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
@@ -1382,11 +1395,11 @@ end
 
 ---Checks the choice problem of a chosen automaton.
 --TODO CHECK
---@param data TODO
+--@param self
 --@see Automaton:check_choice_problem
 --@see Selector:add_combobox
 --@see Selector:run
-function Controller.operations_check_choice_problem( data )
+function Controller:operations_check_choice_problem()
     Selector.new({
         title = 'nadzoru',
         success_fn = function( results, numresult )
@@ -1397,7 +1410,7 @@ function Controller.operations_check_choice_problem( data )
         end,
     })
     :add_combobox{
-        list = data.param.elements,
+        list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
@@ -1411,12 +1424,12 @@ end
 
 ---Checks the avalanche effect of a chosen automaton.
 --TODO
---@param data TODO
+--@param self
 --@see Automaton:check_avalanche_effect
 --@see Selector:add_combobox
 --@see Selector:add_checkbox
 --@see Selector:run
-function Controller.operations_check_avalanche_effect( data )
+function Controller:operations_check_avalanche_effect()
     Selector.new({
         title = 'nadzoru',
         success_fn = function( results, numresult )
@@ -1427,7 +1440,7 @@ function Controller.operations_check_avalanche_effect( data )
         end,
     })
     :add_combobox{
-        list = data.param.elements,
+        list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
@@ -1444,11 +1457,11 @@ end
 
 ---Checks the inexact synchronization problem of a chosen automaton.
 --TODO
---@param data TODO
+--@param self
 --@see Automaton:check_inexact_synchronization
 --@see Selector:add_combobox
 --@see Selector:run
-function Controller.operations_check_inexact_synchronization( data )
+function Controller:operations_check_inexact_synchronization()
     Selector.new({
         title = 'nadzoru',
         success_fn = function( results, numresult )
@@ -1459,7 +1472,7 @@ function Controller.operations_check_inexact_synchronization( data )
         end,
     })
     :add_combobox{
-        list = data.param.elements,
+        list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
@@ -1473,11 +1486,11 @@ end
 
 ---Checks the simultaneity problem of a chosen automaton.
 --TODO
---@param data TODO
+--@param self
 --@see Automaton:check_simultaneity
 --@see Selector:add_combobox
 --@see Selector:run
-function Controller.operations_check_simultaneity( data )
+function Controller:operations_check_simultaneity()
     Selector.new({
         title = 'nadzoru',
         success_fn = function( results, numresult )
@@ -1488,7 +1501,7 @@ function Controller.operations_check_simultaneity( data )
         end,
     })
     :add_combobox{
-        list = data.param.elements,
+        list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
@@ -1502,12 +1515,12 @@ end
 
 ---Creates the deterministic automaton of a chosen automaton.
 --TODO
---@param data TODO
+--@param self
 --@see Automaton:deterministic
 --@see Selector:add_combobox
 --@see Selector:run
---@see Controller.create_automaton_tab
-function Controller.operations_deterministic( data )
+--@see Controller:create_automaton_tab
+function Controller:operations_deterministic()
     Selector.new({
         title = 'nadzoru',
         success_fn = function( results, numresult )
@@ -1516,14 +1529,14 @@ function Controller.operations_deterministic( data )
                 local new_automaton = automaton:deterministic( false )
                 if new_automaton then
                     new_automaton:set('file_name', 'deterministic(' .. automaton:get('file_name') .. ')')
-                    data.param.elements:append( new_automaton )
-                    ---Controller.create_automaton_tab( data, new_automaton ) --start editing automaton
+                    self.elements:append( new_automaton )
+                    ---self:create_automaton_tab( new_automaton ) --start editing automaton
                 end
             end
         end,
     })
     :add_combobox{
-        list = data.param.elements,
+        list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
@@ -1537,12 +1550,12 @@ end
 
 ---Creates the complement automaton of a chosen automaton.
 --TODO
---@param data TODO
+--@param self
 --@see Automaton:complement
 --@see Selector:add_combobox
 --@see Selector:run
---@see Controller.create_automaton_tab
-function Controller.operations_complement( data )
+--@see Controller:create_automaton_tab
+function Controller:operations_complement()
      Selector.new({
         title = 'nadzoru',
         success_fn = function( results, numresult )
@@ -1551,14 +1564,14 @@ function Controller.operations_complement( data )
                 local new_automaton = automaton:complement( false )
                 if new_automaton then
                     new_automaton:set('file_name', 'complement(' .. automaton:get('file_name') .. ')')
-                    data.param.elements:append( new_automaton )
-                    ---Controller.create_automaton_tab( data, new_automaton ) --start editing automaton
+                    self.elements:append( new_automaton )
+                    ---self:create_automaton_tab( new_automaton ) --start editing automaton
                 end
             end
         end,
     })
     :add_combobox{
-        list = data.param.elements,
+        list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
@@ -1572,12 +1585,12 @@ end
 
 ---Creates the minimal automaton of a chosen automaton.
 --TODO
---@param data TODO
+--@param self
 --@see Automaton:minimize
 --@see Selector:add_combobox
 --@see Selector:run
---@see Controller.create_automaton_tab
-function Controller.operations_minimize( data )
+--@see Controller:create_automaton_tab
+function Controller:operations_minimize()
      Selector.new({
         title = 'nadzoru',
         success_fn = function( results, numresult )
@@ -1586,14 +1599,14 @@ function Controller.operations_minimize( data )
                 local new_automaton = automaton:minimize( false )
                 if new_automaton then
                     new_automaton:set('file_name', 'minimize(' .. automaton:get('file_name') .. ')')
-                    data.param.elements:append( new_automaton )
-                    ---Controller.create_automaton_tab( data, new_automaton ) --start editing automaton
+                    self.elements:append( new_automaton )
+                    ---self:create_automaton_tab( new_automaton ) --start editing automaton
                 end
             end
         end,
     })
     :add_combobox{
-        list = data.param.elements,
+        list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
@@ -1609,31 +1622,35 @@ end
 
 ---Creates a new automata group.
 --TODO
---@param data TODO
+--@param self
 --@see Controller:element_add
 --@see AutomataGroup:start_automaton_window
 --@see AutomataGroup:update_automaton_window
-function Controller.automata_group_new( data )
+function Controller:automata_group_new()
     local nag = AutomataGroup.new()
-    data.param:element_add( nag )
-    ---local AG_editor = AutomataGroupEditor.new( data.gui, nag, data.param.elements )
+    self:element_add( nag )
+    ---local AG_editor = AutomataGroupEditor.new( self.gui, nag, self.elements )
     ---AG_editor:start_automaton_window()
     ---AG_editor:update_automaton_window()
 end
 
 ---Opens the window to load an automata group from a file.
 --TODO
---@param data TODO
+--@param self
 --@see AutomataGroup:load_file
 --@see Controller:element_add
 --@see AutomataGroup:start_automaton_window
 --@see AutomataGroup:update_automaton_window
-function Controller.automata_group_load( data )
+function Controller:automata_group_load()
     local dialog = gtk.FileChooserDialog.new(
-        "Select the file", nil, gtk.FILE_CHOOSER_ACTION_OPEN,
+        "Select the file", self.gui.window, gtk.FILE_CHOOSER_ACTION_OPEN,
         "gtk-cancel", gtk.RESPONSE_CANCEL,
-        "gtk-ok", gtk.RESPONSE_OK
+        "gtk-ok", gtk.RESPONSE_OK,
+        "gtk-edit", 1
     )
+    if self.gui.dialogCurrentFolder then
+        dialog:set_current_folder( self.gui.dialogCurrentFolder )
+    end
     local filter = gtk.FileFilter.new()
     filter:add_pattern("*.nag")
     filter:set_name("Nadzoru Automata Group")
@@ -1642,39 +1659,40 @@ function Controller.automata_group_load( data )
     local response = dialog:run()
     dialog:hide()
     local filenames = dialog:get_filenames()
-    if response == gtk.RESPONSE_OK and filenames then
+    if (response == gtk.RESPONSE_OK or response == 1) and filenames then
         for k_filename, filename in ipairs( filenames ) do
             local nag = AutomataGroup.new()
             nag:load_file( filename )
-            data.param:element_add( nag )
-            ---local AG_editor = AutomataGroupEditor.new( data.gui, nag, data.param.elements )
-            ---AG_editor:start_automaton_window()
-            ---AG_editor:update_automaton_window()
+            self:element_add( nag )
+            if response == 1 then
+                AutomataGroupEditor.new( self.gui, nag, self.elements )
+            end
         end
+        self.gui.dialogCurrentFolder = dialog:get_current_folder()
     end
 end
 
 ---Starts editing an automata group.
 --TODO
---@param data TODO
+--@param self
 --@see AutomataGroupEditor:start_automaton_window
 --@see AutomataGroupEditor:update_automaton_window
 --@see Selector:add_combobox
 --@see Selector:run
-function Controller.automata_group_edit( data )
+function Controller:automata_group_edit()
     Selector.new({
         title = "Select an Automata Group to edit",
         success_fn = function( results, numresult )
             local ag = results[1]
             if ag then
-                local AG_editor = AutomataGroupEditor.new( data.gui, ag, data.param.elements )
+                local AG_editor = AutomataGroupEditor.new( self.gui, ag, self.elements )
                 AG_editor:start_automaton_window()
                 AG_editor:update_automaton_window()
             end
         end,
     })
     :add_combobox{
-        list = data.param.elements,
+        list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
@@ -1688,23 +1706,23 @@ end
 
 ---Removes an automata group from the list of editable automata groups.
 --TODO
---@param data TODO
+--@param self
 --@see Selector:add_multipler
 --@see Selector:run
-function Controller.automata_group_remove( data )
+function Controller:automata_group_remove()
     Selector.new({
         title = 'Select Automata Groups to remove',
         success_fn = function( results, numresult )
             local tabs_to_remove = {}
             for group_id, group in ipairs(results[1]) do
-                for ag_id, ag in data.param.elements:ipairs() do
+                for ag_id, ag in self.elements:ipairs() do
                     if ag==group then
-                        data.param.elements:remove( ag_id )
+                        self.elements:remove( ag_id )
                         break
                     end
                 end
-                ---for tab_id, tab in data.gui.tab:ipairs() do
-                    ---TODO: fix, no access to content, OR will we have? What should be done when the data  dysplayed by a tab is removed?
+                ---for tab_id, tab in self.gui.tab:ipairs() do
+                    ---TODO: fix, no access to content, OR will we have? What should be done when the data displayed by a tab is removed?
                     ---if tab.content.automata_group==group then
                     --- tabs_to_remove[ #tabs_to_remove+1 ] = tab_id
                     --- --no 'break' because can be more than one
@@ -1713,13 +1731,13 @@ function Controller.automata_group_remove( data )
             end
             ---local diff = 1
             ---for _, tab in ipairs(tabs_to_remove) do
-            --- data.gui:remove_tab(tab-diff)
+            --- self.gui:remove_tab(tab-diff)
             --- diff = diff + 1
             ---end
         end,
     })
     :add_multipler{
-        list = data.param.elements,
+        list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
@@ -1735,19 +1753,19 @@ end
 --[[
 ---Creates a new scada plant.
 --TODO
---@param data TODO
+--@param self
 --@see Controller:element_add
-function Controller.create_new_scada_plant( data )
+function Controller:create_new_scada_plant()
     local new_scada_plant = ScadaPlant.new()
-    data.param:element_add( new_scada_plant )
+    self:element_add( new_scada_plant )
 end
 
 ---Loads a scada plant from a file.
 --TODO
---@param data TODO
+--@param self
 --@see ScadaPlant:load_file
 --@see Controller:element_add
-function Controller.load_scada_plant( data )
+function Controller:load_scada_plant()
     local dialog = gtk.FileChooserDialog.new(
         "Select the file", nil, gtk.FILE_CHOOSER_ACTION_OPEN,
         "gtk-cancel", gtk.RESPONSE_CANCEL,
@@ -1764,29 +1782,29 @@ function Controller.load_scada_plant( data )
     if response == gtk.RESPONSE_OK and filenames then
         for k_filename, filename in ipairs( filenames ) do
             local new_scada_plant = ScadaPlant.new()
-            new_scada_plant:load_file( filename, data.param.elements )
-            data.param:element_add( new_scada_plant )
+            new_scada_plant:load_file( filename, self.elements )
+            self:element_add( new_scada_plant )
         end
     end
 end
 
 ---Starts editing an scada plant.
 --TODO
---@param data TODO
+--@param self
 --@see Selector:add_combobox
 --@see Selector:run
-function Controller.scada_plant_edit( data )
+function Controller:scada_plant_edit()
     Selector.new({
         title = "Select scada plant to edit",
         success_fn = function( results, numresult )
             local plant = results[1]
             if plant then
-                ScadaEditor.new( data.gui, plant, data.param.elements )
+                ScadaEditor.new( self.gui, plant, self.elements )
             end
         end,
     })
     :add_combobox{
-        list = data.param.elements,
+        list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
@@ -1800,21 +1818,21 @@ end
 
 ---Runs a scada plant.
 --TODO
---@param data TODO
+--@param self
 --@see Selector:add_combobox
 --@see Selector:run
-function Controller.scada_plant_view( data )
+function Controller:scada_plant_view()
     Selector.new({
         title = "Select scada plant to view/run",
         success_fn = function( results, numresult )
             local plant = results[1]
             if plant then
-                ScadaView.new( data.gui, plant, data.param.elements )
+                ScadaView.new( self.gui, plant, self.elements )
             end
         end,
     })
     :add_combobox{
-        list = data.param.elements,
+        list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
@@ -1828,23 +1846,23 @@ end
 
 ---Opens scada mes server.
 --TODO
---@param data TODO
+--@param self
 --@see Selector:add_combobox
 --@see Selector:add_file
 --@see Selector:run
-function Controller.scada_mes_server( data )
+function Controller:scada_mes_server()
      Selector.new({
         title = "Open Server",
         success_fn = function( results, numresult )
             local automata_group = results[1]
             local event_map_file = results[2]
             if automata_group and event_map_file then
-                ScadaServer.new( data.gui, automata_group, event_map_file, data.param.elements )
+                ScadaServer.new( self.gui, automata_group, event_map_file, self.elements )
             end
         end,
     })
     :add_combobox{
-        list = data.param.elements,
+        list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
         end,
@@ -1870,25 +1888,25 @@ end
 
 ---Updates the list of events.
 --Clears the event treeview. For each event in the workspace, draws a row with its name, controllable, observable and refinement property. Resizes the treeview to fit the event names. Updates other treeviews.
---@param param Controller whose event list is updated.
+--@param self
 --@param hist Historic of updated treeviews.
 --@see Treeview:clear_data
 --@see Treeview:add_row
 --@see Treeview:update
 --@see AutomatonEditor:update_treeview_events
 --@see AutomatonRender:draw
-function Controller.update_treeview_events(param, hist)
+function Controller:update_treeview_events(hist)
     local max1 = 0
     local max2 = 0
-    param.gui.treeview_events:clear_data()
-    for event_id, event in param.events:ipairs() do
+    self.gui.treeview_events:clear_data()
+    for event_id, event in self.events:ipairs() do
         if #event.name > max1 then
             max1 = #event.name
         end
         if #event.refinement > max2 then
             max2 = #event.refinement
         end
-        param.gui.treeview_events:add_row{ event.name, event.controllable, event.observable, event.refinement }
+        self.gui.treeview_events:add_row{ event.name, event.controllable, event.observable, event.refinement }
     end
     
     max1 = 7*max1
@@ -1899,16 +1917,16 @@ function Controller.update_treeview_events(param, hist)
     if max2 < 10 then
         max2 = 10
     end
-    param.gui.treeview_events.scrolled:set('width-request', 60+max1+max2+64)
-    param.gui.treeview_events.render[1]:set('width', max1+6)
-    param.gui.treeview_events.render[2]:set('width', 32)
-    param.gui.treeview_events.render[3]:set('width', 32)
-    param.gui.treeview_events:update()
+    self.gui.treeview_events.scrolled:set('width-request', 60+max1+max2+64)
+    self.gui.treeview_events.render[1]:set('width', max1+6)
+    self.gui.treeview_events.render[2]:set('width', 32)
+    self.gui.treeview_events.render[3]:set('width', 32)
+    self.gui.treeview_events:update()
     
     --Update other treeviews
     hist = hist or {}
-    hist[param.gui] = true
-    for tab_id, tab in param.gui.tab:ipairs() do
+    hist[self.gui] = true
+    for tab_id, tab in self.gui.tab:ipairs() do
         if not hist[tab.content] and tab.content and tab.content.automaton then
             tab.content:update_treeview_events(hist)
             tab.content.render:draw()
@@ -1918,10 +1936,10 @@ end
 
 ---Receives input from user for a new event name.
 --TODO
---@param param Controller in which the operations is applied.
+--@param self, the Controller in which the operations is applied.
 --@param event_id Id of the event whose name is received.
---@see Controller.update_treeview_events
-function Controller.new_event_input(param, event_id)
+--@see Controller:update_treeview_events
+function Controller:new_event_input( event_id)
     local window       = gtk.Window.new(gtk.WINDOW_TOPLEVEL)
     local vbox         = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
     local hbox1        = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
@@ -1930,7 +1948,7 @@ function Controller.new_event_input(param, event_id)
     local entry        = gtk.Entry.new()
     local btnOk        = gtk.Button.new_with_mnemonic( "OK" )
     local btnCancel    = gtk.Button.new_with_mnemonic( "Cancel" )
-    local ev = param.events:get(event_id)
+    local ev = self.events:get(event_id)
     
     window:add( vbox )
         vbox:pack_start(hbox1, false, false, 0)
@@ -1951,13 +1969,13 @@ function Controller.new_event_input(param, event_id)
     )
 
     window:connect("delete-event", function()
-        param.events:remove( event_id )
-        param:update_treeview_events()
+        self.events:remove( event_id )
+        self:update_treeview_events()
         window:destroy()
     end)
     btnCancel:connect('clicked', function()
-        param.events:remove( event_id )
-        param:update_treeview_events()
+        self.events:remove( event_id )
+        self:update_treeview_events()
         window:destroy()
     end)
     btnOk:connect('clicked', function()
@@ -1972,7 +1990,7 @@ function Controller.new_event_input(param, event_id)
         
         --Verify if event already exists
         local exists
-        for id, wev in param.events:ipairs() do
+        for id, wev in self.events:ipairs() do
             if wev.name == name then
                 exists = id
                 break
@@ -1980,7 +1998,7 @@ function Controller.new_event_input(param, event_id)
         end
         if (not exists or exists==event_id) and #name>0 then
             ev.name = name
-            param:update_treeview_events()
+            self:update_treeview_events()
             window:destroy()
         end
     end)
@@ -1990,154 +2008,154 @@ end
 
 ---Adds a new event to the workspace.
 --TODO
---@param param Controller in which the operation is applied.
+--@param self Controller in which the operation is applied.
 --@param name Name of the new event.
 --@param observable If true, the new event is observable.
 --@param controllable If true, the new event is controllable.
 --@param refinement Name of the event refined by the new event.
 --@return New event.
---@see Controller.update_treeview_events
---@see Controller.new_event_input
-function Controller.add_event(param, name, controllable, observable, refinement)
-    if observable==nil then
-        observable = true
-    end
-    local event = {
-        name = name or 'new',
-        observable = observable or false,
-        controllable = controllable or false,
-        refinement = refinement or '',
-        automata = {},
-        level = {},
-    }
-    
-    local level_list = get_list('level')
-    for i,e in ipairs(level_list) do
-        event.level[e] = {
-            observable = event.observable,
-            controllable = event.controllable,
-        }
-    end
-    
-    local id = param.events:append(event)
-    param:update_treeview_events() 
-    
-    if not name then
-        Controller.new_event_input(param, id)
-    end
-    
-    return event
-end
+--@see Controller:update_treeview_events
+--@see Controller:new_event_input
+--~ function Controller:add_event(name, controllable, observable, refinement)
+    --~ if observable==nil then
+        --~ observable = true
+    --~ end
+    --~ local event = {
+        --~ name = name or 'new',
+        --~ observable = observable or false,
+        --~ controllable = controllable or false,
+        --~ refinement = refinement or '',
+        --~ automata = {},
+        --~ level = {},
+    --~ }
+    --~ 
+    --~ local level_list = get_list('level')
+    --~ for i,e in ipairs(level_list) do
+        --~ event.level[e] = {
+            --~ observable = event.observable,
+            --~ controllable = event.controllable,
+        --~ }
+    --~ end
+    --~ 
+    --~ local id = self.events:append(event)
+    --~ self:update_treeview_events() 
+    --~ 
+    --~ if not name then
+        --~ self:new_event_input(id)
+    --~ end
+    --~ 
+    --~ return event
+--~ end
 
 ---Adds all events from chosen automaton to the workspace.
 --TODO
---@param param Controller in which the operation is applied.
+--@param self, the Controller in which the operation is applied.
 --@param automaton Automaton whose events are added to the workspace.
---@see Controller.add_event
-function Controller.add_events_from_automaton(param, automaton)
-    for event_id, event in automaton.events:ipairs() do
-        local ev
-        
-        --Verify if event already exists
-        for _, wev in param.events:ipairs() do
-            if wev.name == event.name then
-                ev = wev
-                --[[
-                if ev.controllable ~= event.controllable or ev.observable ~= event.observable or ev.refinement ~= event.refinement then
-                    gtk.InfoDialog.showInfo('Inconsistency found on event ' .. event.name .. '.\n\nControllable:\n\tWorkspace=' .. tostring(ev.controllable) .. '\n\t' .. automaton:get('file_name') .. '=' .. tostring(event.controllable) .. '\n\nObservable:\n\tWorkspace=' .. tostring(ev.observable) .. '\n\t' .. automaton:get('file_name') .. '=' .. tostring(event.observable)  .. '\n\nRefinement:\n\tWorkspace=' .. tostring(ev.refinement) .. '\n\t' .. automaton:get('file_name') .. '=' .. tostring(event.refinement))
-                    event.controllable = ev.controllable
-                    event.observable = ev.observable
-                    event.refinement = ev.refinement
-                end
-                ]]--
-                ev.level[automaton.level] = {
-                    observable = event.observable,
-                    controllable = event.controllable,
-                }
-            end
-        end
-        if not ev then
-            ev = Controller.add_event(param, event.name, event.controllable, event.observable, event.refinement)
-        end
-        ev.automata[automaton] = event
-        event.workspace = ev
-    end
-end
+--@see Controller:add_event
+--~ function Controller:add_events_from_automaton( automaton )
+    --~ for event_id, event in automaton.events:ipairs() do
+        --~ local ev
+        --~ 
+        --~ --Verify if event already exists
+        --~ for _, wev in self.events:ipairs() do
+            --~ if wev.name == event.name then
+                --~ ev = wev
+                --~ --[[
+                --~ if ev.controllable ~= event.controllable or ev.observable ~= event.observable or ev.refinement ~= event.refinement then
+                    --~ gtk.InfoDialog.showInfo('Inconsistency found on event ' .. event.name .. '.\n\nControllable:\n\tWorkspace=' .. tostring(ev.controllable) .. '\n\t' .. automaton:get('file_name') .. '=' .. tostring(event.controllable) .. '\n\nObservable:\n\tWorkspace=' .. tostring(ev.observable) .. '\n\t' .. automaton:get('file_name') .. '=' .. tostring(event.observable)  .. '\n\nRefinement:\n\tWorkspace=' .. tostring(ev.refinement) .. '\n\t' .. automaton:get('file_name') .. '=' .. tostring(event.refinement))
+                    --~ event.controllable = ev.controllable
+                    --~ event.observable = ev.observable
+                    --~ event.refinement = ev.refinement
+                --~ end
+                --~ ]]--
+                --~ ev.level[automaton.level] = {
+                    --~ observable = event.observable,
+                    --~ controllable = event.controllable,
+                --~ }
+            --~ end
+        --~ end
+        --~ if not ev then
+            --~ ev = self:add_event(event.name, event.controllable, event.observable, event.refinement)
+        --~ end
+        --~ ev.automata[automaton] = event
+        --~ event.workspace = ev
+    --~ end
+--~ end
 
 ---Deletes an event from the workspace.
 --TODO
---@param param Controller in which the operation is applied.
---@see Controller.edit_refinement
---@see Controller.update_treeview_events
-function Controller.delete_event(param)
-    local events = param.gui.treeview_events:get_selected()
-    --Remove refinements
-    for _, event_id in ipairs( events ) do
-        local e = param.events:get( event_id )
-        for wid, wev in param.events:ipairs() do
-            if wev.refinement == e.name then
-                Controller.edit_refinement(param, wid-1, '')
-            end
-        end
-    end
-    
-    --Remove events
-    for diff, event_id in ipairs( events ) do
-        local e = param.events:get( event_id-diff+1 )
-        for automaton, ev_id in pairs(e.automata) do
-            automaton:event_remove(ev_id)
-            automaton:write_log(function()
-                param:update_treeview_events()
-            end)
-        end
-        param.events:remove( event_id-diff+1 )
-    end
-    param:update_treeview_events()
-end
+--@param self, the Controller in which the operation is applied.
+--@see Controller:edit_refinement
+--@see Controller:update_treeview_events
+--~ function Controller:delete_event()
+    --~ local events = self.gui.treeview_events:get_selected()
+    --~ --Remove refinements
+    --~ for _, event_id in ipairs( events ) do
+        --~ local e = self.events:get( event_id )
+        --~ for wid, wev in self.events:ipairs() do
+            --~ if wev.refinement == e.name then
+                --~ self:edit_refinement( wid-1, '')
+            --~ end
+        --~ end
+    --~ end
+    --~ 
+    --~ --Remove events
+    --~ for diff, event_id in ipairs( events ) do
+        --~ local e = self.events:get( event_id-diff+1 )
+        --~ for automaton, ev_id in pairs(e.automata) do
+            --~ automaton:event_remove(ev_id)
+            --~ automaton:write_log(function()
+                --~ self:update_treeview_events()
+            --~ end)
+        --~ end
+        --~ self.events:remove( event_id-diff+1 )
+    --~ end
+    --~ self:update_treeview_events()
+--~ end
 
 ---Adds events from the workspace to the current automaton.
 --TODO
---@param param Controller in which the operation is applied.
+--@self Controller in which the operation is applied.
 --@see Treeview:get_selected
 --@see Automaton:event_add
 --@see Automaton:write_log
---@see Controller.update_treeview_events
-function Controller.to_automaton(param)
-    local editor = param.gui:get_current_content()
-    if editor and editor.automaton then
-        local events = param.gui.treeview_events:get_selected()
-        for _, event_id in ipairs( events ) do
-            local e = param.events:get( event_id )
-            if not e.automata[editor.automaton] then
-                editor.automaton:event_add(e.name, e.observable, e.controllable, e.refinement, e)
-            end
-        end
-        editor.automaton:write_log(function()
-            param:update_treeview_events()
-        end)
-        param:update_treeview_events()
-    end
-end
+--@see Controller:update_treeview_events
+--~ function Controller:to_automaton(self)
+    --~ local editor = self.gui:get_current_content()
+    --~ if editor and editor.automaton then
+        --~ local events = self.gui.treeview_events:get_selected()
+        --~ for _, event_id in ipairs( events ) do
+            --~ local e = self.events:get( event_id )
+            --~ if not e.automata[editor.automaton] then
+                --~ editor.automaton:event_add(e.name, e.observable, e.controllable, e.refinement, e)
+            --~ end
+        --~ end
+        --~ editor.automaton:write_log(function()
+            --~ self:update_treeview_events()
+        --~ end)
+        --~ self:update_treeview_events()
+    --~ end
+--~ end
 
 ---Toggles the controllable property of an event.
 --TODO
---@param param Controller in which the operation is applied.
+--@param self, the Controller in which the operation is applied.
 --@param row_id Id of the row of the event.
 --@param hist Historic of updated events.
 --@see Automaton:event_set_controllable
 --@see Automaton:event_unset_controllable
 --@see Automaton:write_log
---@see Controller.update_treeview_events
-function Controller.toggle_controllable(param, row_id, level, hist)
-    local event = param.events:find(row_id+1)
+--@see Controller:update_treeview_events
+function Controller:toggle_controllable( row_id, level, hist)
+    local event = self.events:find(row_id+1)
     if not event then return end
     
-    level = level or param.level
+    level = level or self.level
     
     hist = hist or {}
     hist[event] = true
     
-    if level==param.level then
+    if level==self.level then
         event.controllable = not event.controllable
     end
     event.level[level].controllable = not event.level[level].controllable
@@ -2158,128 +2176,128 @@ function Controller.toggle_controllable(param, row_id, level, hist)
     end
     
     --Change refinements
-    for wid, wev in param.events:ipairs() do
+    for wid, wev in self.events:ipairs() do
         if not hist[wev] and (wev.refinement==event.name or event.refinement==wev.name) then
-            Controller.toggle_controllable(param, wid-1, level, hist)
+            self:toggle_controllable(wid-1, level, hist)
         end
     end
     
-    param:update_treeview_events()
+    self:update_treeview_events()
 end
 
 ---Toggles the observable property of an event.
 --TODO
---@param param Controller in which the operation is applied.
+--@param self, the Controller in which the operation is applied.
 --@param row_id Id of the row of the event.
 --@param hist Historic of updated events.
 --@see Automaton:event_set_observable
 --@see Automaton:event_unset_observable
 --@see Automaton:write_log
---@see Controller.update_treeview_events
-function Controller.toggle_observable(param, row_id, level, hist)
-    local event = param.events:find(row_id+1)
-    if not event then return end
-    
-    level = level or param.level
-    
-    hist = hist or {}
-    hist[event] = true
-    
-    if level==param.level then
-        event.observable = not event.observable
-    end
-    event.level[level].observable = not event.level[level].observable
-    if event.level[level].observable then
-        for automaton, ev_id in pairs(event.automata) do
-            if level==automaton.level then
-                automaton:event_set_observable(ev_id)
-                automaton:write_log()
-            end
-        end
-    else
-        for automaton, ev_id in pairs(event.automata) do
-            if level==automaton.level then
-                automaton:event_unset_observable(ev_id)
-                automaton:write_log()
-            end
-        end
-    end
-    
-    --Change refinements
-    for wid, wev in param.events:ipairs() do
-        if not hist[wev] and (wev.refinement==event.name or event.refinement==wev.name) then
-            Controller.toggle_observable(param, wid-1, level, hist)
-        end
-    end
-    
-    param:update_treeview_events()
-end
+--@see Controller:update_treeview_events
+--~ function Controller:toggle_observable(self, row_id, level, hist)
+    --~ local event = self.events:find(row_id+1)
+    --~ if not event then return end
+    --~ 
+    --~ level = level or self.level
+    --~ 
+    --~ hist = hist or {}
+    --~ hist[event] = true
+    --~ 
+    --~ if level==self.level then
+        --~ event.observable = not event.observable
+    --~ end
+    --~ event.level[level].observable = not event.level[level].observable
+    --~ if event.level[level].observable then
+        --~ for automaton, ev_id in pairs(event.automata) do
+            --~ if level==automaton.level then
+                --~ automaton:event_set_observable(ev_id)
+                --~ automaton:write_log()
+            --~ end
+        --~ end
+    --~ else
+        --~ for automaton, ev_id in pairs(event.automata) do
+            --~ if level==automaton.level then
+                --~ automaton:event_unset_observable(ev_id)
+                --~ automaton:write_log()
+            --~ end
+        --~ end
+    --~ end
+    --~ 
+    --~ --Change refinements
+    --~ for wid, wev in self.events:ipairs() do
+        --~ if not hist[wev] and (wev.refinement==event.name or event.refinement==wev.name) then
+            --~ self:toggle_observable(wid-1, level, hist)
+        --~ end
+    --~ end
+    --~ 
+    --~ self:update_treeview_events()
+--~ end
 
 ---Changes the name of an workspace event.
 --TODO
---@param Controller is which the operation is applied.
+--@param self, Controller is which the operation is applied.
 --@param row_id Id of the row of the event.
 --@param new_name New name of the event.
 --@see Automaton:event_set_name
 --@see Automaton:write_log
---@see Controller.update_treeview_events
---@see Controller.edit_refinement
-function Controller.edit_event( param, row_id, new_name )
-    local event = param.events:find(row_id+1)
-    if not event then return end
-    
-    new_name = new_name:gsub('[^%&%w%_]','')
-    if new_name:find('%&') then
-        new_name = '&'
-    end
-    if new_name:find('EMPTYWORD') then
-        new_name = '&'
-    end
-    
-    --Verify if event already exists
-    local exists
-    for _, wev in param.events:ipairs() do
-        if wev.name == new_name then
-            exists = true
-        end
-    end
-    if not exists and #new_name>0 then
-        local old_name = event.name
-        event.name = new_name
-        for automaton, ev_id in pairs(event.automata) do
-            automaton:event_set_name(ev_id, new_name)
-            automaton:write_log(function()
-                param:update_treeview_events()
-            end)
-        end
-        
-        --Change old refinements
-        for wid, wev in param.events:ipairs() do
-            if wev.refinement == old_name then
-                Controller.edit_refinement(param, wid-1, event.name)
-            end
-        end
-        
-        param:update_treeview_events()
-    end
-end
+--@see Controller:update_treeview_events
+--@see Controller:edit_refinement
+--~ function Controller:edit_event( row_id, new_name )
+    --~ local event = self.events:find(row_id+1)
+    --~ if not event then return end
+    --~ 
+    --~ new_name = new_name:gsub('[^%&%w%_]','')
+    --~ if new_name:find('%&') then
+        --~ new_name = '&'
+    --~ end
+    --~ if new_name:find('EMPTYWORD') then
+        --~ new_name = '&'
+    --~ end
+    --~ 
+    --~ --Verify if event already exists
+    --~ local exists
+    --~ for _, wev in self.events:ipairs() do
+        --~ if wev.name == new_name then
+            --~ exists = true
+        --~ end
+    --~ end
+    --~ if not exists and #new_name>0 then
+        --~ local old_name = event.name
+        --~ event.name = new_name
+        --~ for automaton, ev_id in pairs(event.automata) do
+            --~ automaton:event_set_name(ev_id, new_name)
+            --~ automaton:write_log(function()
+                --~ self:update_treeview_events()
+            --~ end)
+        --~ end
+        --~ 
+        --~ --Change old refinements
+        --~ for wid, wev in self.events:ipairs() do
+            --~ if wev.refinement == old_name then
+                --~ self:edit_refinement( wid-1, event.name)
+            --~ end
+        --~ end
+        --~ 
+        --~ self:update_treeview_events()
+    --~ end
+--~ end
 
 ---Changes the name of an workspace event refinement.
 --TODO
---@param Controller is which the operation is applied.
+--@param self, the Controller is which the operation is applied.
 --@param row_id Id of the row of the event.
 --@param new_name New refinement.
---@see Controller.toggle_controllable
---@see Controller.toggle_observable
+--@see Controller:toggle_controllable
+--@see Controller:toggle_observable
 --@see Automaton:event_set_refinement
 --@see Automaton:write_log
---@see Controller.update_treeview_events
-function Controller.edit_refinement( param, row_id, new_ref )
-    local event = param.events:find(row_id+1)
+--@see Controller:update_treeview_events
+function Controller:edit_refinement( row_id, new_ref )
+    local event = self.events:find(row_id+1)
     if not event then return end
     
     --Verify if event is not refined
-    for _, wev in param.events:ipairs() do
+    for _, wev in self.events:ipairs() do
         if wev.refinement == event.name then
             return
         end
@@ -2295,7 +2313,7 @@ function Controller.edit_refinement( param, row_id, new_ref )
     
     --Verify if event already exists
     local exists
-    for _, wev in param.events:ipairs() do
+    for _, wev in self.events:ipairs() do
         if wev.name == new_ref then
             if wev.refinement == '' then
                 exists = wev
@@ -2308,10 +2326,10 @@ function Controller.edit_refinement( param, row_id, new_ref )
             local level_list = get_list('level')
             for i,e in ipairs(level_list) do
                 if exists.level[e].controllable~=event.level[e].controllable then
-                    Controller.toggle_controllable(param, row_id, e)
+                    self:toggle_controllable( row_id, e)
                 end
                 if exists.level[e].observable~=event.level[e].observable then
-                    Controller.toggle_observable(param, row_id, e)
+                    self:toggle_observable( row_id, e)
                 end
             end
         end
@@ -2321,20 +2339,20 @@ function Controller.edit_refinement( param, row_id, new_ref )
             automaton:event_set_refinement(ev_id, new_ref)
             automaton:write_log()
         end
-        param:update_treeview_events()
+        self:update_treeview_events()
     end
 end
 
 ---Changes the level of the workspace.
 --Verifies if the level really changed. Changes the observable and controllable properties of the events to the new level. Sets the level. If 'automaton' is not nil, changes its events properties as well. Updates the event treeview.
-function Controller.change_level(param, level, automaton)
-    if level==param.level then return end
+function Controller:change_level(level, automaton)
+    if level==self.level then return end
     
-    for k_event, event in param.events:ipairs() do
+    for k_event, event in self.events:ipairs() do
         event.observable = event.level[level].observable
         event.controllable = event.level[level].controllable
     end
-    param.level = level
+    self.level = level
     
     if automaton then
         automaton.level = level
@@ -2354,7 +2372,7 @@ function Controller.change_level(param, level, automaton)
         end
     end
     
-    param:update_treeview_events()
+    self:update_treeview_events()
 end
 
 ------------------------------------------------------------------------

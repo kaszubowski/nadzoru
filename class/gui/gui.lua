@@ -45,7 +45,8 @@ Gui = letk.Class( function( self )
     self:append_menu_separator('file')
     self:append_menu_item('file', "_Quit nadzoru", "Quit nadzoru", 'gtk-quit', gtk.main_quit )
 
-
+    --~ self.lastFileName = nil
+    self.dialogCurrentFolder = nil --get_current_folder
 
 
     --[[
@@ -262,7 +263,7 @@ function Gui:append_menu_item( menu_name, caption, hint, icon, callback, param, 
     else
         menu_item = gtk.MenuItem.new_with_mnemonic( caption )
     end
-    menu_item:connect('activate', callback, { gui = self, param = param } )
+    menu_item:connect('activate', callback, param )
     
     if self.menu[menu_name] then
         self.menu[menu_name]:append ( menu_item )
@@ -291,7 +292,7 @@ function Gui:prepend_menu_item( menu_name, caption, hint, icon, callback, param,
     else
         menu_item = gtk.MenuItem.new_with_mnemonic( caption )
     end
-    menu_item:connect('activate', callback, { gui = self, param = param } )
+    menu_item:connect('activate', callback, param )
     
     if self.menu[menu_name] then
         self.menu[menu_name]:prepend ( menu_item )

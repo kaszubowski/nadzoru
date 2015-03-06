@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<model version="2.1" type="FSA" id="Untitled">
+<data>
+	<state id="1">
+		<properties>
+			<initial />
+		</properties>
+		<name>1</name>
+	</state>
+	<state id="2">
+		<properties/>
+		<name>2</name>
+	</state>
+	<state id="3">
+		<properties/>
+		<name>3</name>
+	</state>
+	<state id="4">
+		<properties/>
+		<name>4</name>
+	</state>
+	<state id="5">
+		<properties>
+			<marked />
+		</properties>
+		<name>5</name>
+	</state>
+	<event id="1">
+		<properties>
+			<controllable />
+			<observable />
+		</properties>
+		<name>0</name>
+	</event>
+	<event id="2">
+		<properties>
+			<controllable />
+			<observable />
+		</properties>
+		<name>1</name>
+	</event>
+	<transition id="2" source="1" target="1" event="2">
+	</transition>
+	<transition id="3" source="1" target="1" event="1">
+	</transition>
+	<transition id="5" source="1" target="2" event="2">
+	</transition>
+	<transition id="7" source="2" target="3" event="2">
+	</transition>
+	<transition id="8" source="2" target="3" event="1">
+	</transition>
+	<transition id="10" source="3" target="4" event="2">
+	</transition>
+	<transition id="11" source="3" target="4" event="1">
+	</transition>
+	<transition id="13" source="4" target="5" event="2">
+	</transition>
+	<transition id="14" source="4" target="5" event="1">
+	</transition>
+</data>
+<meta tag="layout" version="2.1">
+	<font size="12.0"/>
+	<layout uniformnodes="false"/>
+	<state id="1">
+		<circle r="18.0" x="168.0" y="221.0" />
+		<arrow x="36.0" y="0.0" />
+	</state>
+	<state id="2">
+		<circle r="18.0" x="325.0" y="223.0" />
+		<arrow x="1.0" y="0.0" />
+	</state>
+	<state id="3">
+		<circle r="18.0" x="496.0" y="228.0" />
+		<arrow x="1.0" y="0.0" />
+	</state>
+	<state id="4">
+		<circle r="18.0" x="691.0" y="227.0" />
+		<arrow x="1.0" y="0.0" />
+	</state>
+	<state id="5">
+		<circle r="18.0" x="845.0" y="229.0" />
+		<arrow x="1.0" y="0.0" />
+	</state>
+	<transition id="2" group="1">
+		<bezier x1="168.0" y1="221.0" x2="168.0" y2="221.0" ctrlx1="117.08831787109375" ctrly1="170.08831787109375" ctrlx2="218.91168212890625" ctrly2="170.08831787109375" />
+		<label x="-2.0" y="-17.0" />
+	</transition>
+	<transition id="3" group="1">
+		<bezier x1="168.0" y1="221.0" x2="168.0" y2="221.0" ctrlx1="117.08831787109375" ctrly1="170.08831787109375" ctrlx2="218.91168212890625" ctrly2="170.08831787109375" />
+		<label x="-2.0" y="-17.0" />
+	</transition>
+	<transition id="5">
+		<bezier x1="168.0" y1="221.0" x2="325.0" y2="223.0" ctrlx1="220.33334350585938" ctrly1="221.6666717529297" ctrlx2="272.6666564941406" ctrly2="222.3333282470703" />
+		<label x="3.0" y="-20.0" />
+	</transition>
+	<transition id="7" group="2">
+		<bezier x1="325.0" y1="223.0" x2="496.0" y2="228.0" ctrlx1="382.0" ctrly1="224.6666717529297" ctrlx2="439.0" ctrly2="226.3333282470703" />
+		<label x="2.0" y="-15.0" />
+	</transition>
+	<transition id="8" group="2">
+		<bezier x1="325.0" y1="223.0" x2="496.0" y2="228.0" ctrlx1="382.0" ctrly1="224.6666717529297" ctrlx2="439.0" ctrly2="226.3333282470703" />
+		<label x="2.0" y="-15.0" />
+	</transition>
+	<transition id="10" group="3">
+		<bezier x1="496.0" y1="228.0" x2="691.0" y2="227.0" ctrlx1="561.0" ctrly1="227.6666717529297" ctrlx2="626.0" ctrly2="227.3333282470703" />
+		<label x="4.0" y="-17.0" />
+	</transition>
+	<transition id="11" group="3">
+		<bezier x1="496.0" y1="228.0" x2="691.0" y2="227.0" ctrlx1="561.0" ctrly1="227.6666717529297" ctrlx2="626.0" ctrly2="227.3333282470703" />
+		<label x="4.0" y="-17.0" />
+	</transition>
+	<transition id="13" group="4">
+		<bezier x1="691.0" y1="227.0" x2="845.0" y2="229.0" ctrlx1="742.3333129882812" ctrly1="227.6666717529297" ctrlx2="793.6666870117188" ctrly2="228.3333282470703" />
+		<label x="-3.0" y="-22.0" />
+	</transition>
+	<transition id="14" group="4">
+		<bezier x1="691.0" y1="227.0" x2="845.0" y2="229.0" ctrlx1="742.3333129882812" ctrly1="227.6666717529297" ctrlx2="793.6666870117188" ctrly2="228.3333282470703" />
+		<label x="-3.0" y="-22.0" />
+	</transition>
+</meta>
+<meta tag="annotation" version="3">[0,1]* 1 [0,1]^3</meta>
+</model>
