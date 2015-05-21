@@ -1,6 +1,10 @@
 #include "generic_mic.h"
 #include <avr/pgmspace.h>
+#define FN_AP 1
+#define FN_SUP 1
 
+#if FN_SUP
+{% noblankline %}
 {% with
     var_data         = {},
     var_data_pos     = {},
@@ -27,7 +31,9 @@
     unsigned long int sup_data_pos[{{ automata:len() }}] = { {{ table.concat(var_data_pos, ',') }} };
     unsigned char     sup_data[ {{ #var_data }} ] PROGMEM = { {{ table.concat( var_data,',' ) }} };
 {% endwith %}
-
+{% endnoblankline %}
+#endif
+#if FN_AP
 typedef struct Scallback {
     void (*callback)( void* data );
     unsigned char (*check_input) ( void* data );
@@ -236,3 +242,4 @@ void SCT_run_step(){
         //}
     }
 }
+#endif

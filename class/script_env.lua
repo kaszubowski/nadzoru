@@ -17,7 +17,7 @@ ScriptEnv.Export.Automaton.univocal = {'univocal'}
 ScriptEnv.Export.Automaton.accessible = {'accessible'}
 ScriptEnv.Export.Automaton.coaccessible = {'coaccessible'}
 --~ ScriptEnv.Export.Automaton.complement = {'complement'}
---~ ScriptEnv.Export.Automaton.minimize = {'minimize'}
+ScriptEnv.Export.Automaton.minimize = {'minimize'}
 --~ ScriptEnv.Export.Automaton.deterministic = {'deterministic'}
 ScriptEnv.Export.Automaton.product = {'product', 'prod'}
 --~ ScriptEnv.Export.Automaton.projection = {'projection'}
@@ -99,14 +99,15 @@ function ScriptEnv:execScript( script, printErrors )
     local f, loadErr = loadstring( script )
     if f then
         setfenv( f, self.env )
-        local status, errMsg = pcall( f )
-        if not status and printErrors then
-            if self.printObj then
-                self.print( self.printObj, errMsg )
-            else
-                self.print( errMsg )
-            end
-        end
+        f()
+        --~ local status, errMsg = pcall( f )
+        --~ if not status and printErrors then
+            --~ if self.printObj then
+                --~ self.print( self.printObj, errMsg )
+            --~ else
+                --~ self.print( errMsg )
+            --~ end
+        --~ end
         return status, errMsg
     elseif printErrors then
         if self.printObj then

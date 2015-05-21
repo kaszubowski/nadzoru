@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<model version="2.1" type="FSA" id="mDFA">
+<model version="2.1" type="FSA" id="mDFA2">
 <data>
 	<state id="1">
 		<properties>
@@ -45,7 +45,6 @@
 	<transition id="5" source="3" target="2" event="2">
 	</transition>
 </data>
-<meta tag="annotation" version="3">minimize(DFA): Minimized automaton</meta>
 <meta tag="layout" version="2.1">
 	<font size="12.0"/>
 	<layout uniformnodes="false"/>
@@ -62,11 +61,11 @@
 		<arrow x="1.0" y="0.0" />
 	</state>
 	<transition id="1" group="1">
-		<bezier x1="139.9578399658203" y1="258.9094543457031" x2="139.9578399658203" y2="258.9094543457031" ctrlx1="269.728515625" ctrly1="359.1868896484375" ctrlx2="39.680397033691406" ctrly2="388.6801452636719" />
+		<bezier x1="139.9578399658203" y1="258.9094543457031" x2="139.9578399658203" y2="258.9094543457031" ctrlx1="269.728515625" ctrly1="359.1868896484375" ctrlx2="39.68040466308594" ctrly2="388.68011474609375" />
 		<label x="5.0" y="5.0" />
 	</transition>
 	<transition id="2" group="1">
-		<bezier x1="139.9578399658203" y1="258.9094543457031" x2="139.9578399658203" y2="258.9094543457031" ctrlx1="269.728515625" ctrly1="359.1868896484375" ctrlx2="39.680397033691406" ctrly2="388.6801452636719" />
+		<bezier x1="139.9578399658203" y1="258.9094543457031" x2="139.9578399658203" y2="258.9094543457031" ctrlx1="269.728515625" ctrly1="359.1868896484375" ctrlx2="39.68040466308594" ctrly2="388.68011474609375" />
 		<label x="5.0" y="5.0" />
 	</transition>
 	<transition id="3">
@@ -82,4 +81,5 @@
 		<label x="5.0" y="5.0" />
 	</transition>
 </meta>
+<meta tag="annotation" version="3">minimize(DFA): Minimized automaton</meta>
 </model>

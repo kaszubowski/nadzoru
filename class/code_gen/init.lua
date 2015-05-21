@@ -707,14 +707,13 @@ function CodeGen.generate( results, numresults, selector, self )
     if self.custom_code then
         Context:push( self.custom_code )
     end
-    
+
     -- Template --
     if self.device.template_file then
         local tmpls = type( self.device.template_file ) == 'table' and self.device.template_file or { self.device.template_file }
         for _, tmpl in ipairs( tmpls ) do
             local Template = letk.Template.new( './res/codegen/templates/' .. tmpl )
             local code = Template( Context )
-
             local file = io.open( options.pathname .. '/'  .. tmpl, "w")
             file:write( code )
             file:close()

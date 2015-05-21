@@ -1,5 +1,9 @@
 #include "generic_mic.h"
+#define FN_AP 1
+#define FN_SUP 1
 
+#if FN_SUP
+{% noblankline %}
 {% with
     var_data         = {},
     var_data_pos     = {},
@@ -26,7 +30,9 @@
     const unsigned long int sup_data_pos[{{ automata:len() }}] = { {{ table.concat(var_data_pos, ',') }} };
     const unsigned char     sup_data[ {{ #var_data }} ] = { {{ table.concat( var_data,',' ) }} };
 {% endwith %}
-
+{% endnoblankline %}
+#endif
+#if FN_AP
 typedef struct Scallback {
     void (*callback)( void* data );
     unsigned char (*check_input) ( void* data );
@@ -235,3 +241,4 @@ void SCT_run_step(){
         //}
     }
 }
+#endif

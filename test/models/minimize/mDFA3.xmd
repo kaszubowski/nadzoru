@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<model version="2.1" type="FSA" id="mDFA">
+<model version="2.1" type="FSA" id="mDFA3">
 <data>
 	<state id="1">
 		<properties>
@@ -36,7 +36,6 @@
 	<transition id="4" source="2" target="2" event="2">
 	</transition>
 </data>
-<meta tag="annotation" version="3">minimize(DFA): Minimized automaton</meta>
 <meta tag="layout" version="2.1">
 	<font size="12.0"/>
 	<layout uniformnodes="false"/>
@@ -65,4 +64,5 @@
 		<label x="5.0" y="5.0" />
 	</transition>
 </meta>
+<meta tag="annotation" version="3">minimize(DFA): Minimized automaton</meta>
 </model>

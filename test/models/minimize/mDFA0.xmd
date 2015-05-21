@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<model version="2.1" type="FSA" id="mDFA">
+<model version="2.1" type="FSA" id="mDFA0">
 <data>
 	<state id="1">
 		<properties/>
@@ -60,7 +60,6 @@
 	<transition id="10" source="5" target="4" event="1">
 	</transition>
 </data>
-<meta tag="annotation" version="3">minimize(DFA): Minimized automaton</meta>
 <meta tag="layout" version="2.1">
 	<font size="12.0"/>
 	<layout uniformnodes="false"/>
@@ -93,15 +92,15 @@
 		<label x="5.0" y="5.0" />
 	</transition>
 	<transition id="3" group="2">
-		<bezier x1="335.34246826171875" y1="390.5736999511719" x2="335.34246826171875" y2="390.5736999511719" ctrlx1="421.71923828125" ctrly1="422.24468994140625" ctrlx2="303.6714782714844" ctrly2="476.95050048828125" />
+		<bezier x1="335.34246826171875" y1="390.5736999511719" x2="335.34246826171875" y2="390.5736999511719" ctrlx1="421.71923828125" ctrly1="422.24468994140625" ctrlx2="303.6714782714844" ctrly2="476.9504699707031" />
 		<label x="5.0" y="5.0" />
 	</transition>
 	<transition id="4" group="2">
-		<bezier x1="335.34246826171875" y1="390.5736999511719" x2="335.34246826171875" y2="390.5736999511719" ctrlx1="421.71923828125" ctrly1="422.24468994140625" ctrlx2="303.6714782714844" ctrly2="476.95050048828125" />
+		<bezier x1="335.34246826171875" y1="390.5736999511719" x2="335.34246826171875" y2="390.5736999511719" ctrlx1="421.71923828125" ctrly1="422.24468994140625" ctrlx2="303.6714782714844" ctrly2="476.9504699707031" />
 		<label x="5.0" y="5.0" />
 	</transition>
 	<transition id="5">
-		<bezier x1="248.77647399902344" y1="112.48527526855469" x2="248.77647399902344" y2="112.48527526855469" ctrlx1="183.72265625" ctrly1="47.43144989013672" ctrlx2="313.8302917480469" ctrly2="47.43144989013672" />
+		<bezier x1="248.77647399902344" y1="112.48527526855469" x2="248.77647399902344" y2="112.48527526855469" ctrlx1="183.72265625" ctrly1="47.43145751953125" ctrlx2="313.8302917480469" ctrly2="47.43146514892578" />
 		<label x="5.0" y="5.0" />
 	</transition>
 	<transition id="6">
@@ -125,4 +124,5 @@
 		<label x="5.0" y="5.0" />
 	</transition>
 </meta>
+<meta tag="annotation" version="3">minimize(DFA): Minimized automaton</meta>
 </model>

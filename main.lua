@@ -611,23 +611,15 @@ function Controller:remove_automaton()
         title = 'Select automata to remove',
         success_fn = function( results, numresult )
             local tabs_to_remove = {}
-            for automaton_id, automaton in ipairs(results[1]) do
-                for atm_id, atm in self.elements:ipairs() do
-                    if atm==automaton then
-                        for k_event, event in self.events:ipairs() do
-                            event.automata[atm] = nil
-                        end
-                        self.elements:remove( atm_id )
+            for k_automaton, automaton in ipairs(results[1]) do
+                for k_element, element in self.elements:ipairs() do
+                    if element==automaton then
+                        self.elements:remove( k_element )
                         break
                     end
                 end
-                ---for tab_id, tab in self.gui.tab:ipairs() do
-                --- if tab.content.automaton==automaton then
-                ---     tabs_to_remove[ #tabs_to_remove+1 ] = tab_id
-                ---     --no 'break' because can be more than one
-                --- end
-                ---end
             end
+            --TODO: remove tabs that use removed elements
             ---local diff = 1
             ---for _, tab in ipairs(tabs_to_remove) do
             --- self.gui:remove_tab(tab-diff)
@@ -2143,7 +2135,6 @@ end
 --@param row_id Id of the row of the event.
 --@param hist Historic of updated events.
 --@see Automaton:event_set_controllable
---@see Automaton:event_unset_controllable
 --@see Automaton:write_log
 --@see Controller:update_treeview_events
 function Controller:toggle_controllable( row_id, level, hist)
@@ -2162,14 +2153,14 @@ function Controller:toggle_controllable( row_id, level, hist)
     if event.level[level].controllable then
         for automaton, ev_id in pairs(event.automata) do
             if level==automaton.level then
-                automaton:event_set_controllable(ev_id)
+                automaton:event_set_controllable(ev_id, true)
                 automaton:write_log()
             end
         end
     else
         for automaton, ev_id in pairs(event.automata) do
             if level==automaton.level then
-                automaton:event_unset_controllable(ev_id)
+                automaton:event_set_controllable(ev_id, false)
                 automaton:write_log()
             end
         end
@@ -2191,7 +2182,6 @@ end
 --@param row_id Id of the row of the event.
 --@param hist Historic of updated events.
 --@see Automaton:event_set_observable
---@see Automaton:event_unset_observable
 --@see Automaton:write_log
 --@see Controller:update_treeview_events
 --~ function Controller:toggle_observable(self, row_id, level, hist)
@@ -2210,14 +2200,14 @@ end
     --~ if event.level[level].observable then
         --~ for automaton, ev_id in pairs(event.automata) do
             --~ if level==automaton.level then
-                --~ automaton:event_set_observable(ev_id)
+                --~ automaton:event_set_observable(ev_id, true)
                 --~ automaton:write_log()
             --~ end
         --~ end
     --~ else
         --~ for automaton, ev_id in pairs(event.automata) do
             --~ if level==automaton.level then
-                --~ automaton:event_unset_observable(ev_id)
+                --~ automaton:event_set_observable(ev_id, false)
                 --~ automaton:write_log()
             --~ end
         --~ end
@@ -2360,14 +2350,14 @@ function Controller:change_level(level, automaton)
         for k_event, event in automaton.events:ipairs() do
             ew = event.workspace
             if ew.observable then
-                automaton:event_set_observable(k_event)
+                automaton:event_set_observable(k_event, true)
             else
-                automaton:event_unset_observable(k_event)
+                automaton:event_set_observable(k_event, false)
             end
             if ew.controllable then
-                automaton:event_set_controllable(k_event)
+                automaton:event_set_controllable(k_event, true)
             else
-                automaton:event_unset_controllable(k_event)
+                automaton:event_set_controllable(k_event, false)
             end
         end
     end

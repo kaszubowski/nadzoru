@@ -95,10 +95,6 @@ Automaton.TYPES.REF_SPECIFICATION  = { name='Ref. Specification' }
 Automaton.TYPES.REF_SUPERVISOR     = { name='Ref. Supervisor' }
 
 ------------------------------------------------------------------------
---                         Private utils                              --
-------------------------------------------------------------------------
-
-------------------------------------------------------------------------
 --               automaton manipulation and definition                --
 ------------------------------------------------------------------------
 
@@ -108,7 +104,6 @@ end
 
 ---We check all states' numbers that can be converted to number,
 --then we mark the used one and return the first unused (the first hole in the table)
---@param self Automaton in which the operation is applied.
 --@return A number representing the first available number to name a state.
 function Automaton:getNextAvailableNumber()
     local tookNumbers = {}
@@ -123,14 +118,15 @@ function Automaton:getNextAvailableNumber()
 end
 
 ---Adds a new state to the automaton.
---Creates a state with no transitions, with properties according to the arguments 'name', 'marked' and 'initial' (if name is not provided, it will be a number relative to the number of states of the automaton). Inserts the new state in the automaton. If initial is true, the initial state of the automaton is set to the new state.
---@param self Automaton in which the operation is applied.
---@param name Name of the new state.
---@param marked If true, the new state is marked.
---@param initial If true, the new state becomes the initial state.
---@param id Forced id of the state.
---@return Id of the new state.
---@return New state itself.
+--Creates a state with no transitions, with properties according to the arguments
+--'name', 'marked' and 'initial. If name is not provided, it will obtained from @{Automaton:getNextAvailableNumber}.
+--Inserts the new state in the automaton. If initial is true, the initial state of the automaton is set to the new state.
+--@tparam name string Name of the new state.
+--@tparam marked boolean If true, the new state is marked.
+--@tparam initial boolean If true, the new state becomes the initial state.
+--@tparam id number Forced id of the state.
+--@treturn number The id of the new state.
+--@treturn table New state itself.
 --@see Automaton:state_set_initial
 function Automaton:state_add( name, marked, initial, id )
     local new_state = {
@@ -151,16 +147,14 @@ function Automaton:state_add( name, marked, initial, id )
     end
 
     if initial then
-        self:state_set_initial( id )
+        self:state_set_initial( id, true )
     end
 
     return id, new_state
 end
 
 ---Removes a state from the automaton.
---Verifies if the state represented by 'id' exists. Removes from the automaton every transition that has this state as soruce or target. Removes the state from the state list of the automaton.
---@param self Automaton in which the operation is applied.
---@param id Id of the state to be removed.
+--@ptaram id number The id of the state to be removed.
 --@see Automaton:transition_remove
 function Automaton:state_remove( id )
     local state, state_id = self.states:find( id )
@@ -186,24 +180,27 @@ function Automaton:state_remove( id )
     self.states:remove( state_id )
 end
 
-function Automaton:state_iremove( map )
-    if type( map ) ~= 'table' then return false end
+---Removes several states that are the key in the set from the automaton.
+--This is a more efficient way to remove multiple states inside operations.
+--@tparam set table A set [state] = boolean of states to be removed. 
+function Automaton:state_iremove( set )
+    if type( set ) ~= 'table' then return false end
 
-    --Remove states in the map from self.states
-    --Remove transitions to/from map on other states' internal
+    --Remove states in the set from self.states
+    --Remove transitions to/from set on other states' internal
     self.states:iremove( function( s )
-        if map[ s ] then
+        if set[ s ] then
             return true
         end
         
         s.transitions_out:iremove( function( t )
-            if map[ t.target ] then
+            if set[ t.target ] then
                 return true
             end
             return false
         end )
         s.transitions_in:iremove( function( t )
-            if map[ t.source ] then
+            if set[ t.source ] then
                 return true
             end
             return false
@@ -215,7 +212,7 @@ function Automaton:state_iremove( map )
     --Remove states transitions
     for k_event, event in self.events:ipairs() do
         event.transitions:iremove( function(t)
-            if map[t.target] or map[t.source] then
+            if set[t.target] or set[t.source] then
                 return true
             end
             return false
@@ -224,68 +221,47 @@ function Automaton:state_iremove( map )
 
     --Remove transitions
     self.transitions:iremove( function(t)
-        if map[t.target] or map[t.source] then
+        if set[t.target] or set[t.source] then
             return true
         end
         return false
     end )
 end
 
----Sets the initial state of the automaton.
---Verifies if the state represented by 'id' exists. Sets any other state to no initial. Sets the state to initial. Sets the initial state of the automaton to the state.
---@param self Automaton in which the operation is applied.
---@param id Id of the state to be set.
---@return True if no problems occurred, false/nil otherwise.
-function Automaton:state_set_initial( id )
+---Sets or unsert the initial state of the automaton.
+--Verifies if the state represented by 'id' exists. Sets all states' property initial to false. If value is true sets the state to initial and sets the initial state of the automaton to the state.
+--@tparam id number Id of the state to be set.
+--@tparam initial boolean if the state represented by 'id'  is or not initial
+--@treturn boolean true if no problems occurred, false/nil otherwise.
+function Automaton:state_set_initial( id, initial )
     local state, state_index = self.states:find( id )
     if not state then return end
 
+    --Clear all
+    self.initial = nil
     for ch_sta, sta in self.states:ipairs() do
         sta.initial = false
     end
-    state.initial = true
-    self.initial  = state_index
+
+    --Set
+    if initial then
+        state.initial = true
+        self.initial  = state_index
+    end
 
     return true
 end 
 
----Unsets the initial state of the automaton.
---Sets all states initial property to false. Unsets the initial state of the automaton.
---@param self Automaton in which the operation is applied.
---@return True if no problems occurred, false/nil otherwise.
-function Automaton:state_unset_initial( )
-    for ch_sta, sta in self.states:ipairs() do
-        sta.initial = false
-    end
-    self.initial = nil
-
-    return true
-end
-
----Sets a state of the automaton to marked.
---Verifies if the state represented by 'id' exists. Sets the state to marked.
---@param self Automaton in which the operation is applied.
---@param id Id of the state to be set.
---@return True if no problems occurred, false/nil otherwise.
-function Automaton:state_set_marked( id )
+---Sets the marked property of state.
+--Verifies if the state represented by 'id' exists. Sets the state according to param marked.
+--@tparam id number Id of the state.
+--@tparam marked boolean is the state marked.
+--@treturn boolean true if no problems occurred, false/nil otherwise.
+function Automaton:state_set_marked( id, marked )
     local state = self.states:find( id )
     if not state then return end
 
-    state.marked = true
-
-    return true
-end
-
----Sets a state of the automaton to unmarked.
---Verifies if the state represented by 'id' exists. Sets the state to unmarked.
---@param self Automaton in which the operation is applied.
---@param id Id of the state to be set.
---@return True if no problems occurred, false/nil otherwise.
-function Automaton:state_unset_marked( id )
-    local state = self.states:find( id )
-    if not state then return end
-
-    state.marked = false
+    state.marked = marked
 
     return true
 end
@@ -302,21 +278,10 @@ function Automaton:state_get_marked( id )
     return state.marked
 end
 
---Teste do id-name
-function Automaton:state_get_name( id )
-    local state = self.states:find( id )
-    if not state then return end
-    
-    return state.name
-
-end
-
 ---Sets the name of a state of the automaton.
---Verifies if the state represented by 'id' exists. Sets its name to 'name'.
---@param self Automaton in which the operation is applied.
---@param id Id of the state to be set.
---@param name New name of the state.
---@return True if no problems occurred, false/nil otherwise.
+--@tparam id number id of the state to be set.
+--@tparam name string new name of the state.
+--@treturn boolean true if no problems occurred, false/nil otherwise.
 function Automaton:state_set_name( id, name )
     local state = self.states:find( id )
     if not state then return end
@@ -326,9 +291,19 @@ function Automaton:state_set_name( id, name )
     return true
 end
 
+---Get the state name.
+--@tparam id number id of the state.
+--@treturn string state's name
+function Automaton:state_get_name( id )
+    local state = self.states:find( id )
+    if not state then return end
+    
+    return state.name
+
+end
+
 ---Sets the position of a state of the automaton.
 --Verifies if the state represented by 'id' exists. Sets its x coordinate to 'x' and its y coordinate to 'y'.
---@param self Automaton in which the operation is applied.
 --@param id Id of the state whose position is set.
 --@param x New x coordinate of the state.
 --@param y New y coordinate of the state.
@@ -351,7 +326,6 @@ end
 
 ---Returns the position of a state of the automaton.
 --Verifies if the state represented by 'id' exists. Returns its x and y coordinates.
---@param self Automaton in which the operation is applied.
 --@param id Id of the state whose position is returned.
 --@return X coordinate of the state.
 --@return Y coordinate of the state.
@@ -364,7 +338,6 @@ end
 
 ---Sets the radius of a state of the automaton.
 --Verifies if the state represented by 'id' exists. Sets its radius to 'r'.
---@param self Automaton in which the operation is applied.
 --@param id Id of the state to be set.
 --@param r New radius of the state.
 --@return True if no problems occurred, false/nil otherwise.
@@ -379,7 +352,6 @@ end
 
 ---Returns the radius of a state of the automaton.
 --Verifies if the state represented by 'id' exists. Returns its radius.
---@param self Automaton in which the operation is applied.
 --@param id Id of the state whose radius is returned.
 --@return Radius of the state.
 function Automaton:state_get_radius( id )
@@ -514,7 +486,6 @@ end
 
 ---Adds a new event to the automaton.
 --Creates a event that is not in any transitions, with properties according to the arguments 'name', 'observable' and 'controllable'. Inserts the new event in the automaton.
---@param self Automaton in which the operation is applied.
 --@param name Name of the new event.
 --@param observable If true, the new event is observable.
 --@param controllable If true, the new event is controllable.
@@ -549,7 +520,6 @@ end
 
 ---Removes an event from the automaton.
 --Verifies if the event identified by 'id' exists. Removes any transition with this event from the automaton. Removes the event from the event list of the automaton.
---@param self Automaton in which the operation is applied.
 --@param id Id of the event to be removed.
 --@see Automaton:transition_remove
 function Automaton:event_remove( id )
@@ -568,25 +538,22 @@ function Automaton:event_remove( id )
     self.events:remove( event_id )
 end
 
----Sets an event of the automaton to observable.
---Verifies if the event represented by 'id' exists. Sets it to observable.
---@param self Automaton in which the operation is applied.
---@param id Id of the event to be set.
---@return True if no problems occurred, false/nil otherwise.
-function Automaton:event_set_observable( id )
+---Sets an event's observable.
+--@tparam id number Id of the event to be set.
+--@tparam observable boolean is the event observable
+--@treturn boolean true if no problems occurred, false/nil otherwise.
+function Automaton:event_set_observable( id, observable )
     local event = self.events:find( id )
     if not event then return end
 
-    event.observable = true
+    event.observable = observable
 
     return true
 end
 
 ---Verifies if an event of the automaton is observable.
---Verifies if the event represented by 'id' exists. Returns its observable property.
---@param self Automaton in which the operation is applied.
---@param id Id of the event to be verified.
---@return True if the event is observable. False/nil otherwise.
+--@tparam id number Id of the event to be verified.
+--@treturn boolean true if the event is observable, false/nil otherwise.
 function Automaton:event_get_observable( id )
     local event = self.events:find( id )
     if not event then return end
@@ -594,50 +561,20 @@ function Automaton:event_get_observable( id )
     return event.observable
 end
 
----Sets an event of the automaton to unobservable.
---Verifies if the event represented by 'id' exists. Sets it to unobservable.
---@param self Automaton in which the operation is applied.
---@param id Id of the event to be set.
---@return True if no problems occurred, false/nil otherwise.
-function Automaton:event_unset_observable( id )
+---Sets the controllable property of an event.
+--@tparam id number Id of the event to be set.
+--@tparam controllable boolean is the event controllable.
+--@treturn boolean true if no problems occurred, false/nil otherwise.
+function Automaton:event_set_controllable( id, controllable )
     local event = self.events:find( id )
     if not event then return end
 
-    event.observable = false
-
-    return true
-end
-
----Sets an event of the automaton to controllable.
---Verifies if the event represented by 'id' exists. Sets it to controllable.
---@param self Automaton in which the operation is applied.
---@param id Id of the event to be set.
---@return True if no problems occurred, false/nil otherwise.
-function Automaton:event_set_controllable( id )
-    local event = self.events:find( id )
-    if not event then return end
-
-    event.controllable = true
-
-    return true
-end
-
----Sets an event of the automaton to uncontrollable.
---Verifies if the event represented by 'id' exists. Sets it to controllable.
---@param self Automaton in which the operation is applied.
---@param id Id of the event to be set.
---@return True if no problems occurred, false/nil otherwise.
-function Automaton:event_unset_controllable( id )
-    local event = self.events:find( id )
-    if not event then return end
-
-    event.controllable = false
+    event.controllable = controllable
 
     return true
 end
 
 ---Verifies if an event of the automaton is controllable.
---Verifies if the event represented by 'id' exists. Returns its controllable property.
 --@param self Automaton in which the operation is applied.
 --@param id Id of the event to be verified.
 --@return True if the event is controllable. False/nil otherwise.
@@ -651,7 +588,6 @@ end
 
 ---Sets the name of an event of the automaton.
 --Verifies if the event identified by 'id' exists. Filters 'name', removing any characters that are not alphanumeric, "_", or "&". If 'name' has the susbstring "&" or "EMPTYWORD", it is set to "&". The event name is set to 'name'.
---@param self Automaton in which the operation is applied.
 --@param id Id of the event to be set.
 --@param name New name of the event.
 --@return True if no problems occurred, false/nil otherwise.
@@ -677,7 +613,6 @@ end
 
 ---Sets the refinement of an event of the automaton.
 --Verifies if the event identified by 'id' exists. Filters 'ref', removing any characters that are not alphanumeric, "_", or "&". If 'ref' has the susbstring "&" or "EMPTYWORD", it is set to "&". The event refinement is set to 'ref'.
---@param self Automaton in which the operation is applied.
 --@param id Id of the event to be set.
 --@param ref New refinement of the event.
 --@return True if no problems occurred, false/nil otherwise.
@@ -721,14 +656,14 @@ end
 --  event.workspace = wev2
 --  self:event_set_name(id, ws_name)
 --  if wev2.controllable then
---      self:event_set_controllable(id)
+--      self:event_set_controllable(id, true)
 --  else
---      self:event_unset_controllable(id)
+--      self:event_set_controllable(id, false)
 --  end
 --  if wev2.observable then
---      self:event_set_observable(id)
+--      self:event_set_observable(id, true)
 --  else
---      self:event_unset_observable(id)
+--      self:event_set_observable(id, false)
 --  end
 --  self:event_set_refinement(id, wev2.refinement)
 --
@@ -740,7 +675,6 @@ end
 
 ---Adds a transition to the automaton.
 --Searchs fot the states represented by 'source_id' and 'target_id' and for the event represented by 'event_id'. If 'isdata' is true, the ids are treated as the states/event themselves. Sets the combination event-target on the source state and event-source on the target state to true. Adds the transition to the transition lists of the source state, target state and event.
---@param self Automaton in which the operation is applied.
 --@param source_id Id of the source state.
 --@param target_id Id of the target state.
 --@param event_id Id of the event used in the transition.
@@ -783,7 +717,6 @@ end
 
 ---Removes a transition from the automaton.
 --Finds the transition represented by 'id' in the transition list. Removes that transition from the transition list of the source state, target state, event and automaton. Sets the combination event-target on the source state and event-source on the target state to nil.
---@param self Automaton in which the operation is applied.
 --@param id Id of the transition to be removed.
 function Automaton:transition_remove( id )
     local trans, trans_id = self.transitions:find( id )
@@ -797,12 +730,6 @@ function Automaton:transition_remove( id )
     trans.source.event_target[trans.event][trans.target] = nil
     --source.target_trans_factor[ target ] still there
 end
-
---~ ---
---~ --CAUTION: This function will not guarantee consistence, it will remove the transitions from
---~ function Automaton:transition_iremove( map, bySource, byTarget, byEvent )
-    --~ self.transitions
---~ end
 
 ---Changes the factor of a transition
 --Finds the transition represented by 'id'. Sets it's factor to 'factor'.
@@ -822,7 +749,8 @@ end
 
 --~ function Automaton:getNextStates( source, event ) for NFA
 
---~ end 
+--~ end
+
 function Automaton:getNextState( source, event )
     for k_trans, trans in source.transitions_out:ipairs() do
         if trans.event == event then
@@ -856,13 +784,17 @@ end
 
 ---calculate the transition map from the source state to the target state.
 --m[source][event][target] = true
-function Automaton:getTransitionMap()
+function Automaton:getTransitionMap( deterministic )
     local transitionMap = {}
     for k_state, state in self.states:ipairs() do
         transitionMap[ state ] = {}
         for k_trans, trans in state.transitions_out:ipairs() do
-            transitionMap[ state ][ trans.event ] = transitionMap[ state ][ trans.event ] or {}
-            transitionMap[ state ][ trans.event ][ trans.target ] = true
+            if deterministic then
+                transitionMap[ state ][ trans.event ] = trans.target
+            else
+                transitionMap[ state ][ trans.event ] = transitionMap[ state ][ trans.event ] or {}
+                transitionMap[ state ][ trans.event ][ trans.target ] = true
+            end
         end
     end
     return transitionMap
@@ -870,13 +802,17 @@ end
 
 ---calculate the transition map from the target state to the source state.
 --m[target][event] = source
-function Automaton:getInvertedTransitionMap()
+function Automaton:getInvertedTransitionMap( deterministic )
     local transitionMap = {}
     for k_state, state in self.states:ipairs() do
         transitionMap[ state ] = {}
         for k_trans, trans in state.transitions_in:ipairs() do
-            transitionMap[ state ][ trans.event ] = transitionMap[ state ][ trans.event ] or {}
-            transitionMap[ state ][ trans.event ][trans.source ] = true
+            if deterministic then
+                transitionMap[ state ][ trans.event ] = trans.source
+            else
+                transitionMap[ state ][ trans.event ] = transitionMap[ state ][ trans.event ] or {}
+                transitionMap[ state ][ trans.event ][trans.source ] = true
+            end
         end
     end
     return transitionMap
@@ -947,11 +883,11 @@ function Automaton:IDES_import( file_name, get_layout )
             end
 
             if run == 'data' and name == 'initial' and sm == t.s then
-                self:state_set_initial( last_id )
+                self:state_set_initial( last_id, true )
             end
 
             if run == 'data' and name == 'marked'  and sm == t.s then
-                self:state_set_marked( last_id )
+                self:state_set_marked( last_id, true )
             end
 
             --Event
@@ -963,11 +899,11 @@ function Automaton:IDES_import( file_name, get_layout )
             end
 
             if run == 'data' and name == 'observable'   and sm == t.e then
-                self:event_set_observable( last_ev )
+                self:event_set_observable( last_ev, true )
             end
 
             if run == 'data' and name == 'controllable' and sm == t.e then
-                self:event_set_controllable( last_ev )
+                self:event_set_controllable( last_ev, true )
             end
 
             --Transition
@@ -1040,10 +976,10 @@ function Automaton:IDES_import( file_name, get_layout )
 --            map_state_obj[ data_child:prop('id') ] = last_obj
 --
 --          if data_child:find('properties'):find('initial') then
---              self:state_set_initial( last_id )
+--              self:state_set_initial( last_id, true )
 --          end
 --          if data_child:find('properties'):find('marked') then
---              self:state_set_marked( last_id )
+--              self:state_set_marked( last_id, true )
 --          end
 --          self:state_set_name( last_id, data_child:find('name').content )
 --      end
@@ -1054,10 +990,10 @@ function Automaton:IDES_import( file_name, get_layout )
 --                map_event_obj[ data_child:prop('id') ] = last_obj
 --
 --              if data_child:find('properties'):find('observable') then
---                  self:event_set_observable( last_ev )
+--                  self:event_set_observable( last_ev, true )
 --              end
 --              if data_child:find('properties'):find('controllable') then
---                  self:event_set_controllable( last_ev )
+--                  self:event_set_controllable( last_ev, true )
 --              end
 --
 --              self:event_set_name( last_id , data_child:find('name').content )
@@ -1279,9 +1215,9 @@ function Automaton:TCT_import( file_name )
             for i=0,state_num-1 do
                 self:state_add(tostring(i), false, false)
             end
-            self:state_set_initial(1)
+            self:state_set_initial(1, true)
             for id in string.gmatch(string.match(s, 'marker states.-\n(.-)vocal states'), '%d+') do
-                self:state_set_marked(id+1)
+                self:state_set_marked(id+1, true)
             end
         end
 
@@ -1324,9 +1260,7 @@ function Automaton:TCT_import( file_name )
 end
 
 ---Exports an automaton to TCT.
---TODO
 --@param file_name Name of the file to be exported.
---@param workspace_events Workspace events list.
 --@see Object:get
 --@see Object:set
 function Automaton:TCT_export( file_name )
@@ -1614,21 +1548,9 @@ function Automaton:transition_len( )
 end
 
 
-
--- *** Operations *** --
-
---~ function Automaton:check()
-    --~ local problems = {}
-    --~ local ok       = true
-    --~ if self.initial then
-        --~ problems.initial = false
-    --~ else
-        --~ problems.initial = true
-        --~ ok               = false
-    --~ end
---~ 
-    --~ return ok, problems
---~ end
+--------------------------------------------------------------------------------
+-- ******************************* Operations ************************8****** --
+--------------------------------------------------------------------------------
 
 ---Creates a copy of the automaton.
 --Creates a new automaton and copies all states, events and transitions of 'self' to that automaton.
@@ -1762,13 +1684,10 @@ function Automaton:checkCoaccessible()
 end
 
 ---Calculates the coaccessible component of the automaton.
---All states of the automaton are initialized as no coaccessible. Coaccessible states are recursively calculated. If 'remove_states' is true, no coaccessible states are removed.
---@param self Automaton in which the operation is applied.
---@param remove_states If true, no coaccessible states of the automaton are removed.
+--All states of the automaton are initialized as no coaccessible. Coaccessible states are recursively calculated.
 --@param keep If true, the operation is directly applied on 'self', otherwise, in a copy of it.
 --@return Coaccessible component of the automaton.
 --@see Automaton:clone
---@see Automaton:create_log
 function Automaton:coaccessible( keep )
     local newautomaton = keep and self or self:clone()
     local status, errMsg = newautomaton:checkCoaccessible()
@@ -1787,19 +1706,38 @@ function Automaton:coaccessible( keep )
     return newautomaton
 end
 
+--------------------------------------------------------------------------------
+
+---Calculates the trim component of the automaton.
+--Calculates the coaccessible component of the automaton using function 'Automaton:coaccessible'. Calculates the accessible component of the automaton using function 'Automaton:accessible'.
+--@param keep If true, the operation is directly applied on 'self', otherwise, in a copy of it.
+--@return Trim component of the automaton.
+--@see Automaton:coaccessible
+--@see Automaton:accessible
+function Automaton:trim( keep )
+    if not self.initial then
+        return false
+    end
+
+    local newautomaton = self:coaccessible( keep ):accessible( true )
+
+    return newautomaton
+end
+
+--------------------------------------------------------------------------------
+
 ---Joins in one unique state every no coaccessible state of the automaton.
---Calculates the coaccessible component of the automaton using function 'Automaton:coaccessible', but doesn't remove no coaccessible states. Creates a new state that will join all no coaccessible states. For every transition from a no coaccessible state to a no coaccessible state, adds a self-loop with this transition in the new state. For every transition from a coaccessible state to a no coaccessible state, adds this transition to that coaccessible state, having the new state as target. If the initial state is no coaccessible, makes the new state state become the initial state. Removes all no coaccessible states, except the new state.
---@param self Automaton in which the operation is applied.
+--Calculates the coaccessible component of the automaton using function 'Automaton:checkCoaccessible', which does not remove no coaccessible states.
+--Creates a new state that will join all no coaccessible states. For every transition from a NO coaccessible state to a NO coaccessible state, adds a
+--self-loop with this transition in the new state. For every transition from a coaccessible state to a NO coaccessible state, adds this transition to
+--that coaccessible state, having the new state as target. If the initial state is no coaccessible, makes the new state state become the initial state.
+--Removes all no coaccessible states, except the new (join) state.
 --@param keep If true, the operation is directly applied on 'self', otherwise, in a copy of it.
 --@return Automaton with unique no coaccessible state.
---@see Automaton:coaccessible
---@see Automaton:state_add
---@see Automaton:transition_add
---@see Automaton:state_set_initial
---@see Automaton:remove_states_fn TODO
---@see Automaton:create_log
+--@see Automaton:checkCoaccessible
 function Automaton:join_no_coaccessible_states( keep )
     local newautomaton = keep and self or self:clone()
+
     newautomaton:checkCoaccessible()
 
     -- the new no_coaccessible state
@@ -1808,15 +1746,11 @@ function Automaton:join_no_coaccessible_states( keep )
     Snca_state.no_coaccessible_remove = true
 
     --repeat all transition to/from a no_coaccessible
+    local statesToRemoveSet = {}
     for k, state in newautomaton.states:ipairs() do
-        if k < Snca and state.no_coaccessible then
-            --from
-            for k_t, t in state.transitions_out:ipairs() do
-                --if t.target.no_coaccessible then
-                    newautomaton:transition_add( Snca_state, Snca_state, t.event, true )
-                --end
-            end
-            --to
+        --~ if k < Snca and state.no_coaccessible then
+        if state ~= Snca_state and state.no_coaccessible then
+            statesToRemoveSet[ state ] = true
             for k_t, t in state.transitions_in:ipairs() do
                 if t.source.no_coaccessible then
                     newautomaton:transition_add( Snca_state, Snca_state, t.event, true )
@@ -1826,41 +1760,20 @@ function Automaton:join_no_coaccessible_states( keep )
             end
 
             if state.initial then
-                newautomaton:state_set_initial( Snca_state )
+                newautomaton:state_set_initial( Snca_state, true )
             end
         end
     end
 
-    --TODO:
-    --~ remove_states_fn( newautomaton, function( s )
-        --~ return (s.no_coaccessible and not s.no_coaccessible_remove ) and true or false
-    --~ end )
+    newautomaton:state_iremove( statesToRemoveSet )
 
     return newautomaton
 end
 
----Calculates the trim component of the automaton.
---Calculates the coaccessible component of the automaton using function 'Automaton:coaccessible'. Calculates the accessible component of the automaton using function 'Automaton:accessible'. If 'remove_states' is true, no coaccessible or no accessible states are removed.
---@param self Automaton in which the operation is applied.
---@param remove_states If true, no coaccessible or no accessible states of the automaton are removed.
---@param keep If true, the operation is directly applied on 'self', otherwise, in a copy of it.
---@return Trim component of the automaton.
---@see Automaton:coaccessible
---@see Automaton:accessible
---@see Automaton:create_log
-function Automaton:trim( keep )
-    --~ if not self.initial then
-        --~ return false
-    --~ end
-
-    local newautomaton = self:coaccessible( keep ):accessible( true )
-
-    return newautomaton
-end
+--------------------------------------------------------------------------------
 
 ---Creates self-loops in automaton 'self' according to the events in automata '...'.
 --Maps all events of 'self'. For each event that is not in 'self' and is in at least one of the other automata, adds that event to the resulting automaton and creates a self-loop with this event in all states of the resulting automaton.
---@param self Automaton in which the operation is applied.
 --@param keep If true, the operation is directly applied on 'self', otherwise, in a copy of it.
 --@param ... Automata whose events are used to create the self-loops.
 --@return Automaton with self-loops.
@@ -1893,10 +1806,6 @@ function Automaton:selfloop( keep, ... )
             newautomaton:transition_add( k_state, k_state, id_event, false )
         end
     end
-
-    --if not keep then
-    --  newautomaton:create_log()
-    --end
 
     return newautomaton
 end
@@ -1957,12 +1866,11 @@ end
 
 ---Calculates the synchronization/parallel composition of the automata '...' and 'self'.
 --Creates self-loops in the automata. Calculates the product of the automata using 'Automaton:product'.
---@param self Automaton in which the operation is applied.
 --@param ... Automata in which the operation is applied.
 --@return Synchronized automaton.
 --@see Automaton:clone
 --@see Automaton:product
---@see Automaton:create_log
+--@see Automaton:selfloop
 function Automaton:synchronization( ... )
     local allHaveInitialState, noInitialStateList = checkForInitialState( self, ... )
     if not allHaveInitialState then
@@ -1979,18 +1887,12 @@ function Automaton:synchronization( ... )
     selfloopall( unpack( new_all ) )
 
     local newautomaton = Automaton.product( unpack( new_all ) )
-    --newautomaton:create_log()
     return newautomaton
 end
 
 ---Calculates the product/intersection/meet of the automata '...' and 'self'.
---TODO
---@param self Automaton in which the operation is applied.
 --@param ... Automata in which the operation is applied.
 --@return Product automaton.
---@see Automaton:event_add
---@see Automaton:state_add
---@see Automaton:create_log
 function Automaton:product( ... )
     local allHaveInitialState, noInitialStateList = checkForInitialState( self, ... )
     if not allHaveInitialState then
@@ -2140,7 +2042,6 @@ function Automaton:product( ... )
 end
 
 ---Calculates the projection of the sequence of some pre selected events.  .
---TODO
 function Automaton:projection( ... )
     local map_events = { ... }
     local transitions_map=   {}
@@ -2714,6 +2615,7 @@ local function state_sum(t)
     return sum
 end
 
+---Makes the automaton deterministic.
 function Automaton:determinize()
     if not self.initial then return end
 
@@ -2754,9 +2656,10 @@ function Automaton:determinize()
         return def
     end
 
-    local initialStateNFA = self.states:find( self.initial ) 
+    local initialStateNFA = self.states:find( self.initial )
     local def = getPowerSetDef( { [initialStateNFA] = true } )
-    def.state = dfa:state_add( def.name,  initialStateNFA.marked, true )
+    local stateID
+    stateID, def.state = dfa:state_add( def.name,  initialStateNFA.marked, true )
 
     local stack    = { def }
     local stackPos = 1
@@ -2767,10 +2670,9 @@ function Automaton:determinize()
             local sMap          = {}
             local marked        = false
             local anyTransition = false
-            for k_state, sourceState in ipairs( defSource.statesNFA ) do
+            for k_sourceState, sourceState in ipairs( defSource.statesNFA ) do
                 if nfaTransitonMap[ sourceState ][ event ] then
                     for targetState, _ in pairs( nfaTransitonMap[ sourceState ][ event ] ) do
-                        print(sourceState.name, event.name, targetState.name)
                         anyTransition       = true
                         sMap[ targetState ] = true
                         if targetState.marked then marked = true end
@@ -2781,10 +2683,10 @@ function Automaton:determinize()
             if anyTransition then
                 local defTarget = getPowerSetDef( sMap )
                 if not defTarget.state then
-                    defTarget.state = dfa:state_add( defTarget.name,  marked, false )
+                    stateID, defTarget.state = dfa:state_add( defTarget.name,  marked, false )
                     stack[ #stack + 1 ] = defTarget
                 end
-                dfa:transition_add( defSource.state, defTarget.state, dfaEventMap[ event.name ] )
+                dfa:transition_add( defSource.state, defTarget.state, dfaEventMap[ event.name ], true )
             end
         end
         stackPos = stackPos + 1
@@ -2793,93 +2695,8 @@ function Automaton:determinize()
     return dfa
 end
 
----Makes the automaton deterministic.
---Creates a new automaton. Copies all events from 'self' to the new automanton. Creates the initial state of the new automaton as the closure of the initial state of 'self'. Transforms not deterministic and emptyword transitions into deterministic transitions, creating necessary new states in the process. Removes the emptyword from the new automaton.
---@param self Automaton in which the operation is applied.
---@param keep If true, the operation is directly applied on 'self', otherwise, in a copy of it.
---@return Deterministic automaton.
---@see Automaton:clone
---@see Automaton:state_add
---@see Automaton:transition_remove
---@see Automaton:transition_add
---@see Automaton:accessible
---@see Automaton:create_log
-function Automaton:deterministic()
-    if not self.initial then
-        --gtk.InfoDialog.showInfo("Automaton doesn't have initial state. Operation can't be applied.")
-        return
-    end
-
-    --TODO: create new automata and import only the evets (same EventSet)
-    --~ local new_automaton = self:clone()
-    --Clear new_automaton --TODO:
-    --~ remove_states_fn(new_automaton, function() return true end)
-
-    local closure = {}
-    local comp_state = {}
-    local smap = {}
-    local i, j, p, name, marked
-
-    --Map states (smap[state] = state_id)
-    for k_state, state in self.states:ipairs() do
-        smap[state] = k_state
-    end
-
-    p = 1
-    j = 1
-    comp_state[1], name, marked = empty_closure(self, closure, self.initial, smap)
-    new_automaton:state_add(name, marked, true)
-    while j<=p do
-        for k_event, event in self.events:ipairs() do
-            if event.name~='&' then
-                local target, flag
-                flag = false
-                target, name, marked = empty_edge(self, closure, comp_state[j], smap, event)
-
-                if state_sum(target) ~= 0 then
-                    for k_state, state in ipairs(comp_state) do
-                        if state_sum(target)==state_sum(state) then
-                            new_automaton:transition_add(j, k_state, k_event, false)
-                            flag = true
-                            break
-                        end
-                    end
-                    if not flag then
-                        p = p + 1
-                        comp_state[p] = target
-                        new_automaton:state_add(name, marked, false)
-                        new_automaton:transition_add(j, p, k_event, false)
-                    end
-                end
-            end
-        end
-
-        j = j + 1
-    end
-
-    --Remove & events
-    --~ local events_to_remove = {}
-    --~ for k_event, event in new_automaton.events:ipairs() do
-        --~ if event.name=='&' then
-            --~ events_to_remove[ #events_to_remove+1 ] = k_event
-        --~ end
-    --~ end
-    --~ local diff = 0
-    --~ for _, event in ipairs(events_to_remove) do
-        --~ new_automaton:event_remove(event-diff)
-        --~ diff = diff + 1
-    --~ end
-
-    --~ if not keep then
-        --~ new_automaton:create_log()
-    --~ end
-
-    return new_automaton
-end
-
 ---Calculates the complement of the automaton.
 --Uses 'Automaton:deterministic' to make the automaton deterministic. Creates a new state. For every state, inverts its marked property and for each event that is not on that state, creates a transition with this event, having the new state as target. If no new transition have been created, the new state is removed.
---@param self Automaton in which the operation is applied.
 --@param keep If true, the operation is directly applied on 'self', otherwise, in a copy of it.
 --@return Complement of the automaton.
 --@see Automaton:deterministic
@@ -2919,10 +2736,6 @@ function Automaton:complement(keep)
         new_automaton:state_remove(Sc)
     end
 
-    --~ if not keep then
-        --~ new_automaton:create_log()
-    --~ end
-
     return new_automaton
 end
 
@@ -2941,131 +2754,222 @@ local function mark_distinct_pair(distinct, i, j)
     end
 end
 
----Minimizes the automaton.
---Uses 'Automaton:deterministic' to make the automaton deterministic. Removes useless states using 'Automaton:trim'. Creates a new state. For every state, for each event that is not on that state, creates a transition with this event, having the new state as target. If no new transition have been created, the new state is removed. Creates the distinction matrix, marking trivially distinct pairs of states. For each pair in the matrix, verifies if it's states can be equivalent and, if not, marks it. If this depends on other pair(s) of states, store this pair for further analysis. Unifies non-marked pairs of states. Applies 'Automaton:trim' again to remove useless states.
---@param self Automaton in which the operation is applied.
---@param keep If true, the operation is directly applied on 'self', otherwise, in a copy of it.
---@return Minimized automaton.
---@see Automaton:deterministic
---@see Automaton:trim
---@see Automaton:state_add
---@see Automaton:state_remove
---@see Automaton:state_set_initial
---@see Automaton:transition_add
---@see Automaton:transition_remove
---@see Automaton:create_log
-function Automaton:minimize(keep)
-    if not self.initial then
-        return false
+function Automaton:makeTotal(keep)
+    local new_automaton = keep and self or self:clone()
+
+    local k_stateD, stateD = new_automaton:state_add( 'D',false,false )
+    for k_event, event in new_automaton.events:ipairs() do
+        self:transition_add( stateD, stateD, event, true )
     end
 
-    local new_automaton = self:deterministic(keep):trim(true)
-    local Sp, Sp_state = new_automaton:state_add('Sp', false, false )
-    local flag=false
-    local existent, distinct, smap, smap_inverted, union_map, target1, target2, transitions_to_remove
+    local transitionMap = new_automaton:getTransitionMap( true )
 
-    --Create state for the incomplete transitions and map states:
-    smap = {}
-    smap_inverted = {}
     for k_state, state in new_automaton.states:ipairs() do
-        smap[#smap+1] = state
-        smap_inverted[state] = #smap
-        existent = {}
-        for k_t, t in state.transitions_out:ipairs() do
-            existent[t.event] = true
-        end
-        for k_event, event in new_automaton.events:ipairs() do
-            if not existent[event] then
-                new_automaton:transition_add(state, Sp_state, event, true)
-                if state~=Sp_state then
-                    flag = true
-                end
-            end
-        end
-    end
-    if not flag then
-        new_automaton:state_remove(Sp)
-        smap_inverted[smap[#smap]] = nil
-        smap[#smap] = nil
-    end
-
-    --Create distinction matrix, marking trivially distinct pairs of states:
-    distinct = {}
-    for i=1,#smap-1 do
-        distinct[i] = {}
-        for j=i+1,#smap do
-            distinct[i][j] = smap[i].marked~=smap[j].marked
-        end
-    end
-
-    --Check pairs:
-    for i=1,#smap-1 do
-        for j=i+1,#smap do
+        if state ~= stateD then
             for k_event, event in new_automaton.events:ipairs() do
-                for target in pairs(smap[i].event_target[event]) do
-                    target1 = smap_inverted[target]
-                end
-                for target in pairs(smap[j].event_target[event]) do
-                    target2 = smap_inverted[target]
-                end
-                if target1~=target2 then
-                    if target1>target2 then
-                        target1, target2 = target2, target1
-                    end
-                    if distinct[target1][target2]==true then --Needs '==true' because may be a table
-                        mark_distinct_pair(distinct, i, j)
-                        break
-                    else
-                        distinct[target1][target2] = distinct[target1][target2] or {}
-                        distinct[target1][target2][i] = distinct[target1][target2][i] or {}
-                        distinct[target1][target2][i][j] = true
-                    end
+                if not transitionMap[ state ][ event ] then
+                    new_automaton:transition_add( state, stateD, event, true )
                 end
             end
         end
     end
 
-    --Map sets of states:
-    union_map = {}
-    for i=1,#smap do
-        union_map[i] = i
-        for j=1,i-1 do
-            if distinct[j][i]~=true then
-                --i and j are equivalent
-                union_map[i] = union_map[j]
-                smap[union_map[i]].name = smap[union_map[i]].name .. ',' .. smap[i].name
-                if smap[i].initial then
-                    new_automaton:state_set_initial(smap[union_map[i]])
-                end
-                break
-            end
-        end
-    end
-
-    --Change transitions:
-    transitions_to_remove = {}
-    for i=1,#smap do
-        if union_map[i]==i then
-            for k_transition, transition in smap[i].transitions_out:ipairs() do
-                if union_map[smap_inverted[transition.target]]~=smap_inverted[transition.target] then
-                    new_automaton:transition_add(smap[i], smap[union_map[smap_inverted[transition.target]]], transition.event, true)
-                    transitions_to_remove[ #transitions_to_remove+1 ] = transition
-                end
-            end
-        end
-    end
-
-    --Remove transitions:
-    for k_transition,transition in ipairs(transitions_to_remove) do
-        new_automaton:transition_remove(transition)
-    end
-
-    --~ if not keep then
-        --~ new_automaton:create_log()
-    --~ end
-
-    return new_automaton:trim(true)
+    return new_automaton:accessible( true )
 end
+
+function Automaton:minimize()
+    --The minimize is done from a DFA (convert from NFA) WITHOUT inaccesible states and with TOTAL transition function
+    local new_automaton = self:determinize():accessible(true):makeTotal(true)
+    local distinctMap   = {}
+
+    local transitionMap = new_automaton:getTransitionMap( true )
+
+    --Initiate distinctMap and set trivial distinct pairs (marked vs unmarked)
+    for k_stateA, stateA in new_automaton.states:ipairs() do
+        distinctMap[stateA] = distinctMap[stateA] or {}
+        for k_stateB, stateB in new_automaton.states:ipairs() do
+            if k_stateB > k_stateA then
+                local distinct      = stateA.marked ~= stateB.marked
+                distinctMap[stateA][stateB] = distinct
+            end
+        end
+    end
+
+    --mark other pairs (p,q) as distinct if exists e : distinctMap[ f(p,e) ][ f(q,e) ] == true
+    local newDistinct = true
+    while newDistinct do
+        newDistinct = false
+        for k_stateA, stateA in new_automaton.states:ipairs() do
+            for k_stateB, stateB in new_automaton.states:ipairs() do
+                if k_stateB > k_stateA  and distinctMap[stateA][stateB] == false then
+                    for k_event, event in new_automaton.events:ipairs() do
+                        local nextStateA = transitionMap[ stateA ][ event ]
+                        local nextStateB = transitionMap[ stateB ][ event ]
+                        if distinctMap[nextStateA][nextStateB] or distinctMap[nextStateB][nextStateA] then
+                            distinctMap[stateA][stateB] = true
+                            newDistinct = true
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    --Join no distinct states. Always join to the lower state
+    local usedState        = {}
+    local stateToRemoveSet = {}
+    for k_stateA, stateA in new_automaton.states:ipairs() do
+        if not usedState[ stateA ] then
+            usedState[ stateA ] = stateA
+        end
+        for k_stateB, stateB in new_automaton.states:ipairs() do
+            if k_stateA < k_stateB  and distinctMap[stateA][stateB] == false then
+                if stateB.initial then
+                    new_automaton:state_set_initial( usedState[ stateA ], true )
+                end
+                usedState[ stateB ]        = usedState[ stateA ]
+                stateToRemoveSet[ stateB ] = true
+            end
+        end
+    end
+
+    --Move transitions
+    for stateRm, _ in pairs( stateToRemoveSet ) do
+        for k_trans, trans in stateRm.transitions_out:ipairs() do
+            local newSource = usedState[ stateRm ]
+            local newTarget = usedState[ trans.target ]
+            if transitionMap[ newSource ][ trans.event ] ~= newTarget then
+                transitionMap[ newSource ][ trans.event ] = newTarget
+                new_automaton:transition_add( newSource, newTarget, trans.event , true )
+            end
+        end
+        for k_trans, trans in stateRm.transitions_in:ipairs() do
+            local newSource = usedState[ trans.source ]
+            local newTarget = usedState[ stateRm ]
+
+            if transitionMap[ newSource ][ trans.event ] ~= newTarget then
+                transitionMap[ newSource ][ trans.event ] = newTarget
+                new_automaton:transition_add( newSource, newTarget, trans.event , true )
+            end
+        end
+    end
+
+    --Remove unused indistinguishable states
+    new_automaton:state_iremove( stateToRemoveSet )
+
+    return new_automaton:trim( true )
+end
+
+--~ ---Minimizes the automaton.
+--~ --@return Minimized automaton.
+--~ function Automaton:minimize(keep)
+    --~ if not self.initial then
+        --~ return false
+    --~ end
+--~ 
+    --~ local new_automaton = self:deterministic(keep):trim(true)
+    --~ local Sp, Sp_state = new_automaton:state_add('Sp', false, false )
+    --~ local flag=false
+    --~ local existent, distinct, smap, smap_inverted, union_map, target1, target2, transitions_to_remove
+--~ 
+    --~ --Create state for the incomplete transitions and map states:
+    --~ smap = {}
+    --~ smap_inverted = {}
+    --~ for k_state, state in new_automaton.states:ipairs() do
+        --~ smap[#smap+1] = state
+        --~ smap_inverted[state] = #smap
+        --~ existent = {}
+        --~ for k_t, t in state.transitions_out:ipairs() do
+            --~ existent[t.event] = true
+        --~ end
+        --~ for k_event, event in new_automaton.events:ipairs() do
+            --~ if not existent[event] then
+                --~ new_automaton:transition_add(state, Sp_state, event, true)
+                --~ if state~=Sp_state then
+                    --~ flag = true
+                --~ end
+            --~ end
+        --~ end
+    --~ end
+    --~ if not flag then
+        --~ new_automaton:state_remove(Sp)
+        --~ smap_inverted[smap[#smap]] = nil
+        --~ smap[#smap] = nil
+    --~ end
+--~ 
+    --~ --Create distinction matrix, marking trivially distinct pairs of states:
+    --~ distinct = {}
+    --~ for i=1,#smap-1 do
+        --~ distinct[i] = {}
+        --~ for j=i+1,#smap do
+            --~ distinct[i][j] = smap[i].marked~=smap[j].marked
+        --~ end
+    --~ end
+--~ 
+    --~ --Check pairs:
+    --~ for i=1,#smap-1 do
+        --~ for j=i+1,#smap do
+            --~ for k_event, event in new_automaton.events:ipairs() do
+                --~ for target in pairs(smap[i].event_target[event]) do
+                    --~ target1 = smap_inverted[target]
+                --~ end
+                --~ for target in pairs(smap[j].event_target[event]) do
+                    --~ target2 = smap_inverted[target]
+                --~ end
+                --~ if target1~=target2 then
+                    --~ if target1>target2 then
+                        --~ target1, target2 = target2, target1
+                    --~ end
+                    --~ if distinct[target1][target2]==true then --Needs '==true' because may be a table
+                        --~ mark_distinct_pair(distinct, i, j)
+                        --~ break
+                    --~ else
+                        --~ distinct[target1][target2] = distinct[target1][target2] or {}
+                        --~ distinct[target1][target2][i] = distinct[target1][target2][i] or {}
+                        --~ distinct[target1][target2][i][j] = true
+                    --~ end
+                --~ end
+            --~ end
+        --~ end
+    --~ end
+--~ 
+    --~ --Map sets of states:
+    --~ union_map = {}
+    --~ for i=1,#smap do
+        --~ union_map[i] = i
+        --~ for j=1,i-1 do
+            --~ if distinct[j][i]~=true then
+                --~ --i and j are equivalent
+                --~ union_map[i] = union_map[j]
+                --~ smap[union_map[i]].name = smap[union_map[i]].name .. ',' .. smap[i].name
+                --~ if smap[i].initial then
+                    --~ new_automaton:state_set_initial(smap[union_map[i]], true)
+                --~ end
+                --~ break
+            --~ end
+        --~ end
+    --~ end
+--~ 
+    --~ --Change transitions:
+    --~ transitions_to_remove = {}
+    --~ for i=1,#smap do
+        --~ if union_map[i]==i then
+            --~ for k_transition, transition in smap[i].transitions_out:ipairs() do
+                --~ if union_map[smap_inverted[transition.target]]~=smap_inverted[transition.target] then
+                    --~ new_automaton:transition_add(smap[i], smap[union_map[smap_inverted[transition.target]]], transition.event, true)
+                    --~ transitions_to_remove[ #transitions_to_remove+1 ] = transition
+                --~ end
+            --~ end
+        --~ end
+    --~ end
+--~ 
+    --~ --Remove transitions:
+    --~ for k_transition,transition in ipairs(transitions_to_remove) do
+        --~ new_automaton:transition_remove(transition)
+    --~ end
+--~ 
+    --~ return new_automaton:trim(true)
+--~ end
 
 ---Masks the refined events of the automaton.
 --For each mask, find its refinements and replaces them by the mask.
@@ -3419,9 +3323,9 @@ end
             --~ end
             --~ if operation.target=='initial' then
                 --~ if operation.old_value then
-                    --~ automaton:state_set_initial(operation.old_value)
+                    --~ automaton:state_set_initial(operation.old_value, true)
                 --~ else
-                    --~ automaton:state_unset_initial()
+                    --~ automaton:state_set_initial( false )
                 --~ end
             --~ end
         --~ end
@@ -3429,9 +3333,9 @@ end
     --~ if operation.range=='state' then
         --~ if operation.name=='edit' then
             --~ if operation.old_value.marked then
-                --~ automaton:state_set_marked(operation.target)
+                --~ automaton:state_set_marked(operation.target, true)
             --~ else
-                --~ automaton:state_unset_marked(operation.target)
+                --~ automaton:state_set_marked(operation.target, false)
             --~ end
             --~ automaton:state_set_position(operation.target, operation.old_value.x, operation.old_value.y)
             --~ automaton:state_set_name(operation.target, operation.old_value.name)
@@ -3449,14 +3353,14 @@ end
         --~ --[[ Handled in workspace
         --~ if operation.name=='edit' then
             --~ if operation.old_value.observable then
-                --~ automaton:event_set_observable(operation.target)
+                --~ automaton:event_set_observable(operation.target, true)
             --~ else
-                --~ automaton:event_unset_observable(operation.target)
+                --~ automaton:event_set_observable(operation.target, false)
             --~ end
             --~ if operation.old_value.controllable then
-                --~ automaton:event_set_controllable(operation.target)
+                --~ automaton:event_set_controllable(operation.target, true)
             --~ else
-                --~ automaton:event_unset_controllable(operation.target)
+                --~ automaton:event_set_controllable(operation.target, false)
             --~ end
             --~ automaton:event_set_refinement(operation.target, operation.old_value.refinement)
             --~ automaton:event_set_name(operation.target, operation.old_value.name)
@@ -3517,9 +3421,9 @@ end
             --~ end
             --~ if operation.target=='initial' then
                 --~ if operation.new_value then
-                    --~ automaton:state_set_initial(operation.new_value)
+                    --~ automaton:state_set_initial(operation.new_value, true)
                 --~ else
-                    --~ automaton:state_unset_initial()
+                    --~ automaton:state_set_initial( false )
                 --~ end
             --~ end
         --~ end
@@ -3527,9 +3431,9 @@ end
     --~ if operation.range=='state' then
         --~ if operation.name=='edit' then
             --~ if operation.new_value.marked then
-                --~ automaton:state_set_marked(operation.target)
+                --~ automaton:state_set_marked(operation.target, true)
             --~ else
-                --~ automaton:state_unset_marked(operation.target)
+                --~ automaton:state_set_marked(operation.target, false)
             --~ end
             --~ automaton:state_set_position(operation.target, operation.new_value.x, operation.new_value.y)
             --~ automaton:state_set_name(operation.target, operation.new_value.name)
@@ -3547,14 +3451,14 @@ end
         --~ --[[ Handled in workspace
         --~ if operation.name=='edit' then
             --~ if operation.old_value.observable then
-                --~ automaton:event_set_observable(operation.target)
+                --~ automaton:event_set_observable(operation.target, true)
             --~ else
-                --~ automaton:event_unset_observable(operation.target)
+                --~ automaton:event_set_observable(operation.target, false)
             --~ end
             --~ if operation.old_value.controllable then
-                --~ automaton:event_set_controllable(operation.target)
+                --~ automaton:event_set_controllable(operation.target, true)
             --~ else
-                --~ automaton:event_unset_controllable(operation.target)
+                --~ automaton:event_set_controllable(operation.target, false)
             --~ end
             --~ automaton:event_set_refinement(operation.target, operation.old_value.refinement)
             --~ automaton:event_set_name(operation.target, operation.old_value.name)
@@ -3834,6 +3738,7 @@ end
 
 ---Get the list of local plants (Automata) for the specification.
 --The locality is a set of any automata in ... (G) that has at list one event in self (E)
+--@param self the specification
 --@param ... plant automata
 --@return <table> local plants
 function Automaton:locality( ... )
@@ -3852,6 +3757,8 @@ function Automaton:locality( ... )
     return locality
 end
 
+---self is the specification
+---varargs are the plants
 function Automaton:localPlant( ... )
     local locality    = self:locality( ... )
 
@@ -3860,6 +3767,8 @@ function Automaton:localPlant( ... )
     return Automaton.synchronization( unpack( locality ) )
 end
 
+---self is the specification
+---varargs are the plants
 function Automaton:localTarget( ... )
     local Gl = self:localPlant( ... )
     if not Gl then return end
@@ -3867,6 +3776,8 @@ function Automaton:localTarget( ... )
     return Automaton.synchronization( self, Gl ), Gl
 end
 
+---self is the specification
+---varargs are the plants
 function Automaton:localSupervisor( ... )
     local Kl, Gl = self:localTarget( ... )
     local Sl = Automaton.supC( Gl, Kl )
@@ -3915,8 +3826,8 @@ function Automaton:infoString()
     local info = self:getInfo()
     table.insert( infoStr, string.format("Automaton: %s (%s):", info.name, info.file ) )
     table.insert( infoStr, string.format("    States: %i (marked: %i, unmarked: %i)", info.states, info.markedStates, info.unmarkedStates ) )
-    table.insert( infoStr, string.format("    Events: %i (controllable: %i, uncontrollable: %i)", info.events, info.controllableEvents, info.uncontrollableEvents ) )
     table.insert( infoStr, string.format("    Transitions: %i", info.transitions ) )
+    table.insert( infoStr, string.format("    Events: %i (controllable: %i, uncontrollable: %i)", info.events, info.controllableEvents, info.uncontrollableEvents ) )
 
     return table.concat( infoStr, "\n" )
 end

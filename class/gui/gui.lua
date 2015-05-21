@@ -41,7 +41,7 @@ Gui = letk.Class( function( self )
 
     --Menu
     self:append_menu('file', "_File")
-    self:append_menu_item('file', "_Close Tab", "Close The Active Tab", 'gtk-delete', function( data ) data.gui:remove_current_tab() end, self )
+    self:append_menu_item('file', "_Close Tab", "Close The Active Tab", 'gtk-delete', self.remove_current_tab, self )
     self:append_menu_separator('file')
     self:append_menu_item('file', "_Quit nadzoru", "Quit nadzoru", 'gtk-quit', gtk.main_quit )
 

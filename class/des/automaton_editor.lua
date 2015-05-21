@@ -817,7 +817,6 @@ end
 --@see Automaton:state_set_position
 --@see Automaton:state_set_initial
 --@see Automaton:state_get_marked
---@see Automaton:state_unset_marked
 --@see Automaton:state_set_marked
 --@see Automaton:state_remove
 --@see Automaton:transition_remove
@@ -921,15 +920,15 @@ function AutomatonEditor:drawing_area_press( event )
         end
     elseif self.operation == 'initial' then
         if element and element.type == 'state' then
-            self.automaton:state_set_initial( element.id )
+            self.automaton:state_set_initial( element.id, true )
             self.render:draw({},{})
         end
     elseif self.operation == 'marked' then
         if element and element.type == 'state' then
             if self.automaton:state_get_marked( element.id ) then
-                self.automaton:state_unset_marked( element.id )
+                self.automaton:state_set_marked( element.id, false )
             else
-                self.automaton:state_set_marked( element.id )
+                self.automaton:state_set_marked( element.id, true )
             end
             self.render:draw({},{})
         end
@@ -984,16 +983,15 @@ end
 --@param self Automaton editor in which the operation is applied.
 --@param row_id Row of the event.
 --@see Automaton:event_get_controllable
---@see Automaton:event_unset_controllable
 --@see Automaton:event_set_controllable
 --@see AutomatonEditor:update_treeview_events
 --@see AutomatonRender:draw
 function AutomatonEditor:toggle_controllable( row_id )
     local event_id     = row_id+1
     if self.automaton:event_get_controllable( event_id ) then
-        self.automaton:event_unset_controllable( event_id )
+        self.automaton:event_set_controllable( event_id, false )
     else
-        self.automaton:event_set_controllable( event_id )
+        self.automaton:event_set_controllable( event_id, true )
     end
     self:update_treeview_events()
     self.render:draw()
@@ -1004,16 +1002,15 @@ end
 --@param self Automaton editor in which the operation is applied.
 --@param row_id Row of the event.
 --@see Automaton:event_get_observable
---@see Automaton:event_unset_observable
 --@see Automaton:event_set_observable
 --@see AutomatonEditor:update_treeview_events
 --@see AutomatonRender:draw
 function AutomatonEditor:toggle_observable( row_id )
     local event_id = row_id+1
     if self.automaton:event_get_observable( event_id ) then
-        self.automaton:event_unset_observable( event_id )
+        self.automaton:event_set_observable( event_id, false )
     else
-        self.automaton:event_set_observable( event_id )
+        self.automaton:event_set_observable( event_id, true )
     end
     self:update_treeview_events()
     self.render:draw()
