@@ -30,6 +30,7 @@ Selector = letk.Class( function( self, options, nowindow)
     options = table.complete( options or {}, {
         title      = 'nadzoru selector',
         success_fn = nil,
+        success_fn_param = nil,
         no_cancel = nil,
     })
     self             = {}
@@ -47,7 +48,7 @@ Selector = letk.Class( function( self, options, nowindow)
                 if not nowindow then
                     self.hbox_footer      = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
                         if not options.no_cancel then
-                        	self.btn_cancel   = gtk.Button.new_with_label("Cancel")
+                            self.btn_cancel   = gtk.Button.new_with_label("Cancel")
                         end
                         self.btn_ok       = gtk.Button.new_with_label("OK")
                 end
@@ -59,7 +60,7 @@ Selector = letk.Class( function( self, options, nowindow)
             if not nowindow then
                 self.vbox_main:pack_start( self.hbox_footer, false, false, 0 )
                     if not options.no_cancel then
-                    	self.hbox_footer:pack_start( self.btn_cancel, true, true, 0 )
+                        self.hbox_footer:pack_start( self.btn_cancel, true, true, 0 )
                     end
                     self.hbox_footer:pack_start( self.btn_ok, true, true, 0 )
             end
@@ -68,13 +69,23 @@ Selector = letk.Class( function( self, options, nowindow)
         self.window:connect("delete-event", self.window.destroy, self.window)
         self.window:set_modal( true )
         if not options.no_cancel then
-        	self.btn_cancel:connect("clicked", self.window.destroy, self.window )
+            self.btn_cancel:connect("clicked", self.window.destroy, self.window )
         end
         self.btn_ok:connect("clicked", self.success, self)
     end
 
     return self, self.vbox_main
 end, Object )
+
+--TODO check_single_box()
+---Single box groups all single line components
+function Selector:check_single_box()
+    if not self.single_box then
+        self.single_box = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
+        self.hbox_main:pack_start( self.single_box , true, true, 0 )
+        self.num_columns = self.num_columns + 1
+    end
+end
 
 ---TODO
 --TODO
@@ -229,11 +240,7 @@ function Selector:add_combobox( options )
     })
     options.valid_list = letk.List.new()
 
-    if not self.single_box then
-        self.single_box = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
-        self.hbox_main:pack_start( self.single_box , true, true, 0 )
-        self.num_columns = self.num_columns + 1
-    end
+    self:check_single_box()
 
     local label    = gtk.Label.new_with_mnemonic( options.text )
     local combobox = gtk.ComboBoxText.new()
@@ -253,6 +260,24 @@ function Selector:add_combobox( options )
     self.result[#self.result + 1] = function()
         local v = options.valid_list:get( combobox:get_active() + 1 )
         return type(options.result_fn) == 'function' and options.result_fn( v ) or v
+    end
+
+    return self
+end
+
+function Selector:add_entry( options )
+     options = table.complete( options or {}, {
+        text = "input",
+        default = '',
+    })
+    local label = gtk.Label.new_with_mnemonic( options.text )
+    local entry = gtk.Entry.new()
+    entry:set_text( options.default )
+    self:check_single_box()
+    self.single_box:pack_start( label , false, false, 0 )
+    self.single_box:pack_start( entry , false, false, 0 )
+    self.result[#self.result + 1] = function()
+        return entry:get_text()
     end
 
     return self
@@ -303,14 +328,10 @@ end
 --@return Selector with the checkbox.
 function Selector:add_checkbox( options )
      options = table.complete( options or {}, {
-        text        = 'input',
+        text = "input",
     })
     local checkbutton = gtk.CheckButton.new_with_mnemonic( options.text )
-    if not self.single_box then
-        self.single_box = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
-        self.hbox_main:pack_start( self.single_box , true, true, 0 )
-        self.num_columns = self.num_columns + 1
-    end
+    self:check_single_box()
     self.single_box:pack_start( checkbutton , false, false, 0 )
     self.result[#self.result + 1] = function()
         return checkbutton:get_active()
@@ -355,11 +376,7 @@ function Selector:add_file( options )
         dialog:add_filter( filter )
     end
     local file = ''
-    if not self.single_box then
-        self.single_box = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
-        self.hbox_main:pack_start( self.single_box , true, true, 0 )
-        self.num_columns = self.num_columns + 1
-    end
+    self:check_single_box()
     self.single_box:pack_start( vbox_file , false, false, 0 )
         vbox_file:pack_start( label_info , false, false, 0 )
         vbox_file:pack_start( button , false, false, 0 )
@@ -410,11 +427,7 @@ function Selector:add_spin( options )
    
     spinbutton:set_digits( options.digits )
     
-    if not self.single_box then
-        self.single_box = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
-        self.hbox_main:pack_start( self.single_box , true, true, 0 )
-        self.num_columns = self.num_columns + 1
-    end
+    self:check_single_box()
     
     self.single_box:pack_start( vbox_spin , false, false, 0 )
         vbox_spin:pack_start( label_spin , false, false, 0 )
@@ -431,7 +444,7 @@ end
 --TODO
 --@param self Selector to be run.
 function Selector:run()
-    if not nowindow then
+    if not self.nowindow then
         local nc = self.num_columns
         if nc == 0 then nc = 1 end
         if nc > 5 then nc  = 5 end
@@ -441,6 +454,8 @@ function Selector:run()
             "icon-name", "gtk-about")
 
         self.window:show_all()
+    else
+        self.vbox_main:show_all()
     end
     
     return self

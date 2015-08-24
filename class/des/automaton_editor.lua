@@ -20,11 +20,11 @@
 --[[
 module "AutomatonEditor"
 --]]
-AutomatonEditor = letk.Class( function( self, gui, automaton )
+AutomatonEditor = letk.Class( function( self, gui, automaton, elements )
     self.operation = nil
     self.automaton = automaton
-
-    self.gui = gui
+    self.elements  = elements
+    self.gui       = gui
 
     self.vbox                  = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
         self.toolbar           = gtk.Toolbar.new()
@@ -55,6 +55,7 @@ AutomatonEditor = letk.Class( function( self, gui, automaton )
 --]]
                 self.treeview_events      = Treeview.new( true )
                 self.btn_add_event        = gtk.Button.new_from_icon_name ( 'gtk-add' )
+                self.btn_copy_events      = gtk.Button.new_from_icon_name ( 'gtk-copy' )
                 self.btn_delete_event     = gtk.Button.new_from_icon_name ( 'gtk-delete' )
 
 
@@ -69,6 +70,7 @@ AutomatonEditor = letk.Class( function( self, gui, automaton )
     --self.drawing_area:connect("button_release_event", self.drawing_area_release, self )
 
     self.btn_add_event:connect('clicked', self.add_event, self )
+    self.btn_copy_events:connect('clicked', self.copy_events, self )
     self.btn_delete_event:connect('clicked', self.delete_event, self )
 
     self.treeview_events:add_column_text("Events",100, self.edit_event, self)
@@ -83,6 +85,7 @@ AutomatonEditor = letk.Class( function( self, gui, automaton )
             --self.vbox2:pack_start( self.type_box, false, false, 0 )
             self.vbox2:pack_start( self.treeview_events:build{ width = 236 }, true, true, 0 )
             self.vbox2:pack_start( self.btn_add_event, false, false, 0 )
+            self.vbox2:pack_start( self.btn_copy_events, false, false, 0 )
             self.vbox2:pack_start( self.btn_delete_event, false, false, 0 )
             --self.treeview_events.columns[1]:set('sizing', gtk.TREE_VIEW_COLUMN_AUTOSIZE)
 
@@ -1066,6 +1069,134 @@ end
 function AutomatonEditor:add_event()
     self.automaton:event_add("new")
     self:update_treeview_events()
+end
+
+function AutomatonEditor:copy_events()
+    local window      = gtk.Window.new(gtk.WINDOW_TOPLEVEL)
+        local vbox        = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
+            local automataCombobox = gtk.ComboBoxText.new()
+            local hbox1        = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
+                local btn_select_all   = gtk.Button.new_from_icon_name ( 'gtk-select-all' )
+                --~ local btn_select_marked   = gtk.Button.new_from_icon_name ( 'gtk-index' )
+                local btn_select_clear   = gtk.Button.new_from_icon_name ( 'gtk-clear' )
+            local eventsScroll   = gtk.ScrolledWindow.new()
+                local eventsTree        = Treeview.new( true )
+            local hbox2        = gtk.Box.new(gtk.ORIENTATION_HORIZONTAL, 0)
+                local btn_ok = gtk.Button.new_from_icon_name ( 'gtk-apply' )
+                local btn_cancel = gtk.Button.new_from_icon_name ( 'gtk-cancel' )
+
+
+    local selectedEventsDef
+    local function updateEventsTree()
+        eventsTree:clear_all()
+        if selectedEventsDef then
+            for k_eventDef, eventDef in ipairs( selectedEventsDef ) do
+                eventsTree:add_row{ eventDef.use, eventDef.event.name, eventDef.event.controllable, eventDef.event.observable }
+            end
+        end
+        eventsTree:update()
+    end
+    function toggle_event( user_data, row_id )
+        local event_id = row_id+1
+        if selectedEventsDef and selectedEventsDef[ event_id ] then
+            selectedEventsDef[ event_id ].use = not selectedEventsDef[ event_id ].use
+        end
+        updateEventsTree()
+    end
+    local function readEvents()
+        selectedEventsDef = {}
+        local element  = self.elements:get( automataCombobox:get_active() + 1 )
+        for k_event, event in element.events:ipairs() do
+            selectedEventsDef[ k_event ] = { use = true, event = event }
+        end
+        updateEventsTree()
+    end
+    eventsTree:add_column_toggle("Select", 40, toggle_event)
+    eventsTree:add_column_text("Event", 200)
+    eventsTree:add_column_toggle("Con", 40)
+    eventsTree:add_column_toggle("Obs", 40)
+
+    for k_el, el in self.elements:ipairs() do
+        automataCombobox:append_text( el:get('file_name') or "-x-" )
+    end
+    automataCombobox:connect('changed', readEvents )
+
+    btn_select_all:connect('clicked', function()
+        if selectedEventsDef then
+            for k_eventDef, eventDef in ipairs( selectedEventsDef ) do
+                eventDef.use = true
+            end
+            updateEventsTree()
+        end
+    end)
+    btn_select_clear:connect('clicked', function()
+        if selectedEventsDef then
+            for k_eventDef, eventDef in ipairs( selectedEventsDef ) do
+                eventDef.use = false
+            end
+            updateEventsTree()
+        end
+    end)
+    btn_cancel:connect('clicked', window.destroy, window)
+    btn_ok:connect('clicked', function()
+        if selectedEventsDef then
+            for k_eventDef, eventDef in ipairs( selectedEventsDef ) do
+                if eventDef.use then
+                    --just in case to avoid repetition
+                    eventDef.use = false
+                    self.automaton:event_add( eventDef.event.name, eventDef.event.observable, eventDef.event.controllable, eventDef.event.refinement  )
+                end
+            end
+            self:update_treeview_events()
+            updateEventsTree()
+        end
+    end)
+
+    window:add( vbox )
+        vbox:pack_start(automataCombobox, false, false, 0)
+        vbox:pack_start(hbox1, false, false, 0)
+            hbox1:pack_start(btn_select_all, true, true, 0)
+            --~ hbox1:pack_start(btn_select_marked, true, true, 0)
+            hbox1:pack_start(btn_select_clear, true, true, 0)
+        vbox:pack_start(eventsScroll, true, true, 0)
+            eventsScroll:add(eventsTree:build())
+        vbox:pack_start(hbox2, false, false, 0)
+            hbox2:pack_start(btn_ok, true, true, 0)
+            hbox2:pack_start(btn_cancel, true, true, 0)
+
+    window:set_modal( true )
+    window:set(
+        'title', "Add events from",
+        'width-request', 350,
+        'height-request', 500,
+        'window-position', gtk.WIN_POS_CENTER,
+        'icon-name', 'gtk-about'
+    )
+
+    window:connect('delete-event', window.destroy, window)
+    --~ btnOk:connect('clicked', function()
+        --~ for k_event, toggle in ipairs(events_toggle) do
+            --~ if toggle then
+                --~ if not transitions_map[k_event] then
+                    --~ self.automaton:transition_add(source, target, events_map[k_event])
+                --~ end
+            --~ else
+                --~ if transitions_map[k_event] then
+                    --~ self.automaton:transition_remove(transitions_map[k_event])
+                --~ end
+            --~ end
+        --~ end
+--~ 
+        --~ source.target_trans_factor[ target ] = scale:get_value()
+--~ 
+        --~ self.render:draw({},{})
+        --~ --self.automaton:write_log(function() --???
+        --~ --  self.render:draw({},{})
+        --~ --end)
+        --~ window:destroy()
+    --~ end)
+    window:show_all()
+    automataCombobox:set('active', 0)
 end
 
 ---Deletes an event from the editor.

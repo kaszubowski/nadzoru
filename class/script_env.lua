@@ -12,18 +12,18 @@ end, Object )
 
 ScriptEnv.Export = {}
 ScriptEnv.Export.Automaton      = {}
-ScriptEnv.Export.Automaton.supC = {'supc'}
-ScriptEnv.Export.Automaton.univocal = {'univocal'}
-ScriptEnv.Export.Automaton.accessible = {'accessible'}
-ScriptEnv.Export.Automaton.coaccessible = {'coaccessible'}
+ScriptEnv.Export.Automaton.supC = {'supc', params={ { "G", 'combobox', 'automaton' }, { "K", 'combobox', 'automaton' } }, description="Computes an automaton that accepts the supremal controllable sublanguage of the specification with respect to the given plant" }
+ScriptEnv.Export.Automaton.univocal = {'univocal', params={ { "G", 'combobox', 'automaton' }, { "K", 'combobox', 'automaton' } } }
+ScriptEnv.Export.Automaton.accessible = {'accessible', params={ { "Automaton", 'combobox', 'automaton' } } }
+ScriptEnv.Export.Automaton.coaccessible = {'coaccessible', params={ { "Automaton", 'combobox', 'automaton' } } }
 --~ ScriptEnv.Export.Automaton.complement = {'complement'}
-ScriptEnv.Export.Automaton.minimize = {'minimize'}
+ScriptEnv.Export.Automaton.minimize = {'minimize', params={ { "Automaton", 'combobox', 'automaton' } } }
 --~ ScriptEnv.Export.Automaton.deterministic = {'deterministic'}
-ScriptEnv.Export.Automaton.product = {'product', 'prod'}
+ScriptEnv.Export.Automaton.product = {'product', 'prod', params={ { "Automaton",'multiple','automaton' } } }
 --~ ScriptEnv.Export.Automaton.projection = {'projection'}
-ScriptEnv.Export.Automaton.selfloop = {'selfloop'}
-ScriptEnv.Export.Automaton.synchronization = {'synchronization', 'sync'}
-ScriptEnv.Export.Automaton.trim = {'trim'}
+ScriptEnv.Export.Automaton.selfloop = {'selfloop', params={ { "Automaton",'combobox','automaton' }, { "Automata",'multiple','automaton' }  } }
+ScriptEnv.Export.Automaton.synchronization = {'synchronization', 'sync', params={ { "Automaton",'multiple','automaton' } } }
+ScriptEnv.Export.Automaton.trim = {'trim', params={ { "Automaton",'multiple','automaton' } } }
 ScriptEnv.Export.Automaton.save_as = {'save'}
 ScriptEnv.Export.Automaton.infoString = {'info'}
 ScriptEnv.Export.Automaton.infoStringMultiple = {'infom'}

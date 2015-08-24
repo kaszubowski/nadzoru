@@ -1781,8 +1781,8 @@ end
 --@see Automaton:event_add
 --@see Automaton:transition_add
 --@see Automaton:create_log
-function Automaton:selfloop( keep, ... )
-    local newautomaton = keep and self or self:clone()
+function Automaton:selfloop( ... )
+    local newautomaton = self:clone()
     local all          = { ... }
     local self_events  = {}
     local loop_events  = {}

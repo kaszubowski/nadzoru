@@ -91,7 +91,7 @@ Devices['pic18f'].int_cast   = '(unsigned long int)'
 Devices['pic18f'].ns         = '' --number suffix
 
 Devices['pic18f'].models = { --???
-	['Supervisor'] = true,   --???
+    ['Supervisor'] = true,   --???
 }                            --???
 
 Devices['pic18f']:set_option('random_fn', {
@@ -229,6 +229,39 @@ Devices['atmega328p'].name         = "AtMega 328p"
 --*********************************++*********************************--
 --**                     GenericMic Distributed                     **--
 --********************************************************************--
+function divElementsInGroups( e, g, range )
+    local plusOne    = e%g
+    local baseAmount = math.floor(e/g)
+    local s          = {}
+
+    for i=1,plusOne do
+        s[i] = baseAmount+1
+    end
+    for i=plusOne+1,g do
+        s[i]=baseAmount
+    end
+
+    if range then
+        r = {}
+        m = {}
+        local start = 1
+        for i = 1, g do
+            r[i] = {
+                first    = start,
+                last     = start+s[i]-1,
+                elements = s[i],
+            }
+            for j = r[i].first, r[i].last do
+                m[j] = i
+            end
+            start = start + s[i]
+        end
+        return r, m
+    else
+        return s
+    end
+end
+
 Devices['GenericMicDistributed'] = letk.Class( Devices['base'] ):init_options()
 
 Devices['GenericMicDistributed'].template_file = { 'generic_mic_distributed.h', 'generic_mic_distributed.c'}
@@ -236,18 +269,55 @@ Devices['GenericMicDistributed'].template_file = { 'generic_mic_distributed.h', 
 Devices['GenericMicDistributed'].display      = true
 Devices['GenericMicDistributed'].name         = "Generic Mic. Distributed"
 
-Devices['GenericMicDistributed']:set_option('sup_start', {
-    caption   = "Sup. Range start",
+Devices['GenericMicDistributed']:set_option('types', {
+    caption   = "Types",
     type      = 'spin',
-    min_value = 0,
-    max_value = function( codeGen ) return codeGen.automata:len()-1 end,
+    min_value = 1,
+    max_value = function( codeGen ) return codeGen.automata:len() end,
 })
-Devices['GenericMicDistributed']:set_option('sup_end', {
-    caption = "Sup. Range end",
-    type    = 'spin',
-    min_value = 0,
-    max_value = function( codeGen ) return codeGen.automata:len()-1 end,
-})
+
+Devices['GenericMicDistributed'].generate     = function( self, Context, tmpl, options ) --Files?
+    local types        = options[ 'types' ]
+    local len_automata = self.automata:len()
+
+    local automataSets = {}
+    for t = 1, types do
+        automataSets[t] = {}
+    end
+    --divide the automata into types automata sets.
+    local ranges, mapAutomataType = divElementsInGroups( len_automata, types, true )
+    for k_automaton, automaton in self.automata:ipairs() do
+        table.insert( automataSets[ mapAutomataType[k_automaton] ], automaton )
+    end
+    Context:push{
+        automata_sets = automataSets,
+        types         = types,
+    }
+    for t = 1, types do
+        local mySupervisorsCheck = {} --A set that specify which supervisors I have
+        for i=1,len_automata do
+            if i >= ranges[t].first and i <= ranges[t].last then
+                mySupervisorsCheck[i] = 1
+            else
+                mySupervisorsCheck[i] = 0
+            end
+        end
+        Context:push{
+            my_type           = t,
+            my_automata_check = mySupervisorsCheck,
+            my_automata_set   = automataSets[t],
+            my_first_automata = ranges.first,
+        }
+        local templateFileName = './res/codegen/templates/' .. tmpl
+        local Template = letk.Template.new( templateFileName )
+        local code     = Template( Context )
+        local file = io.open( options.pathname .. '/'  .. t .. '_' .. tmpl, "w")
+        file:write( code )
+        file:close()
+        Context:pop()
+    end
+    Context:pop()
+end
 
 require 'res.codegen.devices.schneider'
 require 'res.codegen.devices.schneider_distinguisher'

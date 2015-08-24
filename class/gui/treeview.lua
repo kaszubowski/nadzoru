@@ -82,6 +82,9 @@ function Treeview:add_column_text( caption, width, callback, param )
     if type(callback) == 'function' then
         self.render[#self.render]:set('editable', true)
         self.render[#self.render]:connect('edited', callback, param)
+    elseif type(callback) == 'boolean' then
+        --~ self.render[#self.render]:set('editable', callback)
+        --TODO, update model
     end
 
     return self
@@ -110,6 +113,8 @@ function Treeview:add_column_toggle( caption, width, callback, param )
     self.model_list[#self.model_list +1] = 'gboolean'
     if type(callback) == 'function' then
         self.render[#self.render]:connect('toggled', callback, param)
+    elseif type(callback) == 'boolean' then
+        --TODO, update model
     end
 
     return self
@@ -124,7 +129,7 @@ end
 --@param param TODO
 --@return TODO
 function Treeview:add_column_combobox( caption, width, callback, param )
-	
+    
 end
 
 ---TODO
@@ -200,7 +205,7 @@ function Treeview:update()
 end
 
 --function Treeview:set_selected( column, items )
-	
+    
 --end
 
 ---TODO
@@ -213,7 +218,8 @@ function Treeview:get_selected( column )
         local res, model = self.selection:get_selected( self.iter )
         if res then
             local path = model:get_path( self.iter )
-            local pos  = path:get_indices( 0 )[ 1 ]
+            --~ local pos  = path:get_indices( 0 )[ 1 ]
+            local pos  = path:get_indices()[ 1 ]
             if column then
                 return model:get( self.iter, column - 1 ), pos + 1
             else

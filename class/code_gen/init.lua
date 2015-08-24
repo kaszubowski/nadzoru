@@ -354,7 +354,7 @@ function CodeGen:build_gui( gui )
     self.gui.code_input_scroll:add(self.gui.code_input_view)
     self.gui.code_input_buffer:set('language', self.gui.code_input_lang)
 
-    self.gui.note:insert_page( self.gui.code_input_hbox, gtk.Label.new("Input"), -1)
+    self.gui.note:insert_page( self.gui.code_input_hbox, gtk.Label.new("Uncontrollable"), -1)
     self.gui.code_input_hbox:pack_start( self.gui.code_input_treeview:build{width = 150}, false, false, 0 )
     self.gui.code_input_hbox:pack_start( self.gui.code_input_vbox, true, true, 0 )
         self.gui.code_input_vbox:pack_start( self.gui.code_input_label, false, false, 0 )
@@ -382,7 +382,7 @@ function CodeGen:build_gui( gui )
     self.gui.code_output_scroll:add(self.gui.code_output_view)
     self.gui.code_output_buffer:set('language', self.gui.code_output_lang)
 
-    self.gui.note:insert_page( self.gui.code_output_hbox, gtk.Label.new("Output"), -1)
+    self.gui.note:insert_page( self.gui.code_output_hbox, gtk.Label.new("Action"), -1)
     self.gui.code_output_hbox:pack_start( self.gui.code_output_treeview:build{width = 150}, false, false, 0 )
     self.gui.code_output_hbox:pack_start( self.gui.code_output_vbox, true, true, 0 )
         self.gui.code_output_vbox:pack_start( self.gui.code_output_label, false, false, 0 )
@@ -687,8 +687,9 @@ end
 function CodeGen.generate( results, numresults, selector, self )
     -- Context --
     local options = {}
-    if Devices[ self.device_id ].options then
-        for i, opt in ipairs( Devices[ self.device_id ].options ) do
+    local dev     = Devices[ self.device_id ]
+    if dev.options then
+        for i, opt in ipairs( dev.options ) do
             if opt.type == 'choice' then
                 --~ self[ opt.var ] = results[ i ][ 1 ]
                 options[ opt.var ] = results[ i ][ 1 ]
@@ -712,11 +713,19 @@ function CodeGen.generate( results, numresults, selector, self )
     if self.device.template_file then
         local tmpls = type( self.device.template_file ) == 'table' and self.device.template_file or { self.device.template_file }
         for _, tmpl in ipairs( tmpls ) do
-            local Template = letk.Template.new( './res/codegen/templates/' .. tmpl )
-            local code = Template( Context )
-            local file = io.open( options.pathname .. '/'  .. tmpl, "w")
-            file:write( code )
-            file:close()
+            if dev.generate then
+                status, err = pcall( dev.generate, self, Context, tmpl, options )
+                if not status then
+                    print( err )
+                end
+            else
+                local templateFileName = './res/codegen/templates/' .. tmpl
+                local Template         = letk.Template.new( templateFileName )
+                local code             = Template( Context )
+                local file             = io.open( options.pathname .. '/'  .. tmpl, "w")
+                file:write( code )
+                file:close()
+            end
         end
     end
     

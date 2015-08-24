@@ -25,7 +25,7 @@ function ScriptGui:buildGui( gui )
         
     --~ self.scriptGui.separator        = gtk.Separator.new(gtk.ORIENTATION_HORIZONTAL);
 
-    self.scriptGui.paned:set_position(600)
+    self.scriptGui.paned:set_position(400)
 
     --Help:
     self.scriptGui.scroll_help         = gtk.ScrolledWindow.new()
@@ -33,7 +33,7 @@ function ScriptGui:buildGui( gui )
 
     self.scriptGui.scroll_help:set('hscrollbar-policy', gtk.POLICY_AUTOMATIC, 'vscrollbar-policy', gtk.POLICY_AUTOMATIC)
     self.scriptGui.scroll_help:set('width-request', 250 )
-    self.scriptGui.help_model      = gtk.TreeStore.new('gchararray','gchararray','gint')
+    self.scriptGui.help_model      = gtk.TreeStore.new('gchararray','gchararray','gint','gchararray')--Name, code, carrier return, DESCRIPTION(TODO)
     self.scriptGui.help_col1       = gtk.TreeViewColumn.new_with_attributes("Script help", gtk.CellRendererText.new(), "text", 0)
     self.scriptGui.help_selection  = self.scriptGui.help_view:get_selection()
     
@@ -111,7 +111,7 @@ function ScriptGui:updateHelp( tbl )
     end )
     for k_functionName, functionName in ipairs( envFunctions ) do
         self.scriptGui.help_model:append(iter, iterMain)
-        self.scriptGui.help_model:set(iter, 0, functionName, 1, functionName .. '()', 2, 1) --Display, insert, move cursor n positions backwards after insert
+        self.scriptGui.help_model:set(iter, 0, functionName, 1, functionName .. '()', 2, 1, 3, "") --0:Display, 1:insert, 2:move cursor n positions backwards after insert, 3:DESCRIPTION
     end
 
     self.scriptGui.help_model:append( iterMain )

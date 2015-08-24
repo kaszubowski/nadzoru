@@ -71,6 +71,7 @@ require('class.des.automaton_render')
 require('class.des.automaton_editor')
 require('class.script_env')
 require('class.script_gui')
+require('class.operations_gui')
 --require('class.chooser')
 --require('class.debug')
 --~ require('class.scada.init')
@@ -122,8 +123,10 @@ function Controller:build()
         self.gui:append_menu_item('import', "_TCT" , "Import a TCT (.ads) automaton file" , './images/icons/tct_export.png' , self.import_tct , self)
     self.gui:append_menu_separator('automata')
     self.gui:append_menu_item('automata', "_Edit"          , "Edit automaton struct"                        , 'gtk-edit'   , self.automaton_edit, self)
-    self.gui:append_menu_item('automata', "_Code Generator", "Deterministic Finite Automata - Code Generate", 'gtk-execute', self.code_gen_dfa  , self)
+    self.gui:append_menu_separator('automata')
+    self.gui:append_menu_item('automata', "Operations", "Operations", 'gtk-convert', self.operations_gui  , self)
     self.gui:append_menu_item('automata', "Script operations", "Script operations", 'gtk-media-play', self.script_operation  , self)
+    self.gui:append_menu_item('automata', "_Code Generator", "Deterministic Finite Automata - Code Generate", 'gtk-execute', self.code_gen_dfa  , self)
     --~ self.gui:append_sub_menu('automata','operations', "O_perations")
         --~ self.gui:append_menu_item('operations', "Accessible", "Calcule the accessible automata", nil, self.operations_accessible, self)
         --~ self.gui:append_menu_item('operations', "Coaccessible", "Calcule the coaccessible automata", nil, self.operations_coaccessible, self)
@@ -491,13 +494,13 @@ function Controller:create_automaton_tab( new_automaton )
             if #name>0 then
                 window:destroy()
                 new_automaton:set('file_name', name )
-                AutomatonEditor.new( self.gui, new_automaton )
+                AutomatonEditor.new( self.gui, new_automaton, self.elements )
             end
         end)
 
         window:show_all()
     elseif new_automaton.states:len()<100  then
-        AutomatonEditor.new( self.gui, new_automaton )
+        AutomatonEditor.new( self.gui, new_automaton, self.elements )
     else
         Chooser.new{
             title = 'nadzoru',
@@ -505,7 +508,7 @@ function Controller:create_automaton_tab( new_automaton )
             choices = {'Yes', 'No'},
             callbacks = {
                 function()
-                    AutomatonEditor.new( self.gui, new_automaton )
+                    AutomatonEditor.new( self.gui, new_automaton, self.elements )
                 end,
             }
         }
@@ -522,7 +525,7 @@ end
 function Controller:create_new_automaton()
     local new_automaton = Automaton.new()
     self:element_add( new_automaton )
-    AutomatonEditor.new( self.gui, new_automaton )
+    AutomatonEditor.new( self.gui, new_automaton, self.elements)
 end
 
 ---Loads an automaton from a file.
@@ -558,7 +561,7 @@ function Controller:open_automaton()
             new_automaton:load_file( filename )
             self:element_add( new_automaton )
             if response == 1 then
-                AutomatonEditor.new( self.gui, new_automaton )
+                AutomatonEditor.new( self.gui, new_automaton, self.elements )
             end
         end
         self.gui.dialogCurrentFolder = dialog:get_current_folder()
@@ -671,7 +674,7 @@ function Controller:import_ides()
             new_automaton:IDES_import( filename )
             self:element_add( new_automaton )
             if response == 1 then
-                AutomatonEditor.new( self.gui, new_automaton )
+                AutomatonEditor.new( self.gui, new_automaton, self.elements )
             end
         end
         self.gui.dialogCurrentFolder = dialog:get_current_folder()
@@ -710,7 +713,7 @@ function Controller:import_tct()
             new_automaton:TCT_import( filename )
             self:element_add( new_automaton )
             if response == 1 then
-                AutomatonEditor.new( self.gui, new_automaton )
+                AutomatonEditor.new( self.gui, new_automaton, self.elements )
             end
         end
         self.gui.dialogCurrentFolder = dialog:get_current_folder()
@@ -793,7 +796,7 @@ function Controller:automaton_edit()
         success_fn = function( results, numresult )
             local automaton = results[1]
             if automaton then
-                AutomatonEditor.new( self.gui, automaton )
+                AutomatonEditor.new( self.gui, automaton, self.elements )
                 ---self:create_automaton_tab( automaton )
             end
         end,
@@ -822,6 +825,11 @@ end
 function Controller:script_operation()
     local scriptGui = ScriptGui.new( self.elements )
     scriptGui:buildGui( self.gui )
+end
+
+function Controller:operations_gui()
+    local operationsGui = OperationsGui.new( self.elements )
+    operationsGui:buildGui( self.gui )
 end
 
 
@@ -1062,7 +1070,7 @@ function Controller:operations_selfloop()
         success_fn = function( results, numresult )
             local automaton = results[1]
             if automaton then
-                local new_automaton = automaton:selfloop( false, unpack( results[2] ) )
+                local new_automaton = automaton:selfloop( unpack( results[2] ) )
                 new_automaton:set('file_name', 'selfloop(' .. automaton:get('file_name') .. ', ...' .. ')')
                 self.elements:append( new_automaton )
                 ---self:create_automaton_tab( new_automaton ) --start editing automaton
