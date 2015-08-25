@@ -206,54 +206,21 @@ void calculate_next_state( char *msg ){
     }
 }
 
-/*
-void calculate_next_state( unsigned char event, unsigned long int state_vector[], unsigned char check_vector[] ){
-    unsigned char i;
-    unsigned long int position;
-    unsigned char num_transitions;
-
-    for(i=0; i<NUM_SUPERVISORS; i++){
-        if( (my_automata_check[i] == 1) && (check_vector[i] == 0) ){ //Do I have this supervisor and it was not calculated yet
-            check_vector[ i ] = 1;
-
-            unsigned char local_sup_pos = get_local_supervisor_position( i );
-            if( sup_events[ local_sup_pos ][ event ] ){
-                position        = get_state_position( local_sup_pos, state_vector[i] );
-                num_transitions = sup_data[ position ];
-                position++;
-                while( num_transitions-- ){
-                    if( sup_data[ position ] == event ){
-                        state_vector[ i ] = ( sup_data[ position + 1 ] * 256 ) + ( sup_data[ position + 2 ] );
-                        break;
-                    }
-                    position+=3;
-                }
-            }
-            
-        }
-    }
-}
-*/
-
-void start_get_active_controllable_events( unsigned char *events ){
-    /* Disable all non controllable events */
+void start_get_active_controllable_events( char *msg ){
+    /* init the controllable bit mask as 1. Disable all uncontrollable events (set as 0) */
     unsigned char i;
     for( i=0; i<NUM_EVENTS; i++ ){
-        if( !ev_controllable[i] ){
-            events[i] = 0;
-        } else {
-            events[i] = 1;
-        }
+        msg_set_controllable_event( msg, ev_controllable[i] );
     }
 }
 
-void get_active_controllable_events( unsigned char *events, unsigned long int state_vector[], unsigned char check_vector[] ){
+void get_active_controllable_events( char *msg ){
     unsigned char i,j;
 
     /* Check disabled events for all supervisors */
     for(i=0; i<NUM_SUPERVISORS; i++){
-        if( (my_automata_check[i] == 1) && (check_vector[i] == 0) ){ //Do I have this supervisor and it was not calculated yet
-            check_vector[ i ] = 1;
+        if( (my_automata_check[i] == 1) && (msg_get_considered( msg, i ) == 0) ){ //Do I have this supervisor and it was not calculated yet
+            msg_set_considered( msg, i );
             
             unsigned char local_sup_pos = get_local_supervisor_position( i );
             unsigned long int position;
@@ -272,7 +239,7 @@ void get_active_controllable_events( unsigned char *events, unsigned long int st
             }
             
             /*if supervisor have a transition with the event in the current state, it can't disable the event */
-            position = get_state_position( local_sup_pos, state_vector[ i ] );
+            position        = get_state_position( local_sup_pos, msg_get_current_state( msg, i ) );
             num_transitions = sup_data[ position ];
             position++;
             while( num_transitions-- ){
@@ -283,43 +250,48 @@ void get_active_controllable_events( unsigned char *events, unsigned long int st
             /* Disable for current supervisor states */
             for( j=0; j<NUM_EVENTS; j++ ){
                 if( ev_disable[ j ] == 1 ){
-                    events[ j ] = 0;
+                    msg_set_controllable_event( msg, j, 0 );
                 }
             }
-            
         }
     }
 }
 
-unsigned char end_get_active_controllable_events( unsigned char *events ){
-    unsigned char i, count_actives = 0;
+/*return the number of enabled controllable events or 0 otherwise. A randon selected event is saved in "event"*/
+int end_get_active_controllable_events( char *msg, char *event ){
+    unsigned char i, count_actives = 0, events[ NUM_EVENTS ];
     for(i=0; i<NUM_EVENTS; i++){
-        if( events[i] ){
+        if( msg_get_controllable_event( msg, i ) ){
             count_actives++;
+            events[ i ] = 1;
+        } else {
+            events[ i ] = 0;
         }
     }
-    
-    return count_actives; //TODO: return number of active controllable events
-}
 
-int check_all_supervisors_considered( unsigned char check_vector[] ){
-    int i;
-    for(i=0;i<NUM_SUPERVISORS;i++){
-        if( !check_vector[ i ] ){
-            return 0;
+    if( count_actives ){
+        unsigned char random_pos = rand() % count_actives;
+        for(i=0; i<NUM_EVENTS; i++){
+            if( !random_pos && events[i] ){
+                *event = i;
+                return count_actives;
+            } else if( events[i] ){
+                random_pos--;
+            }
         }
     }
-    return 1;
+
+    return 0;
 }
 
 /******************************************************************************/
 /*************************** Local operations *********************************/
 /******************************************************************************/
 
-void update_states( unsigned long int state_vector[] ){
+void update_states( char *msg ){
     int i;
     for(i=0;i<NUM_SUPERVISORS;i++){
-        sup_current_state[ i ] = state_vector[ i ];
+        sup_current_state[ i ] = msg_get_current_state( msg, i );
     }
 } 
 
@@ -369,29 +341,6 @@ void update_input(){
         }
     }
 }
-
-/*choices*/
-/*
-unsigned char get_next_controllable( unsigned char *event ){ //DIST------
-    unsigned char events[NUM_EVENTS], i, count_actives;
-    unsigned long int random_pos;
-    
-    count_actives = get_active_controllable_events( events );
-    
-    if( count_actives ){
-        random_pos = rand() % count_actives;
-        for(i=0; i<NUM_EVENTS; i++){
-            if( !random_pos && events[i] ){
-                *event = i;
-                return 1;
-            } else if( events[i] ){
-                random_pos--;
-            }
-        }
-    }
-    return 0;
-}
-*/
 
 
 void execCallback( unsigned char ev ){
