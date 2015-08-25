@@ -20,8 +20,8 @@
             {% set var_data[#var_data +1] = state.transitions_out:len() %}
             {% for k_transition, transition in state.transitions_out:ipairs() %}
                 {% set var_data[#var_data +1] = 'EV_' .. transition.event.name %}
-                {% set var_data[#var_data +1] = math.floor( var_state_map[ transition.target ] / 256 ) %}
-                {% set var_data[#var_data +1] = var_state_map[ transition.target ] % 256 %}
+                {% set var_data[#var_data +1] = math.floor( var_state_map[ transition.target ] % 256 ) %}
+                {% set var_data[#var_data +1] = var_state_map[ transition.target ] / 256 %}
             {% end %}
         {% end %}
     {% end %}
@@ -63,22 +63,109 @@ Tcallback callback[ NUM_EVENTS ];
         return b[0] & ( 1<<(bit%8) );
     }
 
-    void set_bit( char *buffer, int offset, int bit, char value ){
-        char *b = &buffer[ offset + bit/8 ];
+    void set_bit( char *buf, int offset, int bit, char value ){
+        char *b = &buf[ offset + bit/8 ];
         b[0] &=  ~( 1 << (bit%8) ); //unset bit
         if( value ){
             b[0] |= ( 1 << (bit%8) ); //set if value != 0
         }
     }
 
-    /**************************************************************************/
-    /***************************** Calculations *******************************/
-    /**************************************************************************/
+    /////////////////////////////////// MSG ////////////////////////////////////
 
+/* update the msg with the new state according to the local supervisors */
+//0                           = start byte
+//1                           = msg type
+//2 to 7                      = bt-addr
+//8 to  2*NUM_SUPERVISORS + 7 = Current state
+//2*NUM_SUPERVISORS + 8 to 2*NUM_SUPERVISORS + 9 + ceil(NUM_SUPERVISORS/8) = considered supervisors
+///// 1 byte - the event
+/* 0 <= global_supervisor < NUM_SUPERVISORS */
+
+void msg_set_type( char *msg, char type ){
+    msg[ 1 ] = type;
+}
+char msg_get_type( char *msg ){
+    return msg[ 1 ];
+}
+
+//-------------------------------------
+void msg_set_local_btaddr( char *msg ){
+    int i;
+    char *btaddr = bt_get_state()->local_address
+    for(i=0;i<6;i++){
+       msg[i+2] = btaddr[i]
+    }
+}
+int msg_is_local_bt_addr( char *msg ){
+    if( bt_compare_device_addrs( msg_id, bt_get_state()->local_address, 6 ) == 0 )
+        return 1;
+    return 0;
+}
+
+//-------------------------------------
+void msg_set_current_state( char *msg, int global_supervisor, int state ){
+    msg[ 8 + global_supervisor*2 ] = state % 256; //less significative
+    msg[ 9 + global_supervisor*2 ] = state / 256; //most significative
+}
+int msg_get_current_state( char *msg, int global_supervisor ){
+    return msg[ 8 + global_supervisor*2 ] + msg[ 9 + global_supervisor*2 ] * 256
+}
+
+//-------------------------------------
+void msg_set_considered( char *msg, int global_supervisor ){
+    int offset = 8 + 2*NUM_SUPERVISORS;
+    set_bit( msg, offset, global_supervisor, 1 );
+}
+char msg_get_considered( char *msg, int global_supervisor ){
+    int offset = 8 + 2*NUM_SUPERVISORS;
+    return get_bit( msg, offset, global_supervisor );
+}
+
+
+//-------------------------------------
+/* For MSG_STATE */
+void msg_set_event( char *msg, unsigned char event ){
+    int pos = 8 + 2*NUM_SUPERVISORS + NUM_SUPERVISORS/8 + (NUM_SUPERVISORS%8? 1 : 0);
+    msg[ pos ] = (char) event;
+}
+char msg_get_event( char *msg ){
+    int pos = 8 + 2*NUM_SUPERVISORS + NUM_SUPERVISORS/8 + (NUM_SUPERVISORS%8? 1 : 0);
+    return msg[ pos ];
+}
+
+//-------------------------------------
+/* For MSG_EVENT */
+void msg_set_controllable_event( char *msg, unsigned char event, value ){
+    int offset = 8 + 2*NUM_SUPERVISORS + NUM_SUPERVISORS/8 + (NUM_SUPERVISORS%8? 1 : 0);
+    set_bit( msg, offset, event, value );
+}
+char msg_get_controllable_event( char *msg, unsigned char event ){
+    int offset = 8 + 2*NUM_SUPERVISORS + NUM_SUPERVISORS/8 + (NUM_SUPERVISORS%8? 1 : 0);
+    return get_bit( msg, offset, event );
+}
+
+//-------------------------------------
+int check_all_considered( *msg ){
+    int i, offset = 8 + 2*NUM_SUPERVISORS;
+    for(i=0;i<NUM_SUPERVISORS;i++){
+        if(! msg_get_considered( msg, i )
+            return 0;
+    }
+    return 1;
+}
+
+
+/******************************************************************************/
+/******************************* Calculations *********************************/
+/******************************************************************************/
+
+/* Convert the global supervisor ID in the local supervisor ID*/
 unsigned char get_local_supervisor_position( unsigned char global_supervisor_position ){
     return global_supervisor_position + MY_FIRST_AUTOMATA;
 }
 
+/* get the position in the sup_data of the transitions on "state" in the local supervisor*/
 unsigned long int get_state_position( unsigned char local_supervisor_positioin, unsigned long int state ){
     unsigned long int position;
     unsigned long int s;
@@ -91,6 +178,35 @@ unsigned long int get_state_position( unsigned char local_supervisor_positioin, 
     return position;
 }
 
+void calculate_next_state( char *msg ){
+    unsigned char i;
+    unsigned long int position;
+    unsigned char num_transitions;
+
+    for(i=0; i<NUM_SUPERVISORS; i++){
+        if( (my_automata_check[i] == 1) && (msg_get_considered( msg, i ) == 0) ){ //Do I have this supervisor and it was not calculated yet
+            msg_set_considered( msg, i );
+
+            unsigned char local_sup_pos = get_local_supervisor_position( i );
+            if( sup_events[ local_sup_pos ][ event ] ){
+                position        = get_state_position( local_sup_pos, msg_get_current_state( msg, i ) );
+                num_transitions = sup_data[ position ];
+                position++;
+                while( num_transitions-- ){
+                    if( sup_data[ position ] == event ){
+                        //state_vector[ i ] = ( sup_data[ position + 2 ] * 256 ) + ( sup_data[ position + 1 ] );
+                        int new_state = (sup_data[ position + 2 ] * 256) + sup_data[ position + 1 ];
+                        msg_set_current_state( msg, new_state );
+                        break;
+                    }
+                    position+=3;
+                }
+            }
+        }
+    }
+}
+
+/*
 void calculate_next_state( unsigned char event, unsigned long int state_vector[], unsigned char check_vector[] ){
     unsigned char i;
     unsigned long int position;
@@ -117,6 +233,7 @@ void calculate_next_state( unsigned char event, unsigned long int state_vector[]
         }
     }
 }
+*/
 
 void start_get_active_controllable_events( unsigned char *events ){
     /* Disable all non controllable events */
@@ -289,19 +406,7 @@ void execCallback( unsigned char ev ){
 #define MSG_STATE 1
 #define MSG_EVENT 2
 
-/* Message protocol
-<0> init bit 0x17
-<1> message type MSG_STATE, MSG_EVENT
-<2 to 7> requester BT address
-<8 to ...> the current state vector bit mask
-
-In MSG_STATE:
-<1 bit> the event
-
-In MSG_EVENT
-<...> the bit mask of all events (controllable) to disable
-
-*/
+////////////////////////////////////////////////////////////////////////////////
 
 void request_new_state( unsigned char event ){
     char s[64];
