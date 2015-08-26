@@ -307,6 +307,7 @@ Devices['GenericMicDistributed'].generate     = function( self, Context, tmpl, o
             my_automata_check = mySupervisorsCheck,
             my_automata_set   = automataSets[t],
             my_first_automata = ranges[t].first,
+            header_file       = t .. '_generic_mic_distributed.h',
         }
         local templateFileName = './res/codegen/templates/' .. tmpl
         local Template = letk.Template.new( templateFileName )
