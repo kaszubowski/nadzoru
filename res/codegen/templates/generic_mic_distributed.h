@@ -1,7 +1,7 @@
 #include <stdlib.h>
 
 #define BT_LOCAL_PORT 2
-#define BT_REMOTE_PORT 2
+#define BT_REMOTE_PORT 3
 
 /* Struct's */
 #define NUM_EVENTS {{ #events }}
