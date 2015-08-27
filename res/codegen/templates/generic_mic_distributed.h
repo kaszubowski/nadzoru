@@ -1,6 +1,6 @@
 #include <stdlib.h>
 
-#define BT_LOCAL_PORT 1
+#define BT_LOCAL_PORT 2
 #define BT_REMOTE_PORT 2
 
 /* Struct's */

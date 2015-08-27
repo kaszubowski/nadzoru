@@ -39,13 +39,13 @@
     /**************************************************************************/
     /********************************** DATA **********************************/
     /**************************************************************************/
-    const unsigned char     my_automata_check[ NUM_SUPERVISORS ] = { {{ table.concat(my_automata_check, ',') }} };
-    const unsigned char     ev_controllable[ NUM_EVENTS ]        = { {% for k_event, event in ipairs(events) %}{{ event.controllable and 1 or 0 }}{% notlast %},{% end %} };
-    const unsigned long int sup_init_state[ NUM_SUPERVISORS ]    = { {% for k_automaton, automaton in automata:ipairs() %}{{automaton.initial - 1}}{% notlast %},{% end %} };
-    unsigned long int       sup_current_state[ NUM_SUPERVISORS ] = { {% for k_automaton, automaton in automata:ipairs() %}{{automaton.initial - 1}}{% notlast %},{% end %} };
+    const unsigned char my_automata_check[ NUM_SUPERVISORS ] = { {{ table.concat(my_automata_check, ',') }} };
+    const unsigned char ev_controllable[ NUM_EVENTS ]        = { {% for k_event, event in ipairs(events) %}{{ event.controllable and 1 or 0 }}{% notlast %},{% end %} };
+    const int           sup_init_state[ NUM_SUPERVISORS ]    = { {% for k_automaton, automaton in automata:ipairs() %}{{automaton.initial - 1}}{% notlast %},{% end %} };
+    int                 sup_current_state[ NUM_SUPERVISORS ] = { {% for k_automaton, automaton in automata:ipairs() %}{{automaton.initial - 1}}{% notlast %},{% end %} };
 
     const unsigned char     sup_events[ MY_NUM_AUTOMATA ][ NUM_EVENTS ] = { {% for k_automaton, automaton in ipairs( my_automata_set ) %}{ {% for i = 1, #events %}{{ sup_events[k_automaton][i] and 1 or 0 }}{% notlast %},{% end %} }{% notlast %},{% end %} };
-    const unsigned long int sup_data_pos[ MY_NUM_AUTOMATA ] = { {{ table.concat(var_data_pos, ',') }} };
+    const int sup_data_pos[ MY_NUM_AUTOMATA ] = { {{ table.concat(var_data_pos, ',') }} };
     const unsigned char     sup_data[ {{ #var_data }} ] = { {{ table.concat( var_data,',' ) }} };
 {% endwith %}
 {% endnoblankline %}
@@ -194,14 +194,14 @@ int check_all_considered( char *msg ){
 
 /* Convert the global supervisor ID in the local supervisor ID*/
 unsigned char get_local_supervisor_position( unsigned char global_supervisor_position ){
-    return global_supervisor_position + MY_FIRST_AUTOMATA;
+    return global_supervisor_position - MY_FIRST_AUTOMATA;
 }
 
 /* get the position in the sup_data of the transitions on "state" in the local supervisor*/
-unsigned long int get_state_position( unsigned char local_supervisor_positioin, unsigned long int state ){
-    unsigned long int position;
-    unsigned long int s;
-    unsigned long int en;
+int get_state_position( unsigned char local_supervisor_positioin, int state ){
+    int position;
+    int s;
+    int en;
     position = sup_data_pos[ local_supervisor_positioin ];
     for(s=0; s<state; s++){
         en       = sup_data[position];
@@ -212,7 +212,7 @@ unsigned long int get_state_position( unsigned char local_supervisor_positioin, 
 
 void calculate_next_state( char *msg ){
     unsigned char i;
-    unsigned long int position;
+    int position;
     unsigned char num_transitions;
     unsigned char event = msg_get_event( msg );
 
@@ -248,7 +248,7 @@ void calculate_active_controllable_events( char *msg ){
             msg_set_considered( msg, i );
             
             unsigned char local_sup_pos = get_local_supervisor_position( i );
-            unsigned long int position;
+            int position;
             unsigned char ev_disable[ NUM_EVENTS ], num_transitions;
 
             /*Disable all*/
@@ -382,9 +382,16 @@ void execCallback( unsigned char ev ){
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#define REQUEST_TIMEOUT 48
+int request_timeout;
+char debug_msg[96];
+unsigned char lastRequestedEvent;
 void request_new_state( unsigned char event ){
-    int sizeMsg = 9 + 2*NUM_SUPERVISORS + NUM_SUPERVISORS/8 + (NUM_SUPERVISORS%8? 1 : 0);
+    lastRequestedEvent = event; //Save event for retry;
+    int i, sizeMsg = 9 + 2*NUM_SUPERVISORS + NUM_SUPERVISORS/8 + (NUM_SUPERVISORS%8? 1 : 0);
     char msg[64];
+    for(i=0;i<sizeMsg;i++)
+        msg[i] = 0x30;
     msg[0] = MSG_START_BYTE;
     msg_set_type( msg, MSG_STATE );
     msg_set_local_btaddr( msg );
@@ -395,12 +402,15 @@ void request_new_state( unsigned char event ){
     calculate_next_state( msg );
 
     bt_cmd_spp_send_data( BT_LOCAL_PORT, sizeMsg, msg );
+    request_timeout = REQUEST_TIMEOUT;
+    toHexStr( msg, debug_msg, sizeMsg ); bt_debug( "state: %i : %s\n", sizeMsg, debug_msg );
 }
 
 void response_new_state( char *msg ){
     int sizeMsg = 9 + 2*NUM_SUPERVISORS + NUM_SUPERVISORS/8 + (NUM_SUPERVISORS%8? 1 : 0);
     calculate_next_state( msg );
     bt_cmd_spp_send_data( BT_LOCAL_PORT, sizeMsg, msg );
+    toHexStr( msg, debug_msg, sizeMsg ); bt_debug( "res state: %i : %s\n", sizeMsg, debug_msg );
 }
 
 void request_enabled_controllable_events(){
@@ -416,20 +426,25 @@ void request_enabled_controllable_events(){
     calculate_active_controllable_events( msg );
 
     bt_cmd_spp_send_data( BT_LOCAL_PORT, sizeMsg, msg );
+    request_timeout = REQUEST_TIMEOUT;
+    msg[ sizeMsg ] = '\0';
+    bt_debug( "events: %i : %s\n", sizeMsg, msg );
 }
 
 void response_enabled_controllable_events( char *msg ){
     int sizeMsg = 8 + 2*NUM_SUPERVISORS + NUM_SUPERVISORS/8 + (NUM_SUPERVISORS%8? 1 : 0) + NUM_EVENTS/8 + (NUM_EVENTS%8? 1 : 0);
     calculate_active_controllable_events( msg );
     bt_cmd_spp_send_data( BT_LOCAL_PORT, sizeMsg, msg );
+    toHexStr( msg, debug_msg, sizeMsg ); bt_debug( "res events: %i : %s\n", sizeMsg, debug_msg );
 }
 
 /******************************************************************************/
 /*********************************** PUBLIC ***********************************/
 /******************************************************************************/
 #define STATE_IDLE 0
-#define STATE_WAIT_MSG 1
-#define STATE_WAIT_UC 2
+#define STATE_REQUESTED_STATE 1
+#define STATE_REQUESTED_EVENT 2
+#define STATE_WAIT_UC 3
 
 void SCT_init(){
     int i;
@@ -439,10 +454,17 @@ void SCT_init(){
         callback[i].check_input = NULL;
         callback[i].data        = NULL;
     }
+
+    request_timeout = -1;
 }
 
 void SCT_init_BT( char enableDebug ){
-    bt_init( BT_LOCAL_PORT | BT_REMOTE_PORT ); //ports 1, 2, and 3
+    if( enableDebug ){
+        bt_init( (1 << (BT_LOCAL_PORT-1)) | (1 << (BT_REMOTE_PORT-1)) | (1 << (enableDebug-1)) );
+        bt_get_state()->debug = enableDebug;
+    } else {
+        bt_init( (1 << (BT_LOCAL_PORT-1)) | (1 << (BT_REMOTE_PORT-1)) ); //ports BT_LOCAL_PORT and BT_REMOTE_PORT
+    }
     
     bt_cmd_spp_release_link( BT_LOCAL_PORT );
     bt_cmd_spp_release_link( BT_REMOTE_PORT );
@@ -454,10 +476,6 @@ void SCT_init_BT( char enableDebug ){
     bt_update();
     
     bt_util_read_local_info();
-    
-    if( enableDebug ){
-        bt_get_state()->debug = 1;
-    }
     
     e_set_led(0,1);
 }
@@ -502,9 +520,20 @@ void SCT_add_callback( unsigned char event, void (*clbk)( void* ), unsigned char
         callback[ event ].data        = data;
 }
 
+void led_signal( int led ){
+    e_set_led(led,1);
+    FRONT_LED=1;__delay_ms( 333 );
+    FRONT_LED=0;__delay_ms( 333 );
+    FRONT_LED=1;__delay_ms( 333 );
+    FRONT_LED=0;__delay_ms( 333 );
+    FRONT_LED=1;__delay_ms( 333 );
+    FRONT_LED=0;
+    e_set_led(led,0);
+}
+
 void SCT_run_step(){//DIST------ //TODO timeout, rentry retransmissions if fail, rentry requests if fail
     //AUTOMATA PLAYER
-    static int state       = STATE_IDLE;
+    static int state   = STATE_IDLE;
     //TODO: messageID to discart old messages?
     unsigned char event;
 
@@ -512,70 +541,101 @@ void SCT_run_step(){//DIST------ //TODO timeout, rentry retransmissions if fail,
     e_led_clear();
     
     if( state == STATE_IDLE || state == STATE_WAIT_UC ){
-        e_set_led(0,1);
         if( input_buffer_get( &event ) ){
-            e_set_led(1,1);
             request_new_state( event );
             execCallback( event );
+            state = STATE_REQUESTED_STATE;
+            bt_debug( "A:%i\n", state);
         } else {
-            e_set_led(2,1);
             request_enabled_controllable_events();
+            state = STATE_REQUESTED_EVENT;
+            bt_debug( "B:%i\n", state);
         }
-        state = STATE_WAIT_MSG;
     }
-    /*
     else {
-        if( bt_get_spp_send_data_status( BT_LOCAL_PORT ) == BT_STATUS_SEND_IDLE_FAIL_WAIT )
-            bt_cmd_spp_send_data_retry( BT_LOCAL_PORT );
+        if( request_timeout > 0 ){
+            request_timeout--;
+            if( request_timeout == 0 ){
+                request_timeout = -1;
+                if( state == STATE_REQUESTED_STATE ){
+                    bt_debug( "C:%i\n", state);
+                    request_new_state( lastRequestedEvent );
+                } else if( state == STATE_REQUESTED_EVENT ){
+                    bt_debug( "D:%i\n", state);
+                    request_enabled_controllable_events();
+                }
+            }
+        }
     }
-    */
-    e_set_led(3,1);
+
     while( 1 ){
         char bt_op = bt_update_step();
 
+        //repair connections
+        while( bt_repair_connection( BT_LOCAL_PORT, 3 ) == 1 ){
+            FRONT_LED = !FRONT_LED;
+        }; 
+        FRONT_LED = 0;
+        
         if( bt_op == BT_CHARFALSE ){
             break;
         }
         
         if( bt_op == BT_OPCODE_SPP_INCOMING_DATA ){
-            e_set_led(4,1);
             char *msg = NULL;
-            bt_util_get_spp_incoming_data_pointer( msg );
+            bt_util_get_spp_incoming_data_pointer( &msg );
+            bt_debug( "----data state:%i msg_type:%i\n", state, msg_get_type( msg ) );__delay_ms(50);
+
             if( msg_get_type( msg ) == MSG_STATE ){
+                bt_debug( "--------MSG_STATE:%i\n", state);__delay_ms(50);
                 if( msg_is_local_bt_addr( msg ) ){
-                    e_set_led(6,1);
-                    update_states( msg );
-                    state = STATE_IDLE;
-                } else {
-                    response_new_state( msg );
-                }
-            }
-            
-            if( msg_get_type( msg ) == MSG_EVENT ){
-                e_set_led(6,1);
-                if( msg_is_local_bt_addr( msg )){
-                    e_set_led(5,1);
-                    if( get_active_controllable_events( msg, &event ) ){
-                        e_set_led(7,1);
-                        request_new_state( event );
-                        execCallback( event );
-                    } else {
-                        state = STATE_WAIT_UC;
+                    bt_debug( "--------local:%i\n", state);__delay_ms(50);
+                    if( state == STATE_REQUESTED_STATE ){
+                        bt_debug( "--------OK:%i\n", state);__delay_ms(50);
+                        update_states( msg );
+                        state           = STATE_IDLE;
+                        request_timeout = -1;
                     }
                 } else {
+                    bt_debug( "--------remote:%i\n", state);__delay_ms(50);
+                    response_new_state( msg );
+                    
+                }
+            }//END MSG_STATE
+            
+            if( msg_get_type( msg ) == MSG_EVENT ){
+                bt_debug( "----data:MSG_EVENT:%i\n", state);__delay_ms(50);
+                if( msg_is_local_bt_addr( msg )){
+                    bt_debug( "--------local:%i\n", state);__delay_ms(50);
+                    if( state == STATE_REQUESTED_EVENT ){
+                        bt_debug( "--------OK:%i\n", state);__delay_ms(50);
+                        if( get_active_controllable_events( msg, &event ) ){
+                            bt_debug( "------------con ev:%i\n", state);__delay_ms(50);
+                            request_new_state( event ); //will reset request_timeout
+                            execCallback( event );
+                            state = STATE_REQUESTED_STATE;
+                        } else {
+                            bt_debug( "------------NO con ev:%i\n", state);__delay_ms(50);
+                            state = STATE_WAIT_UC;
+                        }
+                    }
+                } else {
+                    bt_debug( "--------remote:%i\n", state);__delay_ms(50);
                     response_enabled_controllable_events( msg );
                 }
-            }
-        }
-
-        FRONT_LED=1;__delay_ms( 50 );
-        FRONT_LED=0;;
-    }
-
-
-
-
+            }//END MSG_EVENT
+            __delay_ms( 1000 );
+        } //END incoming data
+    }//END while
     
+    BODY_LED=!BODY_LED;
+}
+#endif
+
+        //~ if( bt_get_spp_send_data_status( BT_LOCAL_PORT ) == BT_STATUS_SEND_IDLE_FAIL_WAIT ){
+            //~ bt_cmd_spp_send_data_retry( BT_LOCAL_PORT );
+        //~ }
+
     //~ update_input();
     //~ unsigned char event;
     //~ while( input_buffer_get( &event ) ){//clear buffer, executing all no controllable events (NCE)
@@ -588,5 +648,3 @@ void SCT_run_step(){//DIST------ //TODO timeout, rentry retransmissions if fail,
         //~ execCallback( event );
         //~ //}
     //~ }
-}
-#endif
