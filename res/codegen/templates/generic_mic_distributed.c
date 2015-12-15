@@ -39,6 +39,7 @@
     /**************************************************************************/
     /********************************** DATA **********************************/
     /**************************************************************************/
+    #define SUP_DATA_SIZE {{ #var_data }}
     const unsigned char my_automata_check[ NUM_SUPERVISORS ] = { {{ table.concat(my_automata_check, ',') }} };
     const unsigned char ev_controllable[ NUM_EVENTS ]        = { {% for k_event, event in ipairs(events) %}{{ event.controllable and 1 or 0 }}{% notlast %},{% end %} };
     const int           sup_init_state[ NUM_SUPERVISORS ]    = { {% for k_automaton, automaton in automata:ipairs() %}{{automaton.initial - 1}}{% notlast %},{% end %} };
@@ -47,7 +48,7 @@
     const unsigned char     sup_events[ NUM_SUPERVISORS ][ NUM_EVENTS ] = { {% for k_automaton, automaton in automata:ipairs() %}{ {% for i = 1, #events %}{{ sup_events[k_automaton][i] and 1 or 0 }}{% notlast %},{% end %} }{% notlast %},{% end %} };
 
     const int sup_data_pos[ MY_NUM_AUTOMATA ] = { {{ table.concat(var_data_pos, ',') }} };
-    const unsigned char     sup_data[ {{ #var_data }} ] = { {{ table.concat( var_data,',' ) }} };
+    const unsigned char     sup_data[ SUP_DATA_SIZE ] = { {{ table.concat( var_data,',' ) }} };
 {% endwith %}
 {% endnoblankline %}
 #endif
@@ -84,6 +85,10 @@ Tcallback callback[ NUM_EVENTS ];
     }
 
     /////////////////////////////////// MSG ////////////////////////////////////
+    #define MSG_START_BYTE 0x17
+    #define MSG_NONE 0
+    #define MSG_STATE 1
+    #define MSG_EVENT 2
 
 /* update the msg with the new state according to the local supervisors */
 //0                           = start byte
@@ -93,6 +98,41 @@ Tcallback callback[ NUM_EVENTS ];
 //2*NUM_SUPERVISORS + 8 to 2*NUM_SUPERVISORS + 9 + ceil(NUM_SUPERVISORS/8) = considered supervisors
 ///// 1 byte - the event
 /* 0 <= global_supervisor < NUM_SUPERVISORS */
+
+//-------------------------------------
+#define MSG_POS_TYPE 1
+#define MSG_POS_BT_ADDR 2
+#define MSG_POS_CURRENT_STATE 3
+#define MSG_POS_CONSIDERED_SUP 4
+#define MSG_POS_LAST 5
+#define MSG_POS_LENGTH 6
+
+int msg_get_position( char *msg, int element ){
+    int pos = 0;
+    if( element >= MSG_POS_TYPE )
+        pos++; //1
+    if( element >= MSG_POS_BT_ADDR )
+        pos++; //2
+    if( element >= MSG_POS_CURRENT_STATE )
+        pos += 6; //8 //Jump BT_ADDR
+
+    if( element >= MSG_POS_CONSIDERED_SUP )
+        pos += 2*NUM_SUPERVISORS; //Jump current state
+        
+    if( element >= MSG_POS_LAST )
+        pos += NUM_SUPERVISORS/8 + (NUM_SUPERVISORS%8? 1 : 0); //Jump considered
+        
+    if( element == MSG_POS_LENGTH ){
+        if( msg[1] == MSG_STATE )
+            pos++;
+        else if( msg[1] == MSG_EVENT )
+            pos += NUM_EVENTS/8 + (NUM_EVENTS%8? 1 : 0); //Jump enabled events set
+        else
+            pos = -1;
+    }
+    
+    return pos;
+}
 
 void msg_set_type( char *msg, char type ){
     msg[ 1 ] = type;
@@ -132,18 +172,21 @@ int msg_get_current_state( char *msg, int global_supervisor ){
 
 //-------------------------------------
 void msg_set_considered( char *msg, int global_supervisor ){
-    int offset = 8 + 2*NUM_SUPERVISORS;
+    //int offset = 8 + 2*NUM_SUPERVISORS;
+    int offset = msg_get_position( msg, MSG_POS_CONSIDERED_SUP );
     set_bit( msg, offset, global_supervisor, 1 );
 }
 void msg_init_considered( char *msg ){
-    int offset      = 8 + 2*NUM_SUPERVISORS;
+    //int offset      = 8 + 2*NUM_SUPERVISORS;
+    int offset = msg_get_position( msg, MSG_POS_CONSIDERED_SUP );
     int i, numBytes = NUM_SUPERVISORS/8 + ( NUM_SUPERVISORS%8 ? 1 : 0 );
     for( i = 0; i < numBytes; i++ ){
         msg[ offset + i ] = 0;
     }
 }
 char msg_get_considered( char *msg, int global_supervisor ){
-    int offset = 8 + 2*NUM_SUPERVISORS;
+    //int offset = 8 + 2*NUM_SUPERVISORS;
+    int offset = msg_get_position( msg, MSG_POS_CONSIDERED_SUP );
     return get_bit( msg, offset, global_supervisor );
 }
 
@@ -151,18 +194,21 @@ char msg_get_considered( char *msg, int global_supervisor ){
 //-------------------------------------
 /* For MSG_STATE */
 void msg_set_event( char *msg, unsigned char event ){
-    int pos = 8 + 2*NUM_SUPERVISORS + NUM_SUPERVISORS/8 + (NUM_SUPERVISORS%8? 1 : 0);
+    //int pos = 8 + 2*NUM_SUPERVISORS + NUM_SUPERVISORS/8 + (NUM_SUPERVISORS%8? 1 : 0);
+    int pos = msg_get_position( msg, MSG_POS_LAST );
     msg[ pos ] = (char) event;
 }
 char msg_get_event( char *msg ){
-    int pos = 8 + 2*NUM_SUPERVISORS + NUM_SUPERVISORS/8 + (NUM_SUPERVISORS%8? 1 : 0);
+    //int pos = 8 + 2*NUM_SUPERVISORS + NUM_SUPERVISORS/8 + (NUM_SUPERVISORS%8? 1 : 0);
+    int pos = msg_get_position( msg, MSG_POS_LAST );
     return msg[ pos ];
 }
 
 //-------------------------------------
 /* For MSG_EVENT */
 void msg_set_controllable_events( char *msg, unsigned char event, char value ){
-    int offset = 8 + 2*NUM_SUPERVISORS + NUM_SUPERVISORS/8 + (NUM_SUPERVISORS%8? 1 : 0);
+    //int offset = 8 + 2*NUM_SUPERVISORS + NUM_SUPERVISORS/8 + (NUM_SUPERVISORS%8? 1 : 0);
+    int offset = msg_get_position( msg, MSG_POS_LAST );
     set_bit( msg, offset, event, value );
 }
 void msg_init_controllable_events( char *msg ){
@@ -173,9 +219,11 @@ void msg_init_controllable_events( char *msg ){
     }
 }
 char msg_get_controllable_events( char *msg, unsigned char event ){
-    int offset = 8 + 2*NUM_SUPERVISORS + NUM_SUPERVISORS/8 + (NUM_SUPERVISORS%8? 1 : 0);
+    //int offset = 8 + 2*NUM_SUPERVISORS + NUM_SUPERVISORS/8 + (NUM_SUPERVISORS%8? 1 : 0);
+    int offset = msg_get_position( msg, MSG_POS_LAST );
     return get_bit( msg, offset, event );
 }
+
 
 //-------------------------------------
 int check_all_considered( char *msg ){
@@ -205,17 +253,20 @@ int get_state_position( unsigned char local_supervisor_positioin, int state ){
     int en;
     position = sup_data_pos[ local_supervisor_positioin ];
     for(s=0; s<state; s++){
+        if( position >= SUP_DATA_SIZE ) return -1;
         en       = sup_data[position];
         position += en * 3 + 1;
     }
     return position;
 }
 
-void calculate_next_state( char *msg ){
+int calculate_next_state( char *msg ){ /////////////////////////////TODO: check return of function
     unsigned char i;
     int position;
     unsigned char num_transitions;
     unsigned char event = msg_get_event( msg );
+    if( event >= NUM_EVENTS )
+        return 0;
     //bt_debug( "considering event %i\n", event );
 
     for(i=0; i<NUM_SUPERVISORS; i++){
@@ -226,10 +277,12 @@ void calculate_next_state( char *msg ){
             if( sup_events[ i ][ event ] ){
                 int current_state = msg_get_current_state( msg, i );
                 position        = get_state_position( local_sup_pos, current_state );
+                if( position == -1 ) return 0;
                 num_transitions = sup_data[ position ];
                 //bt_debug( "cur state %i @ sup %i : pos %i has %i trans.\n", current_state, i, position, num_transitions );
                 position++;
                 while( num_transitions-- ){
+                    if( (position+2) >= SUP_DATA_SIZE ) return 0;
                     if( sup_data[ position ] == event ){
                         //state_vector[ i ] = ( sup_data[ position + 2 ] * 256 ) + ( sup_data[ position + 1 ] );
                         int new_state = (sup_data[ position + 2 ] * 256) + sup_data[ position + 1 ];
@@ -244,9 +297,10 @@ void calculate_next_state( char *msg ){
             //bt_debug( "no sup %i, has %i, cons %i\n", i, my_automata_check[i], msg_get_considered( msg, i ) );
         }
     }
+    return 1;
 }
 
-void calculate_active_controllable_events( char *msg ){
+int calculate_active_controllable_events( char *msg ){
     unsigned char i,j;
 
     /* Check disabled events for all supervisors */
@@ -272,9 +326,11 @@ void calculate_active_controllable_events( char *msg ){
             
             /*if supervisor have a transition with the event in the current state, it can't disable the event */
             position        = get_state_position( local_sup_pos, msg_get_current_state( msg, i ) );
+            if( position == -1 ) return -1;
             num_transitions = sup_data[ position ];
             position++;
             while( num_transitions-- ){
+                if( position >= SUP_DATA_SIZE ) return 0;
                 ev_disable[ sup_data[ position ] ] = 0;
                 position += 3;
             }
@@ -287,6 +343,7 @@ void calculate_active_controllable_events( char *msg ){
             }
         }
     }
+    return 1;
 }
 
 /******************************************************************************/
@@ -384,10 +441,6 @@ void execCallback( unsigned char ev ){
 /******************************************************************************/
 /************************** Communication Functions ***************************/
 /******************************************************************************/
-#define MSG_START_BYTE 0x17
-#define MSG_NONE 0
-#define MSG_STATE 1
-#define MSG_EVENT 2
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -408,7 +461,7 @@ void request_new_state( unsigned char event ){
     msg_init_considered( msg );
     msg_set_event( msg, event );
 
-    calculate_next_state( msg );
+    if( !calculate_next_state( msg ) ) return;
 
     bt_cmd_spp_send_data( BT_LOCAL_PORT, sizeMsg, msg );
     request_timeout = REQUEST_TIMEOUT;
@@ -417,7 +470,7 @@ void request_new_state( unsigned char event ){
 
 void response_new_state( char *msg ){
     int sizeMsg = 9 + 2*NUM_SUPERVISORS + NUM_SUPERVISORS/8 + (NUM_SUPERVISORS%8? 1 : 0);
-    calculate_next_state( msg );
+    if( !calculate_next_state( msg ) ) return;
     bt_cmd_spp_send_data( BT_LOCAL_PORT, sizeMsg, msg );
     //toHexStr( msg, debug_msg, sizeMsg ); bt_debug( "res state: %i : %s\n", sizeMsg, debug_msg );
 }
@@ -432,7 +485,7 @@ void request_enabled_controllable_events(){
     msg_init_considered( msg );
     msg_init_controllable_events( msg );
 
-    calculate_active_controllable_events( msg );
+    if( !calculate_active_controllable_events( msg ) ) return;
 
     bt_cmd_spp_send_data( BT_LOCAL_PORT, sizeMsg, msg );
     request_timeout = REQUEST_TIMEOUT;
@@ -441,7 +494,7 @@ void request_enabled_controllable_events(){
 
 void response_enabled_controllable_events( char *msg ){
     int sizeMsg = 8 + 2*NUM_SUPERVISORS + NUM_SUPERVISORS/8 + (NUM_SUPERVISORS%8? 1 : 0) + NUM_EVENTS/8 + (NUM_EVENTS%8? 1 : 0);
-    calculate_active_controllable_events( msg );
+    if( !calculate_active_controllable_events( msg ) ) return;
     bt_cmd_spp_send_data( BT_LOCAL_PORT, sizeMsg, msg );
     //toHexStr( msg, debug_msg, sizeMsg ); bt_debug( "res events: %i : %s\n", sizeMsg, debug_msg );
 }
@@ -468,14 +521,15 @@ void SCT_init(){
 }
 
 void SCT_init_BT( char enableDebug ){
-    //~ if( enableDebug ){
+    bt_init( 7 ); // ports 1,2,3
+    if( enableDebug ){
         //~ bt_init( (1 << (BT_LOCAL_PORT-1)) | (1 << (BT_REMOTE_PORT-1)) | (1 << (enableDebug-1)) );
-        //~ bt_get_state()->debug = enableDebug;
+        bt_get_state()->debug = enableDebug;
     //~ } else {
         //~ bt_init( (1 << (BT_LOCAL_PORT-1)) | (1 << (BT_REMOTE_PORT-1)) ); //ports BT_LOCAL_PORT and BT_REMOTE_PORT
-    //~ }
+    }
 
-    bt_init( 7 ); // ports 1,2,3
+    
     
     bt_cmd_spp_release_link( BT_LOCAL_PORT );
     bt_cmd_spp_release_link( BT_REMOTE_PORT );
@@ -539,7 +593,9 @@ void SCT_run_step(){//DIST------ //TODO timeout, rentry retransmissions if fail,
     //TODO: messageID to discart old messages?
     unsigned char event;
 
-    bt_debug( "Run step:%i\n", state);
+    //bt_debug( "Run step:%i\n", state);
+    e_led_clear();
+    e_set_led(state,1);
 
     update_input();
     
@@ -579,6 +635,7 @@ void SCT_run_step(){//DIST------ //TODO timeout, rentry retransmissions if fail,
     }
 
     while( 1 ){
+        e_led_clear();
         e_set_led( state, 1 );
         char bt_op = bt_update_step();
 
@@ -594,48 +651,52 @@ void SCT_run_step(){//DIST------ //TODO timeout, rentry retransmissions if fail,
         
         if( bt_op == BT_OPCODE_SPP_INCOMING_DATA ){
             char *msg = NULL;
-            bt_util_get_spp_incoming_data_pointer( &msg );
+            int msgSize         = bt_util_get_spp_incoming_data_pointer( &msg );
+            int expectedMsgSize = msg_get_position( msg, MSG_POS_LENGTH );
             //bt_debug( "----data state:%i msg_type:%i\n", state, msg_get_type( msg ) );__delay_ms(50);
+            bt_debug("Income message size: %i, expected: %i, type %i\n", msgSize, expectedMsgSize, msg_get_type( msg ) );
 
-            if( msg_get_type( msg ) == MSG_STATE ){
-                //bt_debug( "--------MSG_STATE:%i\n", state);__delay_ms(50);
-                if( msg_is_local_bt_addr( msg ) ){
-                    //bt_debug( "--------local:%i\n", state);__delay_ms(50);
-                    if( state == STATE_REQUESTED_STATE ){
-                        //bt_debug( "--------OK:%i\n", state);__delay_ms(50);
-                        update_states( msg );
-                        state           = STATE_BREAK; /////////////////////////////////////
-                        request_timeout = -1;
-                    }
-                } else {
-                    //bt_debug( "--------remote:%i\n", state);__delay_ms(50);
-                    response_new_state( msg );
-                    
-                }
-            }//END MSG_STATE
-            
-            if( msg_get_type( msg ) == MSG_EVENT ){
-                //bt_debug( "----data:MSG_EVENT:%i\n", state);__delay_ms(50);
-                if( msg_is_local_bt_addr( msg )){
-                    //bt_debug( "--------local:%i\n", state);__delay_ms(50);
-                    if( state == STATE_REQUESTED_EVENT ){
-                        //bt_debug( "--------OK:%i\n", state);__delay_ms(50);
-                        if( get_active_controllable_events( msg, &event ) ){
-                            bt_debug( "controllable ev:%i\n", event);
-                            request_new_state( event ); //will re-set request_timeout
-                            execCallback( event );
-                            state = STATE_REQUESTED_STATE;
-                        } else {
-                            //bt_debug( "------------NO con ev:%i\n", state);__delay_ms(50);
-                            state = STATE_WAIT_UC;
+            if( msgSize == expectedMsgSize ){
+                if( msg_get_type( msg ) == MSG_STATE ){
+                    //bt_debug( "--------MSG_STATE:%i\n", state);__delay_ms(50);
+                    if( msg_is_local_bt_addr( msg ) ){
+                        //bt_debug( "--------local:%i\n", state);__delay_ms(50);
+                        if( state == STATE_REQUESTED_STATE ){
+                            //bt_debug( "--------OK:%i\n", state);__delay_ms(50);
+                            update_states( msg );
+                            state           = STATE_BREAK; /////////////////////////////////////
                             request_timeout = -1;
                         }
+                    } else {
+                        //bt_debug( "--------remote:%i\n", state);__delay_ms(50);
+                        response_new_state( msg );
+                        
                     }
-                } else {
-                    //bt_debug( "--------remote:%i\n", state);__delay_ms(50);
-                    response_enabled_controllable_events( msg );
-                }
-            }//END MSG_EVENT
+                }//END MSG_STATE
+                
+                if( msg_get_type( msg ) == MSG_EVENT ){
+                    //bt_debug( "----data:MSG_EVENT:%i\n", state);__delay_ms(50);
+                    if( msg_is_local_bt_addr( msg )){
+                        //bt_debug( "--------local:%i\n", state);__delay_ms(50);
+                        if( state == STATE_REQUESTED_EVENT ){
+                            //bt_debug( "--------OK:%i\n", state);__delay_ms(50);
+                            if( get_active_controllable_events( msg, &event ) ){
+                                bt_debug( "controllable ev:%i\n", event);
+                                request_new_state( event ); //will re-set request_timeout
+                                execCallback( event );
+                                state = STATE_REQUESTED_STATE;
+                            } else {
+                                //bt_debug( "------------NO con ev:%i\n", state);__delay_ms(50);
+                                state = STATE_WAIT_UC;
+                                request_timeout = -1;
+                            }
+                        }
+                    } else {
+                        //bt_debug( "--------remote:%i\n", state);__delay_ms(50);
+                        response_enabled_controllable_events( msg );
+                    }
+                }//END MSG_EVENT
+            }//END check message size
         } //END incoming data
     }//END while
     

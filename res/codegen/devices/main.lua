@@ -229,7 +229,7 @@ Devices['atmega328p'].name         = "AtMega 328p"
 --*********************************++*********************************--
 --**                     GenericMic Distributed                     **--
 --********************************************************************--
-function divElementsInGroups( e, g, range )
+local function divElementsInGroups( e, g, range )
     local plusOne    = e%g
     local baseAmount = math.floor(e/g)
     local s          = {}
@@ -262,21 +262,8 @@ function divElementsInGroups( e, g, range )
     end
 end
 
-Devices['GenericMicDistributed'] = letk.Class( Devices['base'] ):init_options()
-
-Devices['GenericMicDistributed'].template_file = { 'generic_mic_distributed.h', 'generic_mic_distributed.c'}
-
-Devices['GenericMicDistributed'].display      = true
-Devices['GenericMicDistributed'].name         = "Generic Mic. Distributed"
-
-Devices['GenericMicDistributed']:set_option('types', {
-    caption   = "Types",
-    type      = 'spin',
-    min_value = 1,
-    max_value = function( codeGen ) return codeGen.automata:len() end,
-})
-
-Devices['GenericMicDistributed'].generate     = function( self, Context, tmpl, options ) --Files?
+--~ Devices['GenericMicDistributed'].generate     = function( self, Context, tmpl, options ) --Files?
+local function distGenerate ( self, Context, tmpl, options ) --Files?
     local types        = options[ 'types' ]
     local len_automata = self.automata:len()
 
@@ -319,6 +306,42 @@ Devices['GenericMicDistributed'].generate     = function( self, Context, tmpl, o
     end
     Context:pop()
 end
+
+Devices['GenericMicDistributed'] = letk.Class( Devices['base'] ):init_options()
+
+Devices['GenericMicDistributed'].template_file = { 'generic_mic_distributed.h', 'generic_mic_distributed.c'}
+
+Devices['GenericMicDistributed'].display      = true
+Devices['GenericMicDistributed'].name         = "Generic Mic. Distributed"
+
+Devices['GenericMicDistributed']:set_option('types', {
+    caption   = "Types",
+    type      = 'spin',
+    min_value = 1,
+    max_value = function( codeGen ) return codeGen.automata:len() end,
+})
+
+Devices['GenericMicDistributed'].generate = distGenerate
+
+--------------------------------------------------------------------------------
+
+Devices['GenericMicDistributed2'] = letk.Class( Devices['base'] ):init_options()
+
+Devices['GenericMicDistributed2'].template_file = { 'generic_mic_distributed2.h', 'generic_mic_distributed2.c'}
+
+Devices['GenericMicDistributed2'].display      = true
+Devices['GenericMicDistributed2'].name         = "Generic Mic. Distributed"
+
+Devices['GenericMicDistributed2']:set_option('types', {
+    caption   = "Types",
+    type      = 'spin',
+    min_value = 1,
+    max_value = function( codeGen ) return codeGen.automata:len() end,
+})
+
+Devices['GenericMicDistributed2'].generate = distGenerate
+
+--------------------------------------------------------------------------------
 
 require 'res.codegen.devices.schneider'
 require 'res.codegen.devices.schneider_distinguisher'
