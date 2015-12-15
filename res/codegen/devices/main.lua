@@ -294,7 +294,7 @@ local function distGenerate ( self, Context, tmpl, options ) --Files?
             my_automata_check = mySupervisorsCheck,
             my_automata_set   = automataSets[t],
             my_first_automata = ranges[t].first,
-            header_file       = t .. '_generic_mic_distributed.h',
+            header_file       = t .. '_' .. (self.device.basicHeadfileName or 'generic_mic_distributed.h'),
         }
         local templateFileName = './res/codegen/templates/' .. tmpl
         local Template = letk.Template.new( templateFileName )
@@ -312,7 +312,7 @@ Devices['GenericMicDistributed'] = letk.Class( Devices['base'] ):init_options()
 Devices['GenericMicDistributed'].template_file = { 'generic_mic_distributed.h', 'generic_mic_distributed.c'}
 
 Devices['GenericMicDistributed'].display      = true
-Devices['GenericMicDistributed'].name         = "Generic Mic. Distributed"
+Devices['GenericMicDistributed'].name         = "Generic Mic. Distributed (OLD)"
 
 Devices['GenericMicDistributed']:set_option('types', {
     caption   = "Types",
@@ -321,7 +321,8 @@ Devices['GenericMicDistributed']:set_option('types', {
     max_value = function( codeGen ) return codeGen.automata:len() end,
 })
 
-Devices['GenericMicDistributed'].generate = distGenerate
+Devices['GenericMicDistributed'].basicHeadfileName = 'generic_mic_distributed.h'
+Devices['GenericMicDistributed'].generate          = distGenerate
 
 --------------------------------------------------------------------------------
 
@@ -330,7 +331,7 @@ Devices['GenericMicDistributed2'] = letk.Class( Devices['base'] ):init_options()
 Devices['GenericMicDistributed2'].template_file = { 'generic_mic_distributed2.h', 'generic_mic_distributed2.c'}
 
 Devices['GenericMicDistributed2'].display      = true
-Devices['GenericMicDistributed2'].name         = "Generic Mic. Distributed"
+Devices['GenericMicDistributed2'].name         = "Generic Mic. Distributed (transparent)"
 
 Devices['GenericMicDistributed2']:set_option('types', {
     caption   = "Types",
@@ -339,7 +340,8 @@ Devices['GenericMicDistributed2']:set_option('types', {
     max_value = function( codeGen ) return codeGen.automata:len() end,
 })
 
-Devices['GenericMicDistributed2'].generate = distGenerate
+Devices['GenericMicDistributed2'].basicHeadfileName = 'generic_mic_distributed2.h'
+Devices['GenericMicDistributed2'].generate         = distGenerate
 
 --------------------------------------------------------------------------------
 

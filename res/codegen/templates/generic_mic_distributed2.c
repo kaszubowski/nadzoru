@@ -3,7 +3,7 @@
 #include <motor_led/e_epuck_ports.h>
 #include <uart/e_uart_char.h>
 #include <motor_led/advance_one_timer/e_led.h>
-#include <shefpuck/bluetooth.h>
+//#include <shefpuck/bluetooth.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -52,6 +52,7 @@
 {% endwith %}
 {% endnoblankline %}
 #endif
+
 
 #if FN_AP
 
@@ -109,16 +110,18 @@ Tcallback callback[ NUM_EVENTS ];
 
 int getData( char *msg ){
     int i = 0;
+    char c;
     if( e_ischar_uart1() ){
-        do{
+        do {
             if( e_getchar_uart1( &msg[i] ) ){
                 c = msg[i];
                 i++;
             } else {
                 return 0;
             }
-        }while( (c != MSG_END_BYTE) );
-        return 1;
+        } while( (c != MSG_END_BYTE) );
+        
+        return i;
     }
     return 0;
 }
@@ -164,7 +167,7 @@ void msg_init_btaddr( char *msg ){
        msg[i+2] = 0; //The router will set it
     }
 }
-int msg_is_local_btaddr( char *msg ){
+int msg_is_local_addr( char *msg ){
     int i;
     for(i=0;i<6;i++){
         if( msg[i+2] != 0) //Router will set to 0 again when it is for this robot
@@ -605,17 +608,14 @@ void SCT_run_step(){//DIST------ //TODO timeout, rentry retransmissions if fail,
 
 
         //TODO: check if incoming data
-        if( bt_op == BT_OPCODE_SPP_INCOMING_DATA ){
-            //char *msg = NULL;
-            char msg[ MSG_BUFFER_SIZE ];
-            int msgSize         = bt_util_get_spp_incoming_data_pointer( &msg );
+        char msg[ MSG_BUFFER_SIZE ];
+        int msgSize = getData( msg );
+        if( msgSize ){
             int expectedMsgSize = msg_get_position( msg, MSG_POS_LENGTH );
-            //bt_debug( "----data state:%i msg_type:%i\n", state, msg_get_type( msg ) );__delay_ms(50);
-            bt_debug("Income message size: %i, expected: %i, type %i\n", msgSize, expectedMsgSize, msg_get_type( msg ) );
 
             if( msgSize == expectedMsgSize ){
                 if( msg_get_type( msg ) == MSG_STATE ){
-                    if( msg_is_local_btaddr( msg ) ){
+                    if( msg_is_local_addr( msg ) ){
                         if( state == STATE_REQUESTED_STATE ){
                             update_states( msg );
                             state           = STATE_BREAK; /////////////////////////////////////
@@ -628,7 +628,7 @@ void SCT_run_step(){//DIST------ //TODO timeout, rentry retransmissions if fail,
                 }//END MSG_STATE
                 
                 if( msg_get_type( msg ) == MSG_EVENT ){
-                    if( msg_is_local_bt_addr( msg )){
+                    if( msg_is_local_addr( msg )){
                         if( state == STATE_REQUESTED_EVENT ){
                             if( get_active_controllable_events( msg, &event ) ){
                                 request_new_state( event ); //will re-set request_timeout

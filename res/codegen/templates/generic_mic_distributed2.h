@@ -7,9 +7,9 @@
 #define NUM_SUPERVISORS {{ automata:len() }}
 
 #define TYPES {{ types }}
-#define MY_NUM_AUTOMATA {{ #my_automata_set }}
 #define MY_TYPE {{ my_type-1 }}
 #define MY_FIRST_AUTOMATA {{ my_first_automata-1 }}
+#define MY_NUM_AUTOMATA {{ #my_automata_set }}
 
 {% for k_event, event in ipairs(events) %}
 #define EV_{{event.name}} {{k_event-1}}
