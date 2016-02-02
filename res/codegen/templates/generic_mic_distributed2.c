@@ -439,7 +439,7 @@ void update_input(){
     unsigned char i;
     for(i=0;i<NUM_EVENTS;i++){
         if( !ev_controllable[i]){
-            if( !last_events[i] ){
+            if( !last_events[i] ){ //Event is not in the buffer.
                 if(  input_read( i ) ){
                     input_buffer_add( i );
                     last_events[i] = 1;
@@ -469,7 +469,7 @@ unsigned char lastRequestedEvent;
 void request_new_state( unsigned char event ){
     lastRequestedEvent = event; //Save event for retry;
     int i, sizeMsg = 9 + 2*NUM_SUPERVISORS + NUM_SUPERVISORS/8 + (NUM_SUPERVISORS%8? 1 : 0);
-    char msg[64];
+    char msg[ MSG_BUFFER_SIZE ];
     for(i=0;i<sizeMsg;i++)
         msg[i] = 0x30;
     msg[0] = MSG_START_BYTE;
@@ -495,7 +495,7 @@ void response_new_state( char *msg ){
 
 void request_enabled_controllable_events(){
     int sizeMsg = 8 + 2*NUM_SUPERVISORS + NUM_SUPERVISORS/8 + (NUM_SUPERVISORS%8? 1 : 0) + NUM_EVENTS/8 + (NUM_EVENTS%8? 1 : 0);
-    char msg[64];
+    char msg[ MSG_BUFFER_SIZE ];
     msg[0] = MSG_START_BYTE;
     msg_set_type( msg, MSG_EVENT );
     msg_init_btaddr( msg );
@@ -526,17 +526,8 @@ void response_enabled_controllable_events( char *msg ){
 #define STATE_REQUESTED_EVENT 3
 #define STATE_WAIT_UC 4
 
-void SCT_init(){
-    int i;
-    for(i=0; i<NUM_EVENTS; i++){
-        last_events[i] = 0;
-        callback[i].callback    = NULL;
-        callback[i].check_input = NULL;
-        callback[i].data        = NULL;
-    }
-
-    request_timeout = -1;
-}
+//AUTOMATA PLAYER
+int state, breakTime;
 
 void SCT_reset(){
     int i;
@@ -546,6 +537,25 @@ void SCT_reset(){
     for(i=0; i<NUM_EVENTS; i++){
         last_events[i] = 0;
     }
+
+    request_timeout      = -1;
+    input_buffer_pnt_add = 0;
+    input_buffer_pnt_get = 0;
+
+    state     = STATE_IDLE;
+    breakTime = BREAKTIME;
+}
+
+void SCT_init(){
+    int i;
+    for(i=0; i<NUM_EVENTS; i++){
+        last_events[i] = 0;
+        callback[i].callback    = NULL;
+        callback[i].check_input = NULL;
+        callback[i].data        = NULL;
+    }
+
+    SCT_reset();
 }
 
 void SCT_add_callback( unsigned char event, void (*clbk)( void* ), unsigned char (*ci)( void* ), void* data ){
@@ -556,14 +566,8 @@ void SCT_add_callback( unsigned char event, void (*clbk)( void* ), unsigned char
 
 #define BREAKTIME 8
 void SCT_run_step(){//DIST------ //TODO timeout, rentry retransmissions if fail, rentry requests if fail
-    //AUTOMATA PLAYER
-    static int state     = STATE_IDLE;
-    static int breakTime = BREAKTIME;
     //TODO: messageID to discart old messages?
     unsigned char event;
-
-    e_led_clear();
-    e_set_led(state,1);
 
     update_input();
     
@@ -578,8 +582,7 @@ void SCT_run_step(){//DIST------ //TODO timeout, rentry retransmissions if fail,
                 state = STATE_REQUESTED_EVENT;
             }
         }
-    }
-    else {
+    } else { /* Timeout routine to execute the request again in case of fail*/
         if( request_timeout > 0 ){
             request_timeout--;
             if( request_timeout == 0 ){
@@ -595,18 +598,14 @@ void SCT_run_step(){//DIST------ //TODO timeout, rentry retransmissions if fail,
 
     if( state == STATE_BREAK ){
         if( breakTime==0 ){
-            state = STATE_IDLE;
+            state     = STATE_IDLE;
             breakTime = BREAKTIME;
         } else {
             breakTime--;
         }
     }
 
-    while( 1 ){
-        e_led_clear();
-        e_set_led( state, 1 );
-
-
+    //while( 1 ){
         //TODO: check if incoming data
         char msg[ MSG_BUFFER_SIZE ];
         int msgSize = getData( msg );
@@ -623,11 +622,10 @@ void SCT_run_step(){//DIST------ //TODO timeout, rentry retransmissions if fail,
                         }
                     } else {
                         response_new_state( msg );
-                        
                     }
                 }//END MSG_STATE
                 
-                if( msg_get_type( msg ) == MSG_EVENT ){
+                else if( msg_get_type( msg ) == MSG_EVENT ){
                     if( msg_is_local_addr( msg )){
                         if( state == STATE_REQUESTED_EVENT ){
                             if( get_active_controllable_events( msg, &event ) ){
@@ -645,9 +643,7 @@ void SCT_run_step(){//DIST------ //TODO timeout, rentry retransmissions if fail,
                 }//END MSG_EVENT
             }//END check message size
         } //END incoming data
-    }//END while
-    
-    BODY_LED=!BODY_LED;
+    //}//END while
 }
 #endif
 
