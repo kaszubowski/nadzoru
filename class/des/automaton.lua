@@ -502,6 +502,8 @@ function Automaton:event_add(name, observable, controllable, refinement, id)
         controllable = controllable,
         refinement   = refinement or '',
         transitions  = letk.List.new(),
+
+        shared       = false,
     }
 
     if not id then
@@ -514,6 +516,22 @@ function Automaton:event_add(name, observable, controllable, refinement, id)
     --if workspace then
     --  workspace.automata[self] = new_event
     --end
+
+    return id, new_event
+end
+
+function Automaton:event_add_clone( event )
+    local new_event = {
+        name         = event.name or 'new',
+        observable   = event.observable,
+        controllable = event.controllable,
+        refinement   = event.refinement or '',
+        transitions  = letk.List.new(),
+
+        shared       = event.shared,
+    }
+
+    local id = self.events:append( new_event )
 
     return id, new_event
 end
@@ -583,6 +601,24 @@ function Automaton:event_get_controllable( id )
     if not event then return end
 
     return event.controllable
+
+end
+
+
+---
+function Automaton:event_set_shared( id, shared )
+    local event = self.events:find( id )
+    if not event then return end
+
+    event.shared = shared
+    return true
+end
+
+function Automaton:event_get_shared( id )
+    local event = self.events:find( id )
+    if not event then return end
+
+    return event.shared
 
 end
 

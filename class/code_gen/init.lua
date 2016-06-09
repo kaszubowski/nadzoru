@@ -163,8 +163,17 @@ function CodeGen:read_automata()
                     output       = '',
                     automaton    = {},
                     controllable = event.controllable,
+                    shared       = event.shared,
                     source       = "Automaton",
                 }
+                print( event.name, event.controllable, event.shared )
+            else
+                if event.controlable ~= self.event_code[ event.name ].controllable then
+                    print("Controllability differs for", event.name)
+                end
+                if event.shared ~= self.event_code[ event.name ].shared then
+                    print("Shared prop. differs for", event.name)
+                end
             end
             self.event_code[ event.name ].automaton[ k_automaton ] = event.controllable and 'c' or 'n'
         end
@@ -286,15 +295,15 @@ function CodeGen:build_gui( gui )
     }, true)
     
     --DEBUG start
-    for k_dev, dev in pairs( Devices ) do
-        print( k_dev, dev )
-        if Devices[ self.device_id ].options then
-            print("    Options:",dev.options)
-            for num_opt, opt in ipairs( dev.options ) do
-                print("    ", num_opt, opt.var, opt.caption, opt.type)
-            end
-        end
-    end
+    --for k_dev, dev in pairs( Devices ) do
+    --    print( k_dev, dev )
+    --    if Devices[ self.device_id ].options then
+    --        print("    Options:",dev.options)
+    --        for num_opt, opt in ipairs( dev.options ) do
+    --            print("    ", num_opt, opt.var, opt.caption, opt.type)
+    --        end
+    --    end
+    --end
     --DEBUG end
 
     if Devices[ self.device_id ].options then

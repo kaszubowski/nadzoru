@@ -76,6 +76,7 @@ AutomatonEditor = letk.Class( function( self, gui, automaton, elements )
     self.treeview_events:add_column_text("Events",100, self.edit_event, self)
     self.treeview_events:add_column_toggle("Con", 50, self.toggle_controllable, self )
     self.treeview_events:add_column_toggle("Obs", 50, self.toggle_observable,  self )
+    self.treeview_events:add_column_toggle("Sha", 50, self.toggle_shared,  self )
 
     self.vbox:pack_start( self.toolbar, false, false, 0 )
     self.vbox:pack_start( self.hbox, true, true, 0 )
@@ -273,7 +274,7 @@ function AutomatonEditor:update_treeview_events()
         --    max = #event.name
         --end
         --self.treeview_events:add_row{ event.name }
-        self.treeview_events:add_row{ event.name, event.controllable, event.observable }
+        self.treeview_events:add_row{ event.name, event.controllable, event.observable, event.shared }
     end
 
     --max = 7*max
@@ -1019,6 +1020,17 @@ function AutomatonEditor:toggle_observable( row_id )
     self.render:draw()
 end
 
+function AutomatonEditor:toggle_shared( row_id )
+    local event_id = row_id+1
+    if self.automaton:event_get_shared( event_id ) then
+        self.automaton:event_set_shared( event_id, false )
+    else
+        self.automaton:event_set_shared( event_id, true )
+    end
+    self:update_treeview_events()
+    self.render:draw()
+end
+
 --END WORKSPACE NOT NECESSARY
 
 ---Changes the name of an event.
@@ -1144,7 +1156,8 @@ function AutomatonEditor:copy_events()
                 if eventDef.use then
                     --just in case to avoid repetition
                     eventDef.use = false
-                    self.automaton:event_add( eventDef.event.name, eventDef.event.observable, eventDef.event.controllable, eventDef.event.refinement  )
+                    --self.automaton:event_add( eventDef.event.name, eventDef.event.observable, eventDef.event.controllable, eventDef.event.refinement  )
+                    self.automaton:event_add_clone( eventDef.event )
                 end
             end
             self:update_treeview_events()

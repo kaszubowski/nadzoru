@@ -11,3 +11,4 @@
 *.vim
 *.~*
 res/codegen/libs/*
+*OLD*

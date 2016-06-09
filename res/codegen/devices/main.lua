@@ -156,22 +156,22 @@ Devices['pic18f']:set_option('timer_interval', {
 })
 
 -- PIC18F4620
-Devices['pic18f4620'] = letk.Class( Devices['pic18f'] ):init_options()
-Devices['pic18f4620'].clock        = 20000000
-Devices['pic18f4620'].display      = true
-Devices['pic18f4620'].name         = 'PIC18F4620'
-Devices['pic18f4620'].include_ccs  = '18F4620.h'
-Devices['pic18f4620'].include_sdcc = {'pic18f4620.h'}
-Devices['pic18f4620'].fuses        = 'NOMCLR,EC_IO,H4,NOWDT,NOPROTECT,NOLVP,NODEBUG'
+--Devices['pic18f4620'] = letk.Class( Devices['pic18f'] ):init_options()
+--Devices['pic18f4620'].clock        = 20000000
+--Devices['pic18f4620'].display      = true
+--Devices['pic18f4620'].name         = 'PIC18F4620'
+--Devices['pic18f4620'].include_ccs  = '18F4620.h'
+--Devices['pic18f4620'].include_sdcc = {'pic18f4620.h'}
+--Devices['pic18f4620'].fuses        = 'NOMCLR,EC_IO,H4,NOWDT,NOPROTECT,NOLVP,NODEBUG'
 
 -- PIC18F4550
-Devices['pic18f4550'] = letk.Class( Devices['pic18f'] ):init_options()
-Devices['pic18f4550'].clock        = 20000000
-Devices['pic18f4550'].display      = true
-Devices['pic18f4550'].name         = 'PIC18F4550'
-Devices['pic18f4550'].include_ccs  = '18F4550.h'
-Devices['pic18f4550'].include_sdcc = {'pic18f4550.h'}
-Devices['pic18f4550'].fuses        = 'NOMCLR,EC_IO,H4,NOWDT,NOPROTECT,NOLVP,NODEBUG'
+--Devices['pic18f4550'] = letk.Class( Devices['pic18f'] ):init_options()
+--Devices['pic18f4550'].clock        = 20000000
+--Devices['pic18f4550'].display      = true
+--Devices['pic18f4550'].name         = 'PIC18F4550'
+--Devices['pic18f4550'].include_ccs  = '18F4550.h'
+--Devices['pic18f4550'].include_sdcc = {'pic18f4550.h'}
+--Devices['pic18f4550'].fuses        = 'NOMCLR,EC_IO,H4,NOWDT,NOPROTECT,NOLVP,NODEBUG'
 
 --*********************************++*********************************--
 --**                         Kilobot Atmega                         **--
@@ -216,13 +216,24 @@ Devices['GenericMic'].display      = true
 Devices['GenericMic'].name         = "Generic Mic."
 
 --*********************************++*********************************--
+--**                       GenericMicShared                         **--
+--********************************************************************--
+Devices['GenericMic'] = letk.Class( Devices['base'] ):init_options()
+
+Devices['GenericMic'].template_file = { 'generic_mic_shared.h', 'generic_mic_shared.c'}
+
+Devices['GenericMic'].display      = true
+Devices['GenericMic'].name         = "Generic Mic. Shared"
+
+--*********************************++*********************************--
 --**                           atmega328p                          **--
 --********************************************************************--
 Devices['atmega328p'] = letk.Class( Devices['base'] ):init_options()
 
 Devices['atmega328p'].template_file = { 'generic_mic.h', 'atmega328p.c'}
 
-Devices['atmega328p'].display      = true
+--~ Devices['atmega328p'].display      = true
+Devices['atmega328p'].display      = false
 Devices['atmega328p'].name         = "AtMega 328p"
 
 
@@ -311,7 +322,8 @@ Devices['GenericMicDistributed'] = letk.Class( Devices['base'] ):init_options()
 
 Devices['GenericMicDistributed'].template_file = { 'generic_mic_distributed.h', 'generic_mic_distributed.c'}
 
-Devices['GenericMicDistributed'].display      = true
+--~ Devices['GenericMicDistributed'].display      = true
+Devices['GenericMicDistributed'].display      = false
 Devices['GenericMicDistributed'].name         = "Generic Mic. Distributed (OLD)"
 
 Devices['GenericMicDistributed']:set_option('types', {
@@ -330,7 +342,8 @@ Devices['GenericMicDistributed2'] = letk.Class( Devices['base'] ):init_options()
 
 Devices['GenericMicDistributed2'].template_file = { 'generic_mic_distributed2.h', 'generic_mic_distributed2.c'}
 
-Devices['GenericMicDistributed2'].display      = true
+--~ Devices['GenericMicDistributed2'].display      = true
+Devices['GenericMicDistributed2'].display      = false
 Devices['GenericMicDistributed2'].name         = "Generic Mic. Distributed (transparent)"
 
 Devices['GenericMicDistributed2']:set_option('types', {
@@ -345,7 +358,7 @@ Devices['GenericMicDistributed2'].generate         = distGenerate
 
 --------------------------------------------------------------------------------
 
-require 'res.codegen.devices.schneider'
-require 'res.codegen.devices.schneider_distinguisher'
+--require 'res.codegen.devices.schneider'
+--require 'res.codegen.devices.schneider_distinguisher'
 
 return Devices
