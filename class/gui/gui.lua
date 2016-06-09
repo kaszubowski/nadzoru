@@ -121,8 +121,8 @@ Gui = letk.Class( function( self )
     self.window:add(self.vbox)
 
     --** window defines **--
-    self.window:set("title", "nadzoru", "width-request", 800,
-        "height-request", 600, "window-position", gtk.WIN_POS_CENTER,
+    self.window:set("title", "nadzoru", "width-request", 1000,
+        "height-request", 800, "window-position", gtk.WIN_POS_CENTER,
         "icon-name", "gtk-about")
 
     self.window:connect("delete-event", gtk.main_quit)

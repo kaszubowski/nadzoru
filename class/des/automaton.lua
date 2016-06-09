@@ -736,6 +736,8 @@ function Automaton:transition_add( source_id, target_id, event_id, isdata, id )
         source = source,
         target = target,
         event  = event,
+
+        probability = nil,
     }
 
     if not id then
@@ -776,6 +778,15 @@ function Automaton:transition_set_factor( id, factor )
     if not trans then return end
 
     trans.factor = factor
+
+    return true
+end
+
+function Automaton:transition_set_probability( id, probability )
+    local trans, trans_id = self.transitions:find( id )
+    if not trans then return end
+
+    trans.probability = probability
 
     return true
 end
@@ -1434,6 +1445,7 @@ function Automaton:save_serialize()
             target = state_map[ transition.target ],
             event = event_map[ transition.event ],
             factor = transition.factor,
+            probability = transition.probability,
         }
     end
 
@@ -1529,7 +1541,8 @@ function Automaton:load_file( file_name )
                 event_map[id]       = new_event
             end
             for k_transition, transition in ipairs( data.transitions ) do
-                self:transition_add( state_map[transition.source], state_map[transition.target], event_map[transition.event], true )
+                local newTrans_id, newTrans = self:transition_add( state_map[transition.source], state_map[transition.target], event_map[transition.event], true )
+                newTrans.probability = transition.probability
             end
             self:set( 'file_type', 'nza' )
             self:set( 'full_file_name', file_name )
@@ -3888,4 +3901,33 @@ function Automaton:infoStringMultiple( ... )
     table.insert( infoStr, string.format("    Transitions: %i", transitions ) )
 
     return table.concat( infoStr, "\n" )
+end
+
+--------------------------------------------------------------------------------
+
+---Normalise the probability in each state in such way that the sum is 100%
+function Automaton:probabilityNormalise()
+    for k_state, state in self.states:ipairs() do
+        local sumControllable, sumNonControllable = 0, 0
+        for k_trans, trans in state.transitions_out:ipairs() do
+            if trans.event.controllable then
+                sumControllable = sumControllable + (trans.probability or 100)
+            else
+                sumNonControllable = sumNonControllable + (trans.probability or 100)
+            end
+        end
+
+        for k_trans, trans in state.transitions_out:ipairs() do
+            if trans.event.controllable then
+                trans.probability = 100*(trans.probability or 100)/sumControllable
+            else
+                trans.probability = 100*(trans.probability or 100)/sumNonControllable
+            end
+        end
+    end
+end
+
+---Remove all probabilities
+function Automaton:probabilityClear()
+    
 end

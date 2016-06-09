@@ -235,6 +235,23 @@ AutomatonEditor = letk.Class( function( self, gui, automaton, elements )
     self.tool_item:set_homogeneous( true )
     self.tool_item:add( self.scale_act_factor )
     self.toolbar:insert( self.tool_item, -1 )
+
+    --separator
+    self.sep = gtk.SeparatorToolItem.new()
+    self.toolbar:insert( self.sep, -1 )
+
+    --display probabilities
+    self.img_act_display_prob = gtk.Image.new_from_file( './images/icons/chart_pie.png' )
+    self.btn_act_display_prob = gtk.ToggleToolButton.new( )
+    self.btn_act_display_prob:set_icon_widget( self.img_act_display_prob )
+    self.btn_act_display_prob:connect( 'toggled', self.set_act_display_prob, self )
+    self.toolbar:insert( self.btn_act_display_prob, -1 )
+
+    --Normilise probabilities
+    self.img_act_norm_prob = gtk.Image.new_from_file( './images/icons/chart_pie.png' )
+    self.btn_act_norm_prob = gtk.ToolButton.new( self.img_act_norm_prob, "Norm prob" )
+    self.btn_act_norm_prob:connect( 'clicked', self.set_act_norm_prob, self )
+    self.toolbar:insert( self.btn_act_norm_prob, -1 )
     
     
 
@@ -378,7 +395,7 @@ end
 --@see Treeview:add_column_text
 --@see AutomatonRender:draw
 --@see Automaton:write_log
-function AutomatonEditor:edit_transition( source, target )
+function AutomatonEditor:edit_transition_OLD( source, target )
     local window          = gtk.Window.new(gtk.WINDOW_TOPLEVEL)
         local vbox        = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
         local tree        = Treeview.new( true )
@@ -411,7 +428,8 @@ function AutomatonEditor:edit_transition( source, target )
         for k_event, toggle in ipairs(events_toggle) do
             tree:add_row{
                 toggle,
-                events_map[k_event].name
+                events_map[k_event].name,
+                
             }
         end
         tree:update()
@@ -446,6 +464,109 @@ function AutomatonEditor:edit_transition( source, target )
             if toggle then
                 if not transitions_map[k_event] then
                     self.automaton:transition_add(source, target, events_map[k_event])
+                end
+            else
+                if transitions_map[k_event] then
+                    self.automaton:transition_remove(transitions_map[k_event])
+                end
+            end
+        end
+
+        source.target_trans_factor[ target ] = scale:get_value()
+
+        self.render:draw({},{})
+        --self.automaton:write_log(function() --???
+        --  self.render:draw({},{})
+        --end)
+        window:destroy()
+    end)
+
+    window:show_all()
+end
+
+
+function AutomatonEditor:edit_transition( source, target )
+    local window          = gtk.Window.new(gtk.WINDOW_TOPLEVEL)
+        local vbox        = gtk.Box.new(gtk.ORIENTATION_VERTICAL, 0)
+        local tree        = Treeview.new( true )
+        local scale       = gtk.Scale.new_with_range( gtk.ORIENTATION_HORIZONTAL, 0.1, 10.0, 0.1 )
+        local btnOk           = gtk.Button.new_with_mnemonic( "OK" )
+    local properties      = {}
+    local transitions_map = {}
+
+    scale:set_digits( 1 )
+    scale:set_value( source.target_trans_factor[ target ] or 1.0 )
+
+    --~ self.scale_act_factor:connect( 'value-changed', function( s)
+        --~ s:change_radius_factor( s.scale_act_factor:get_value() )
+    --~ end, self )
+
+    for k_event, event in self.automaton.events:ipairs() do
+        properties[k_event] = {
+            toggle = source.event_target[event] and source.event_target[event][target] and true or false,
+            event  = event,
+        }
+        if source.event_target[event] and source.event_target[event][target] then
+            for k_transition, transition in source.transitions_out:ipairs() do
+                if transition.source == source and transition.target == target and transition.event == event then
+                    transitions_map[ k_event ]      = transition
+                    properties[k_event].probability = transition.probability
+                end
+            end
+        end
+    end
+
+    local function update()
+        tree:clear_all()
+        for k_event, prop in ipairs(properties) do
+            tree:add_row{
+                prop.toggle,
+                prop.event.name,
+                prop.probability or "",
+            }
+        end
+        tree:update()
+    end
+
+    tree:add_column_toggle("Tran", 50, function(self, row_id)
+        local item = row_id + 1
+        properties[item].toggle = not properties[item].toggle
+        update()
+    end, self )
+    tree:add_column_text("Event", 100)
+    tree:add_column_text("Prob", 100, function(self, row_id, value)
+        local item                   = row_id + 1
+        value                        = tonumber( value )
+        properties[item].probability = value-- or properties[item].probability
+        --~ print( value, properties[item].probability )
+        update()
+    end, self)
+
+    window:add( vbox )
+        vbox:pack_start(tree:build(), true, true, 0)
+        vbox:pack_start(scale, false, false, 0)
+        vbox:pack_start(btnOk, false, false, 0)
+
+    update()
+
+    window:set_modal( true )
+    window:set(
+        "title", "Transition properties",
+        "width-request", 350,
+        "height-request", 300,
+        "window-position", gtk.WIN_POS_CENTER,
+        "icon-name", "gtk-about"
+    )
+
+    window:connect("delete-event", window.destroy, window)
+    btnOk:connect('clicked', function()
+        for k_event, prop in ipairs(properties) do
+            if prop.toggle then
+                if not transitions_map[k_event] then
+                    local newTrans_id, newTrans = self.automaton:transition_add(source, target, prop.event)
+                    newTrans.probability = prop.probability
+                else
+                    transitions_map[k_event].probability = prop.probability
                 end
             else
                 if transitions_map[k_event] then
@@ -744,6 +865,17 @@ function AutomatonEditor:set_act_renumber_states()
     --        self.render:draw()
     --    end
     --end)
+end
+
+function AutomatonEditor:set_act_display_prob()
+    local active   = self.btn_act_display_prob:get('active')
+    self.render:setRenderProbabilities( active )
+    self.render:draw()
+end
+
+function AutomatonEditor:set_act_norm_prob()
+    self.automaton:probabilityNormalise()
+    self.render:draw()
 end
 
 local function scalar(v, u)

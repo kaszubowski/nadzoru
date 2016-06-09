@@ -33,8 +33,14 @@ AutomatonRender = letk.Class( function( self, automaton )
 
     self.drawing_area:connect('draw', self.drawing_area_expose, self )
 
+    self.renderProbabilities = false
+
     return self, self.scrolled, self.drawing_area
 end, Object )
+
+function AutomatonRender:setRenderProbabilities( value )
+    self.renderProbabilities = value
+end
 
 local function dot(cr, x, y, c)
     c = c or {0,0,0}
@@ -414,7 +420,11 @@ function AutomatonRender:draw_context( cr )
             local xt, yt, rt           = states_position[target_id].x, states_position[target_id].y, states_position[target_id].r
 
             transitions_out[index] = transitions_out[index] or {xs=xs, ys=ys, rs=rs, xt=xt, yt=yt, rt=rt, factor = trans.source.target_trans_factor[ trans.target ] }
-            table.insert( transitions_out[index], trans.event.name )
+            if self.renderProbabilities and trans.probability then
+                table.insert( transitions_out[index], string.format( "%s(%.2f%%)", trans.event.name, trans.probability ) )
+            else
+                table.insert( transitions_out[index], trans.event.name )
+            end
         else
             local index                = source_id .. '_' .. target_id
             transitions_self[index] = transitions_self[index] or {
@@ -423,7 +433,11 @@ function AutomatonRender:draw_context( cr )
                 r = states_position[source_id].r,
                 factor = trans.source.target_trans_factor[ trans.target ],
             }
-            table.insert( transitions_self[index], trans.event.name )
+            if self.renderProbabilities and trans.probability then
+                table.insert( transitions_self[index], string.format( "%s(%.2f%%)", trans.event.name, trans.probability ) )
+            else
+                table.insert( transitions_self[index], trans.event.name )
+            end
         end
     end
 

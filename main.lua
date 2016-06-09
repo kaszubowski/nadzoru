@@ -114,8 +114,8 @@ function Controller:build()
     --Automata
     self.gui:append_menu('automata', "_Automata")
     
-    self.gui:append_menu_item('automata', "_New"   , "Create a New Automaton"       , 'gtk-open'  , self.create_new_automaton, self)
-    self.gui:append_menu_item('automata', "_Open"  , "Open an Automaton"            , 'gtk-new'   , self.open_automaton      , self)
+    self.gui:append_menu_item('automata', "_New"   , "Create a New Automaton"       , 'gtk-new'  , self.create_new_automaton, self)
+    self.gui:append_menu_item('automata', "_Open"  , "Open an Automaton"            , 'gtk-open'   , self.open_automaton      , self)
     self.gui:append_menu_item('automata', "_Clone" , "Create a Copy of an Automaton", 'gtk-copy'  , self.clone_automaton     , self)
     self.gui:append_menu_item('automata', "_Remove", "Remove an Automaton"          , 'gtk-delete', self.remove_automaton    , self)
     self.gui:append_sub_menu('automata','import', "_Import") --gtk-convert
