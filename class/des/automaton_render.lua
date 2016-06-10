@@ -420,8 +420,8 @@ function AutomatonRender:draw_context( cr )
             local xt, yt, rt           = states_position[target_id].x, states_position[target_id].y, states_position[target_id].r
 
             transitions_out[index] = transitions_out[index] or {xs=xs, ys=ys, rs=rs, xt=xt, yt=yt, rt=rt, factor = trans.source.target_trans_factor[ trans.target ] }
-            if self.renderProbabilities and trans.probability then
-                table.insert( transitions_out[index], string.format( "%s(%.2f%%)", trans.event.name, trans.probability ) )
+            if self.renderProbabilities and trans.probability and trans.event.controllable then
+                table.insert( transitions_out[index], string.format( "%s:%.3f", trans.event.name, trans.probability ) )
             else
                 table.insert( transitions_out[index], trans.event.name )
             end
@@ -433,8 +433,8 @@ function AutomatonRender:draw_context( cr )
                 r = states_position[source_id].r,
                 factor = trans.source.target_trans_factor[ trans.target ],
             }
-            if self.renderProbabilities and trans.probability then
-                table.insert( transitions_self[index], string.format( "%s(%.2f%%)", trans.event.name, trans.probability ) )
+            if self.renderProbabilities and trans.probability and trans.event.controllable then
+                table.insert( transitions_self[index], string.format( "%s:%.3f", trans.event.name, trans.probability ) )
             else
                 table.insert( transitions_self[index], trans.event.name )
             end

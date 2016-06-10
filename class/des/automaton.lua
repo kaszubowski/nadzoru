@@ -129,6 +129,10 @@ end
 --@treturn table New state itself.
 --@see Automaton:state_set_initial
 function Automaton:state_add( name, marked, initial, id )
+    letk.debug.assertType( name, 'string', 'nil' )
+    letk.debug.assertType( marked, 'boolean', 'nil' )
+    letk.debug.assertType( initial, 'boolean', 'nil' )
+
     local new_state = {
         initial             = initial or false,
         marked              = marked  or false,
@@ -157,6 +161,7 @@ end
 --@ptaram id number The id of the state to be removed.
 --@see Automaton:transition_remove
 function Automaton:state_remove( id )
+    letk.debug.assertType( id, 'number', 'table' )
     local state, state_id = self.states:find( id )
     if not state then return end
 
@@ -234,6 +239,9 @@ end
 --@tparam initial boolean if the state represented by 'id'  is or not initial
 --@treturn boolean true if no problems occurred, false/nil otherwise.
 function Automaton:state_set_initial( id, initial )
+    letk.debug.assertType( id, 'number', 'table' )
+    letk.debug.assertType( initial, 'boolean', 'nil' )
+    
     local state, state_index = self.states:find( id )
     if not state then return end
 
@@ -258,6 +266,8 @@ end
 --@tparam marked boolean is the state marked.
 --@treturn boolean true if no problems occurred, false/nil otherwise.
 function Automaton:state_set_marked( id, marked )
+    letk.debug.assertType( id, 'number', 'table' )
+    letk.debug.assertType( marked, 'boolean' )
     local state = self.states:find( id )
     if not state then return end
 
@@ -272,6 +282,7 @@ end
 --@param id Id of the state to be verified.
 --@return True if the state is marked, false/nil otherwise.
 function Automaton:state_get_marked( id )
+    letk.debug.assertType( id, 'number', 'table' )
     local state = self.states:find( id )
     if not state then return end
 
@@ -283,6 +294,8 @@ end
 --@tparam name string new name of the state.
 --@treturn boolean true if no problems occurred, false/nil otherwise.
 function Automaton:state_set_name( id, name )
+    letk.debug.assertType( id, 'number', 'table' )
+    letk.debug.assertType( name, 'number', 'string' )
     local state = self.states:find( id )
     if not state then return end
 
@@ -295,6 +308,7 @@ end
 --@tparam id number id of the state.
 --@treturn string state's name
 function Automaton:state_get_name( id )
+    letk.debug.assertType( id, 'number', 'table' )
     local state = self.states:find( id )
     if not state then return end
     
@@ -309,6 +323,10 @@ end
 --@param y New y coordinate of the state.
 --@return True if no problems occurred, false/nil otherwise.
 function Automaton:state_set_position( id, x, y )
+    letk.debug.assertType( id, 'number', 'table' )
+    letk.debug.assertType( x, 'number' )
+    letk.debug.assertType( y, 'number' )
+    
     local state = self.states:find( id )
     if not state then return end
 
@@ -330,6 +348,7 @@ end
 --@return X coordinate of the state.
 --@return Y coordinate of the state.
 function Automaton:state_get_position( id )
+    letk.debug.assertType( id, 'number', 'table' )
     local state = self.states:find( id )
     if not state then return end
 
@@ -342,6 +361,8 @@ end
 --@param r New radius of the state.
 --@return True if no problems occurred, false/nil otherwise.
 function Automaton:state_set_radius( id, r )
+    letk.debug.assertType( id, 'number', 'table' )
+    letk.debug.assertType( r, 'number' )
     local state = self.states:find( id )
     if not state then return end
 
@@ -355,6 +376,7 @@ end
 --@param id Id of the state whose radius is returned.
 --@return Radius of the state.
 function Automaton:state_get_radius( id )
+    letk.debug.assertType( id, 'number', 'table' )
     local state = self.states:find( id )
     if not state then return end
 
@@ -494,6 +516,12 @@ end
 --@return Id of the new event.
 --@return New event itself.
 function Automaton:event_add(name, observable, controllable, refinement, id)
+    letk.debug.assertType( name, 'string', 'nil' )
+    letk.debug.assertType( observable, 'boolean', 'nil' )
+    letk.debug.assertType( controllable, 'boolean', 'nil' )
+    letk.debug.assertType( refinement, 'string', 'nil' )
+    letk.debug.assertType( id, 'number', 'nil' )
+    
     if observable == nil   then observable = true end
     if controllable == nil then controllable = true end
     local new_event = {
@@ -521,6 +549,8 @@ function Automaton:event_add(name, observable, controllable, refinement, id)
 end
 
 function Automaton:event_add_clone( event )
+    letk.debug.assertType( event, 'table' )
+    
     local new_event = {
         name         = event.name or 'new',
         observable   = event.observable,
@@ -541,6 +571,8 @@ end
 --@param id Id of the event to be removed.
 --@see Automaton:transition_remove
 function Automaton:event_remove( id )
+    letk.debug.assertType( id, 'number', 'table' )
+    
     local event, event_id = self.events:find( id )
     if not event then return end
 
@@ -561,6 +593,9 @@ end
 --@tparam observable boolean is the event observable
 --@treturn boolean true if no problems occurred, false/nil otherwise.
 function Automaton:event_set_observable( id, observable )
+    letk.debug.assertType( id, 'number', 'table' )
+    letk.debug.assertType( observable, 'boolean' )
+    
     local event = self.events:find( id )
     if not event then return end
 
@@ -573,6 +608,7 @@ end
 --@tparam id number Id of the event to be verified.
 --@treturn boolean true if the event is observable, false/nil otherwise.
 function Automaton:event_get_observable( id )
+    letk.debug.assertType( id, 'number', 'table' )
     local event = self.events:find( id )
     if not event then return end
 
@@ -584,6 +620,9 @@ end
 --@tparam controllable boolean is the event controllable.
 --@treturn boolean true if no problems occurred, false/nil otherwise.
 function Automaton:event_set_controllable( id, controllable )
+    letk.debug.assertType( id, 'number', 'table' )
+    letk.debug.assertType( controllable, 'boolean' )
+    
     local event = self.events:find( id )
     if not event then return end
 
@@ -597,29 +636,34 @@ end
 --@param id Id of the event to be verified.
 --@return True if the event is controllable. False/nil otherwise.
 function Automaton:event_get_controllable( id )
+    letk.debug.assertType( id, 'number', 'table' )
+
     local event = self.events:find( id )
     if not event then return end
 
     return event.controllable
-
 end
 
 
 ---
 function Automaton:event_set_shared( id, shared )
+    letk.debug.assertType( id, 'number', 'table' )
+    letk.debug.assertType( shared, 'boolean' )
+    
     local event = self.events:find( id )
-    if not event then return end
+    if not event then return false end
 
     event.shared = shared
     return true
 end
 
 function Automaton:event_get_shared( id )
+    letk.debug.assertType( id, 'number', 'table' )
+    
     local event = self.events:find( id )
     if not event then return end
 
     return event.shared
-
 end
 
 ---Sets the name of an event of the automaton.
@@ -629,6 +673,9 @@ end
 --@return True if no problems occurred, false/nil otherwise.
 --TODO: do not allow to use names already used
 function Automaton:event_set_name( id, name )
+    letk.debug.assertType( id, 'number', 'table' )
+    letk.debug.assertType( name, 'string' )
+    
     local event = self.events:find( id )
     if not event then return end
     if name ~= '&' then
@@ -653,6 +700,9 @@ end
 --@param ref New refinement of the event.
 --@return True if no problems occurred, false/nil otherwise.
 function Automaton:event_set_refinement( id, ref )
+    letk.debug.assertType( id, 'number', 'table' )
+    letk.debug.assertType( ref, 'string' )
+    
     local event = self.events:find( id )
     if not event then return end
     if ref ~= '&' then
@@ -718,7 +768,13 @@ end
 --@param id Forced id of the transition.
 --@return Id of the new transition.
 --@return New transition itself.
-function Automaton:transition_add( source_id, target_id, event_id, isdata, id )
+function Automaton:transition_add( source_id, target_id, event_id, isdata, id, param )
+    letk.debug.assertType( source_id, 'number', 'table' )
+    letk.debug.assertType( target_id, 'number', 'table' )
+    letk.debug.assertType( event_id, 'number', 'table' )
+    letk.debug.assertType( isdata, 'boolean', 'nil' )
+    letk.debug.assertType( id, 'boolean', 'nil' )
+    letk.debug.assertType( param, 'table', 'nil' )
     local event  = not isdata and self.events:find( event_id )  or event_id
     local source = not isdata and self.states:find( source_id ) or source_id
     local target = not isdata and self.states:find( target_id ) or target_id
@@ -750,6 +806,12 @@ function Automaton:transition_add( source_id, target_id, event_id, isdata, id )
     target.transitions_in:append( transition )
     event.transitions:append( transition )
 
+    if param then
+        if param.probability then
+            transition.probability = param.probability
+        end
+    end
+
     return id, transition
 end
 
@@ -757,6 +819,8 @@ end
 --Finds the transition represented by 'id' in the transition list. Removes that transition from the transition list of the source state, target state, event and automaton. Sets the combination event-target on the source state and event-source on the target state to nil.
 --@param id Id of the transition to be removed.
 function Automaton:transition_remove( id )
+    letk.debug.assertType( id, 'number', 'table' )
+    
     local trans, trans_id = self.transitions:find( id )
     if not trans then return end
 
@@ -774,6 +838,9 @@ end
 --@param id Id of the transition.
 --@param factor New factor.
 function Automaton:transition_set_factor( id, factor )
+    letk.debug.assertType( id, 'number', 'table' )
+    letk.debug.assertType( factor, 'number' )
+
     local trans, trans_id = self.transitions:find( id )
     if not trans then return end
 
@@ -783,6 +850,9 @@ function Automaton:transition_set_factor( id, factor )
 end
 
 function Automaton:transition_set_probability( id, probability )
+    letk.debug.assertType( id, 'number', 'table' )
+    letk.debug.assertType( probability, 'number' )
+    
     local trans, trans_id = self.transitions:find( id )
     if not trans then return end
 
@@ -799,6 +869,9 @@ end
 --~ end
 
 function Automaton:getNextState( source, event )
+    letk.debug.assertType( source, 'table' )
+    letk.debug.assertType( event, 'table' )
+        
     for k_trans, trans in source.transitions_out:ipairs() do
         if trans.event == event then
             return trans.target
@@ -1541,8 +1614,7 @@ function Automaton:load_file( file_name )
                 event_map[id]       = new_event
             end
             for k_transition, transition in ipairs( data.transitions ) do
-                local newTrans_id, newTrans = self:transition_add( state_map[transition.source], state_map[transition.target], event_map[transition.event], true )
-                newTrans.probability = transition.probability
+                self:transition_add( state_map[transition.source], state_map[transition.target], event_map[transition.event], true, nil, { probability = transition.probability } )
             end
             self:set( 'file_type', 'nza' )
             self:set( 'full_file_name', file_name )
@@ -1624,7 +1696,7 @@ function Automaton:clone()
         _, event_map[v]= new_automaton:event_add(v.name, v.observable, v.controllable, v.refinement, v.workspace)
     end
     for c, v in self.transitions:ipairs() do
-        new_automaton:transition_add( state_map[v.source], state_map[v.target], event_map[v.event], true )
+        new_automaton:transition_add( state_map[v.source], state_map[v.target], event_map[v.event], true, nil, { probability = v.probability } )
     end
     --new_automaton.type = self.type
     --new_automaton.level = self.level
@@ -1802,9 +1874,10 @@ function Automaton:join_no_coaccessible_states( keep )
             statesToRemoveSet[ state ] = true
             for k_t, t in state.transitions_in:ipairs() do
                 if t.source.no_coaccessible then
-                    newautomaton:transition_add( Snca_state, Snca_state, t.event, true )
+                    --What if this transition already exists? sum probabilities?
+                    newautomaton:transition_add( Snca_state, Snca_state, t.event, true, nil, { probability = t.probability } )
                 else
-                    newautomaton:transition_add( t.source, Snca_state, t.event, true )
+                    newautomaton:transition_add( t.source, Snca_state, t.event, true, nil, { probability = t.probability } )
                 end
             end
 
@@ -1852,7 +1925,7 @@ function Automaton:selfloop( ... )
 
     for k_state, state in newautomaton.states:ipairs() do
         for nm_event, id_event in pairs( loop_events ) do
-            newautomaton:transition_add( k_state, k_state, id_event, false )
+            newautomaton:transition_add( k_state, k_state, id_event, false ) --added with 1.000 probability
         end
     end
 
@@ -1887,7 +1960,7 @@ local function selfloopall( ... )
     for k_a, a in ipairs( all ) do
         for k_state, state in a.states:ipairs() do
             for nm_event, id_event in pairs( new_events[ k_a ]  ) do
-                a:transition_add( k_state, k_state, id_event, false )
+                a:transition_add( k_state, k_state, id_event, false ) --100% probability
             end
         end
     end
@@ -1991,7 +2064,8 @@ function Automaton:product( ... )
         for k_s, s in a.states:ipairs() do
             for teta,zeta in pairs(s) do --??? CHECK THIS BLOCK     
                 zeta=tostring(zeta) --???
-                if teta == "initial" and zeta == "true" then --???
+                --~ if teta == "initial" and zeta == "true" then --???
+                if teta == "initial" and zeta == true then --???
                     flagini=1 --???
                 end              --???
                 if teta == "name" and flagini==1 then --???
@@ -2008,9 +2082,13 @@ function Automaton:product( ... )
             state_num_data_map[ k_a ][ k_s ] = s
         end
         for k_s, s in a.states:ipairs() do
-            for k_e, e in s.transitions_out:ipairs() do
-                if events_names_id[ e.event.name ] then
-                    transitions_map[ k_a ][ k_s ][ e.event.name ] = states_map[ e.target ]
+            for k_t, t in s.transitions_out:ipairs() do
+                if events_names_id[ t.event.name ] then
+                    transitions_map[ k_a ][ k_s ][ t.event.name ] = {
+                        target      = states_map[ t.target ],
+                        probability = t.probability
+                    }
+                    print( k_a, k_s, t.event.name, states_map[ t.target ], t.probability )
                 end
             end
         end
@@ -2048,26 +2126,29 @@ function Automaton:product( ... )
 
         --create states
         for e_nm, e in pairs( events ) do
-            local ok = true
-            new_stack   = {}
-            new_stack_names={} --???
-            marked      = true
+            local ok          = true
+            new_stack         = {}
+            new_stack_names   = {} --???
+            marked            = true
+            local probability = 1
             for k_a, a in ipairs( all ) do
-                local target = transitions_map[ k_a ][ current[k_a] ][ e_nm ]
-                if  target then
-                    new_stack[ k_a ] = target
+                if  transitions_map[ k_a ][ current[k_a] ][ e_nm ] then
+                    local target = transitions_map[ k_a ][ current[k_a] ][ e_nm ].target
+                    probability  = probability * ( transitions_map[ k_a ][ current[k_a] ][ e_nm ].probability or 1 )
+
+                    new_stack[ k_a ]     = target
                     new_stack_names[k_a] = tab_states[k_a][target]  --???
                     if not state_num_data_map[ k_a ][ target ].marked then
                         marked = false
                     end
-                else
+                else --One of the automaton does not have a transition with this events, therefore forbidden
                     ok = false
                     break
                 end
             end
             if ok then
                 state_map_id = table.concat( new_stack, ',' )
-                new_name_id = table.concat(new_stack_names, ',') --???
+                new_name_id  = table.concat(new_stack_names, ',') --???
                 if not created_states_data[ state_map_id ] then
                     created_states_id, created_states_data[ state_map_id ] = new_automaton:state_add(
                         new_name_id, marked, false
@@ -2079,12 +2160,16 @@ function Automaton:product( ... )
                     current_state_data,
                     created_states_data[ state_map_id ],
                     events_names_data[ e_nm ],
-                    true
+                    true,
+                    nil,
+                    { probability = probability }
                 )
             end
         end
     end
 
+    new_automaton:probabilityNormalise()
+    
     --new_automaton:create_log()
 
     return new_automaton
@@ -2246,6 +2331,8 @@ function Automaton.supC(G, K)
         numStatesS     = S.states:len()
         if coroutine.running() then coroutine.yield('end while') end
     end
+
+    S:probabilityNormalise()
 
     return S
 end
@@ -2665,6 +2752,7 @@ local function state_sum(t)
 end
 
 ---Makes the automaton deterministic.
+--TODO: probability calc
 function Automaton:determinize()
     if not self.initial then return end
 
@@ -2735,7 +2823,7 @@ function Automaton:determinize()
                     stateID, defTarget.state = dfa:state_add( defTarget.name,  marked, false )
                     stack[ #stack + 1 ] = defTarget
                 end
-                dfa:transition_add( defSource.state, defTarget.state, dfaEventMap[ event.name ], true )
+                dfa:transition_add( defSource.state, defTarget.state, dfaEventMap[ event.name ], true ) --TODO:probability
             end
         end
         stackPos = stackPos + 1
@@ -3908,20 +3996,22 @@ end
 ---Normalise the probability in each state in such way that the sum is 100%
 function Automaton:probabilityNormalise()
     for k_state, state in self.states:ipairs() do
-        local sumControllable, sumNonControllable = 0, 0
+        --~ local sumControllable, sumNonControllable = 0, 0
+        local sumControllable = 0
         for k_trans, trans in state.transitions_out:ipairs() do
             if trans.event.controllable then
-                sumControllable = sumControllable + (trans.probability or 100)
-            else
-                sumNonControllable = sumNonControllable + (trans.probability or 100)
+                sumControllable = sumControllable + (trans.probability or 1)
+            --~ else
+                --~ sumNonControllable = sumNonControllable + (trans.probability or 1)
             end
         end
 
         for k_trans, trans in state.transitions_out:ipairs() do
             if trans.event.controllable then
-                trans.probability = 100*(trans.probability or 100)/sumControllable
+                trans.probability = (trans.probability or 1)/sumControllable
             else
-                trans.probability = 100*(trans.probability or 100)/sumNonControllable
+                --~ trans.probability = (trans.probability or 1)/sumNonControllable
+                trans.probability = nil
             end
         end
     end
