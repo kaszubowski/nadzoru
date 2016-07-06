@@ -2197,7 +2197,7 @@ function Automaton:product( ... )
         end
     end
 
-    --~ new_automaton:probabilityNormalise()
+    --~ new_automaton:_probabilityNormalise()
     
     --new_automaton:create_log()
 
@@ -2307,7 +2307,7 @@ end
 --@param stateG the state in the plant G that is univocal for the stateK.
 --@param stateK the state to be checked if it is a bad state.
 --@return boolean, true is stateK is a bad state, false otherwise.
-function isBadState( stateG, stateK )
+local function isBadState( stateG, stateK )
     local stateKEventSet = {}
     for k_transK, transK in stateK.transitions_out:ipairs() do
         stateKEventSet[ transK.event.name ] = true
@@ -2362,7 +2362,7 @@ function Automaton.supC(G, K)
         if coroutine.running() then coroutine.yield('end while') end
     end
 
-    S:probabilityNormalise()
+    --~ S:_probabilityNormalise()
 
     return S
 end
@@ -4041,7 +4041,7 @@ end
 --------------------------------------------------------------------------------
 
 ---Normalise the probability in each state in such way that the sum is 100%
-function Automaton:probabilityNormalise()
+function Automaton:_probabilityNormalise()
     for k_state, state in self.states:ipairs() do
         --~ local sumControllable, sumNonControllable = 0, 0
         local sumControllable = 0
@@ -4062,6 +4062,13 @@ function Automaton:probabilityNormalise()
             end
         end
     end
+end
+
+function Automaton:probabilityNormalise()
+    local newautomaton = self:clone()
+    newautomaton:_probabilityNormalise()
+
+    return newautomaton
 end
 
 ---Remove all probabilities

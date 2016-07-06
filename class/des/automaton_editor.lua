@@ -874,7 +874,7 @@ function AutomatonEditor:set_act_display_prob()
 end
 
 function AutomatonEditor:set_act_norm_prob()
-    self.automaton:probabilityNormalise()
+    self.automaton:_probabilityNormalise()
     self.render:draw()
 end
 
