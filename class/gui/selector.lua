@@ -50,6 +50,9 @@ Selector = letk.Class( function( self, options, nowindow)
                         if not options.no_cancel then
                             self.btn_cancel   = gtk.Button.new_with_label("Cancel")
                         end
+                        if options.apply then
+                            self.btn_apply = gtk.Button.new_with_label("Apply")
+                        end
                         self.btn_ok       = gtk.Button.new_with_label("OK")
                 end
 
@@ -62,6 +65,9 @@ Selector = letk.Class( function( self, options, nowindow)
                     if not options.no_cancel then
                         self.hbox_footer:pack_start( self.btn_cancel, true, true, 0 )
                     end
+                    if options.apply then
+                        self.hbox_footer:pack_start( self.btn_apply, true, true, 0 )
+                    end
                     self.hbox_footer:pack_start( self.btn_ok, true, true, 0 )
             end
 
@@ -71,8 +77,13 @@ Selector = letk.Class( function( self, options, nowindow)
         if not options.no_cancel then
             self.btn_cancel:connect("clicked", self.window.destroy, self.window )
         end
+        if options.apply then
+            self.btn_apply:connect("clicked", self.apply, self)
+        end
         self.btn_ok:connect("clicked", self.success, self)
     end
+
+    --~ self.changeCallback = {}
 
     return self, self.vbox_main
 end, Object )
@@ -87,15 +98,21 @@ function Selector:check_single_box()
     end
 end
 
+function Selector:getResults()
+    local result = {}
+    for c,k in ipairs( self.result ) do
+        result[c] = k()
+    end
+
+    return result
+end
+
 ---TODO
 --TODO
 --@param self TODO
 function Selector:success()
     if type(self.options.success_fn) == 'function' then
-        local result = {}
-        for c,k in ipairs( self.result ) do
-            result[c] = k()
-        end
+        local result = self:getResults()
         if not self.nowindow then
             self.window:destroy()
         end
@@ -104,6 +121,13 @@ function Selector:success()
         if not self.nowindow then
             self.window:destroy()
         end
+    end
+end
+
+function Selector:apply()
+    if type(self.options.success_fn) == 'function' then
+        local result = self:getResults()
+        self.options.success_fn( result, #self.result, self, self.options.success_fn_param )
     end
 end
 
@@ -251,15 +275,22 @@ function Selector:add_combobox( options )
         end
     end
 
-    if options.valid_list:len() > 0 then
-        combobox:set('active', 0)
-    end
-
     self.single_box:pack_start( label , false, false, 0 )
     self.single_box:pack_start( combobox , false, false, 0 )
     self.result[#self.result + 1] = function()
         local v = options.valid_list:get( combobox:get_active() + 1 )
         return type(options.result_fn) == 'function' and options.result_fn( v ) or v
+    end
+
+    if options.onChange  then
+        combobox:connect( 'changed', function()
+            local results = self:getResults()
+            options.onChange( results, self, options )
+        end )
+    end
+
+    if options.valid_list:len() > 0 then
+        combobox:set('active', 0)
     end
 
     return self
@@ -440,17 +471,67 @@ function Selector:add_spin( options )
     return self
 end
 
+function Selector:add_button( options )
+    options = table.complete( options or {}, {
+        caption  = "?",
+        callback = function() end,
+    })
+    local btn = gtk.Button.new_with_label( options.caption )
+
+    self.hbox_footer:pack_start( btn, true, true, 0 )
+
+    btn:connect("clicked", options.callback, {
+        param    = options.param,
+        selector = self,
+    } )
+
+    return self
+end
+
+function Selector:add_treeview( tree, options )
+    local widget = tree:postBuild( options )
+
+    self:check_single_box()
+
+    self.single_box:pack_start( widget , true, true, 0 )
+
+    self.result[#self.result + 1] = function()
+        local data = {}
+        for k_row, row in tree.data:ipairs() do
+            data[ k_row ] = row
+        end
+
+        return data
+    end
+
+    return self
+end
+
+--~ function Selector:onChange( fn, param )
+    --~ self.changeCallback[ #self.changeCallback + 1 ] = {
+        --~ fn   = fn,
+        --~ data = param,
+    --~ }
+--~ end
+
+--~ function Selector:triggerOnChange()
+    --~ for k_cb, cb in ipairs( self.changeCallback ) do
+        --~ cb.fn( self, cb.data )
+    --~ end
+--~ end
+
 ---Runs the selector.
 --TODO
 --@param self Selector to be run.
-function Selector:run()
+function Selector:run( options )
+    options = options or {} 
     if not self.nowindow then
         local nc = self.num_columns
         if nc == 0 then nc = 1 end
         if nc > 5 then nc  = 5 end
 
-        self.window:set("title", self.options.title, "width-request", nc * 200,
-            "height-request", 450, "window-position", gtk.WIN_POS_CENTER,
+        self.window:set("title", self.options.title, "width-request", nc * (options.colWidth or 200),
+            "height-request", (options.height or 450), "window-position", gtk.WIN_POS_CENTER,
             "icon-name", "gtk-about")
 
         self.window:show_all()

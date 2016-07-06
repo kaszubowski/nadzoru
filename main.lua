@@ -118,6 +118,7 @@ function Controller:build()
     self.gui:append_menu_item('automata', "_Open"  , "Open an Automaton"            , 'gtk-open'   , self.open_automaton      , self)
     self.gui:append_menu_item('automata', "_Clone" , "Create a Copy of an Automaton", 'gtk-copy'  , self.clone_automaton     , self)
     self.gui:append_menu_item('automata', "_Remove", "Remove an Automaton"          , 'gtk-delete', self.remove_automaton    , self)
+    self.gui:append_menu_item('automata', "_Clone Special", "Create a Copy of an Automaton with extra options", 'gtk-copy', self.clone_automaton_special, self)
     self.gui:append_sub_menu('automata','import', "_Import") --gtk-convert
         self.gui:append_menu_item('import', "_IDES", "Import a IDES (.xmd) automaton file", './images/icons/ides_export.png', self.import_ides, self)
         self.gui:append_menu_item('import', "_TCT" , "Import a TCT (.ads) automaton file" , './images/icons/tct_export.png' , self.import_tct , self)
@@ -580,12 +581,74 @@ function Controller:clone_automaton()
     Selector.new({
         title = 'nadzoru',
         success_fn = function( results, numresult )
-            local automaton = results[1]
-            if automaton then
-                local new_automaton = automaton:clone()
-                new_automaton:set('file_name', 'clone(' .. automaton:get('file_name') .. ')')
-                self.elements:append( new_automaton )
-                ---self:create_automaton_tab( new_automaton ) --start editing automaton
+            --~ local automaton = results[1]
+            --~ if automaton then
+            if results[1] then
+                for k_automaton, automaton in ipairs( results[1] ) do
+                    local new_automaton = automaton:clone()
+                    new_automaton:set('file_name', 'clone(' .. automaton:get('file_name') .. ')')
+                    self.elements:append( new_automaton )
+                    ---self:create_automaton_tab( new_automaton ) --start editing automaton
+                    if results[2] then
+                        AutomatonEditor.new( self.gui, new_automaton, self.elements )
+                    end
+                end
+            end
+        end,
+    })
+    --~ :add_combobox{
+        --~ list = self.elements,
+        --~ text_fn  = function( a )
+            --~ return a:get( 'file_name' )
+        --~ end,
+        --~ filter_fn = function( v )
+            --~ return v.__TYPE == 'automaton'
+        --~ end,
+        --~ text = 'Automaton:'
+    --~ }
+    :add_multipler{
+        list = self.elements,
+        text_fn  = function( a )
+            return a:get( 'file_name' )
+        end,
+        filter_fn = function( v )
+            return v.__TYPE == 'automaton'
+        end,
+        text = "Automaton:"
+    }
+    :add_checkbox{
+        text = "Edit?",
+    }
+    :run()
+end
+
+
+function Controller:clone_automaton_special()
+    local eventTree = Treeview.new( true )
+    eventTree:add_column_text( "Automaton", 150 )
+    eventTree:add_column_text( "Event", 150 )
+    eventTree:add_column_text( "Replace", 150, true )
+    eventTree:preBuild()
+
+    Selector.new({
+        title = 'nadzoru',
+        apply = true,
+        success_fn = function( results, numresult )
+            local automaton     = results[1]
+
+            local replaceMap = {}
+            for k_ev, ev in ipairs( results[3] ) do
+                replaceMap[ ev[2] ] = {
+                    name = ev[3],
+                }
+            end
+            local new_automaton = automaton:cloneReplaceEvents( replaceMap )
+
+            new_automaton:set('file_name', 'clone(' .. automaton:get('file_name') .. ')')
+            self.elements:append( new_automaton )
+
+            if results[2] then
+                AutomatonEditor.new( self.gui, new_automaton, self.elements )
             end
         end,
     })
@@ -597,9 +660,24 @@ function Controller:clone_automaton()
         filter_fn = function( v )
             return v.__TYPE == 'automaton'
         end,
-        text = 'Automaton:'
+        text = "Automaton:",
+        onChange = function( results )
+            eventTree:clear_data()
+            local automaton = results[1]
+            if results[1] then
+                for k_event, event in automaton.events:ipairs() do
+                    eventTree:add_row{ automaton:get('file_name'), event.name, event.name }
+                end
+            end
+            eventTree:update()
+        end,
     }
-    :run()
+    :add_checkbox{
+        text = "Edit?",
+    }
+    :add_treeview( eventTree, {
+    })
+    :run({ colWidth=400 })
 end
 
 ---Removes automata from the list of editable automata.
@@ -794,14 +872,27 @@ function Controller:automaton_edit()
     Selector.new({
         title = 'Select automaton to edit',
         success_fn = function( results, numresult )
-            local automaton = results[1]
-            if automaton then
-                AutomatonEditor.new( self.gui, automaton, self.elements )
-                ---self:create_automaton_tab( automaton )
+            --~ local automaton = results[1]
+            --~ if automaton then
+            if results[1] then
+                for k_automaton, automaton in ipairs( results[1] ) do
+                    AutomatonEditor.new( self.gui, automaton, self.elements )
+                    ---self:create_automaton_tab( automaton )
+                end
             end
         end,
     })
-    :add_combobox{
+    --~ :add_combobox{
+        --~ list = self.elements,
+        --~ text_fn  = function( a )
+            --~ return a:get( 'file_name' )
+        --~ end,
+        --~ filter_fn = function( v )
+            --~ return v.__TYPE == 'automaton'
+        --~ end,
+        --~ text = 'Automaton:'
+    --~ }
+    :add_multipler{
         list = self.elements,
         text_fn  = function( a )
             return a:get( 'file_name' )
@@ -809,7 +900,7 @@ function Controller:automaton_edit()
         filter_fn = function( v )
             return v.__TYPE == 'automaton'
         end,
-        text = 'Automaton:'
+        text = "Automaton:"
     }
     :run()
 end

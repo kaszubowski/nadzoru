@@ -66,25 +66,32 @@ end
 --@param param an user data to be sent to the callback function
 --@return self
 function Treeview:add_column_text( caption, width, callback, param )
-    self.render[#self.render +1] = gtk.CellRendererText.new()
-    self.columns[#self.columns +1] = gtk.TreeViewColumn.new_with_attributes(
+    local columnID           = #self.columns +1
+    self.render[ columnID ]  = gtk.CellRendererText.new()
+    self.columns[ columnID ] = gtk.TreeViewColumn.new_with_attributes(
         caption,
-        self.render[#self.render],
+        self.render[columnID],
         'text',
         #self.columns
     )
     if tonumber( width ) then
-        self.render[#self.render]:set('width',width)
+        self.render[columnID]:set('width',width)
     end
-    self.view:append_column( self.columns[#self.columns] )
+    self.view:append_column( self.columns[ columnID ] )
     self.model_list[#self.model_list +1] = 'gchararray'
 
     if type(callback) == 'function' then
-        self.render[#self.render]:set('editable', true)
-        self.render[#self.render]:connect('edited', callback, param)
-    elseif type(callback) == 'boolean' then
-        --~ self.render[#self.render]:set('editable', callback)
-        --TODO, update model
+        self.render[ columnID ]:set('editable', true)
+        self.render[ columnID ]:connect('edited', callback, param )
+    elseif type(callback) == 'boolean' and callback == true then
+        self.render[ columnID ]:set('editable', callback)
+        local function updateData( treeview, row_id, newValue )
+            --~ print( treeview, row_id, new_name )
+            local rowData       = treeview.data:get( row_id + 1 )
+            rowData[ columnID ] = newValue
+            treeview:update()
+        end
+        self.render[ columnID ]:connect('edited', updateData, self )
     end
 
     return self
@@ -137,10 +144,13 @@ end
 --@param self TODO
 --@param options TODO
 --@return TODO
-function Treeview:build( options )
-    options = options or {}
+function Treeview:preBuild()
     self.model = gtk.ListStore.new( unpack( self.model_list ) )
     self.view:set( 'model', self.model )
+end
+
+function Treeview:postBuild( options )
+    options = options or {}
     if options.width then
         self.scrolled:set( 'width-request', options.width )
     end
@@ -149,6 +159,11 @@ function Treeview:build( options )
     end
 
     return self.scrolled
+end
+
+function Treeview:build( options )
+    self:preBuild()
+    return self:postBuild( options )
 end
 
 ---TODO

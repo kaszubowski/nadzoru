@@ -166,9 +166,9 @@ function CodeGen:read_automata()
                     shared       = event.shared,
                     source       = "Automaton",
                 }
-                print( event.name, event.controllable, event.shared )
+                --~ print( event.name, event.controllable, event.shared )
             else
-                if event.controlable ~= self.event_code[ event.name ].controllable then
+                if event.controllable ~= self.event_code[ event.name ].controllable then
                     print("Controllability differs for", event.name)
                 end
                 if event.shared ~= self.event_code[ event.name ].shared then

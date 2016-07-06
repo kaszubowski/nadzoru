@@ -888,7 +888,7 @@ function Automaton:getEventMap()
     for k_event, event in self.events:ipairs() do
         eventMap[ k_event ]    = event   --[number] = event
         eventMap[ event ]      = k_event --[table]  = number
-        eventMap[ event.name ] = event   --[string] = event
+        eventMap[ event.name ] = { event = event, number = k_event } --[string] = { event/number }
     end
     return eventMap
 end
@@ -906,18 +906,31 @@ end
 --m[source][event][target] = true
 function Automaton:getTransitionMap( deterministic )
     local transitionMap = {}
+    local eventMap      = self:getEventMap()
+    local stateMap      = self:getStateMap()
     for k_state, state in self.states:ipairs() do
-        transitionMap[ state ] = {}
+        transitionMap[ state ]   = {}
+        transitionMap[ k_state ] = {} --?
         for k_trans, trans in state.transitions_out:ipairs() do
             if deterministic then
                 transitionMap[ state ][ trans.event ] = trans.target
+                transitionMap[ k_state ][ eventMap[trans.event] ] = stateMap[ trans.target ]
             else
                 transitionMap[ state ][ trans.event ] = transitionMap[ state ][ trans.event ] or {}
                 transitionMap[ state ][ trans.event ][ trans.target ] = true
+
+                --~ print( transitionMap[ k_state ] )
+                --~ print( eventMap[trans.event]  )
+                --~ print( transitionMap[ k_state ][ eventMap[trans.event] ] )
+                --~ print( transitionMap[ k_state ] )
+                --~ print( eventMap[trans.event] )
+                --~ print( transitionMap[ k_state ][ eventMap[trans.event] ] )
+                transitionMap[ k_state ][ eventMap[trans.event] ] = transitionMap[ k_state ][ eventMap[trans.event] ] or {}
+                transitionMap[ k_state ][ eventMap[trans.event] ][ stateMap[ trans.target ] ] = true
             end
         end
     end
-    return transitionMap
+    return transitionMap, eventMap, stateMap
 end
 
 ---calculate the transition map from the target state to the source state.
@@ -1705,6 +1718,22 @@ function Automaton:clone()
     return new_automaton
 end
 
+function Automaton:cloneReplaceEvents( replaceMap )
+    local newAutomaton = self:clone()
+
+    for k_event, event in newAutomaton.events:ipairs() do
+        local currentName = event.name
+        if replaceMap[ currentName ] then
+            event.name         = replaceMap[ currentName ].name or event.name
+            event.controllable = replaceMap[ currentName ].controllable or event.controllable
+            event.observable   = replaceMap[ currentName ].observable or event.observable
+            event.shared       = replaceMap[ currentName ].shared or event.shared
+        end
+    end
+
+    return newAutomaton
+end
+
 --------------------------------------------------------------------------------
 
 local function accessible_search( s )
@@ -2088,7 +2117,7 @@ function Automaton:product( ... )
                         target      = states_map[ t.target ],
                         probability = t.probability
                     }
-                    print( k_a, k_s, t.event.name, states_map[ t.target ], t.probability )
+                    --~ print( k_a, k_s, t.event.name, states_map[ t.target ], t.probability )
                 end
             end
         end
@@ -2168,7 +2197,7 @@ function Automaton:product( ... )
         end
     end
 
-    new_automaton:probabilityNormalise()
+    --~ new_automaton:probabilityNormalise()
     
     --new_automaton:create_log()
 
@@ -2242,10 +2271,10 @@ function Automaton.univocal(G, K)
 
     --Check if the event set of G and K are the same. TODO: move to a EventSet class
     for k_eventG, eventG in G.events:ipairs() do
-        if not eventMapK[ eventG.name ] then return false, 'K does not have all events of G' end
+        if not eventMapK[ eventG.name ] then return false, string.format('K does not have all events of G: %s', eventG.name ) end
     end
     for k_eventK, eventK in K.events:ipairs() do
-        if not eventMapG[ eventK.name ] then return false, 'G does not have all events of K' end
+        if not eventMapG[ eventK.name ] then return false, string.format('G does not have all events of K: %s', eventK.name ) end
     end
     
     local univocalRel = {} --from [s in K] = s in G    
@@ -2261,7 +2290,8 @@ function Automaton.univocal(G, K)
         sG = univocalRel[ sK ]
         for k_trans, trans in sK.transitions_out:ipairs() do
             if not univocalRel[ trans.target ] then
-                local eG = eventMapG[ trans.event.name ]
+                --~ local eG = eventMapG[ trans.event.name ]
+                local eG = eventMapG[ trans.event.name ].event
                 univocalRel[ trans.target ] = G:getNextState( sG, eG )
                 stackK[ #stackK+ 1 ]        = trans.target
             end
@@ -2306,8 +2336,8 @@ function Automaton.supC(G, K)
         return false, errMsg
     end
 
-    local eventMapG             = G:getEventMap()
-    local eventMapS             = S:getEventMap()
+    --~ local eventMapG             = G:getEventMap()
+    --~ local eventMapS             = S:getEventMap()
 
     local lastNumStatesS = -1
     local numStatesS     = S.states:len()
@@ -2765,7 +2795,7 @@ function Automaton:determinize()
     end
 
     local dfaEventMap     = dfa:getEventMap()
-    local nfaEventMap     = self:getEventMap()
+    --~ local nfaEventMap     = self:getEventMap()
     local nfaStateMap     = self:getStateMap()
     local nfaTransitonMap = self:getTransitionMap()
     local powerSetTree    = {}
@@ -2823,7 +2853,8 @@ function Automaton:determinize()
                     stateID, defTarget.state = dfa:state_add( defTarget.name,  marked, false )
                     stack[ #stack + 1 ] = defTarget
                 end
-                dfa:transition_add( defSource.state, defTarget.state, dfaEventMap[ event.name ], true ) --TODO:probability
+                local dfaEv = dfaEventMap[ event.name ] and dfaEventMap[ event.name ].event or nil
+                dfa:transition_add( defSource.state, defTarget.state, dfaEv, true ) --TODO:probability
             end
         end
         stackPos = stackPos + 1
@@ -3989,6 +4020,22 @@ function Automaton:infoStringMultiple( ... )
     table.insert( infoStr, string.format("    Transitions: %i", transitions ) )
 
     return table.concat( infoStr, "\n" )
+end
+
+--------------------------------------------------------------------------------
+
+function Automaton:generateMaps()
+    local maps = {}
+
+    self.maps.transition, self.maps.event, self.maps.state = getTransitionMap( true )
+
+    if self.initial then
+        self.maps.initial = self.initial --self.initial keeps the state index
+    else
+        self.initial = 1
+    end
+
+    return maps
 end
 
 --------------------------------------------------------------------------------

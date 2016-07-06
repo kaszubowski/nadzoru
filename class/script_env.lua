@@ -86,28 +86,34 @@ function ScriptEnv:loadEnv()
     end
 
     local function newIndexFn( t, key, value )
-        value:set('file_name', key .. '.nza') --UPDATE defClassExtension -- ElementClass arch
+        if type(value) == 'table' then
+            value:set('file_name', key .. '.nza') --UPDATE defClassExtension -- ElementClass arch
+        end
         rawset(t, key, value)
     end
 
     return setmetatable( self.env, { __index=self.fnEnv, __newindex=newIndexFn } )
 end
 
+local function scriptErrorHandler ( errMsg )
+  return errMsg .. debug.traceback( '', 2 )
+end -- err
+
 function ScriptEnv:execScript( script, printErrors )
     if not self.fnEnv then self:loadFnEnv() end
-    if not self.enf then self:loadEnv() end
+    if not self.env then self:loadEnv() end
     local f, loadErr = loadstring( script )
     if f then
         setfenv( f, self.env )
-        f()
-        --~ local status, errMsg = pcall( f )
-        --~ if not status and printErrors then
-            --~ if self.printObj then
-                --~ self.print( self.printObj, errMsg )
-            --~ else
-                --~ self.print( errMsg )
-            --~ end
-        --~ end
+        --~ f()
+        local status, errMsg = xpcall( f, scriptErrorHandler )
+        if not status and printErrors then
+            if self.printObj then
+                self.print( self.printObj, errMsg )
+            else
+                self.print( errMsg )
+            end
+        end
         return status, errMsg
     elseif printErrors then
         if self.printObj then

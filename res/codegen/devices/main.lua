@@ -236,6 +236,16 @@ Devices['atmega328p'].template_file = { 'generic_mic.h', 'atmega328p.c'}
 Devices['atmega328p'].display      = false
 Devices['atmega328p'].name         = "AtMega 328p"
 
+--********************************************************************--
+--**                    atmega328p PROBABILISTIC                    **--
+--********************************************************************--
+Devices['atmega328p'] = letk.Class( Devices['base'] ):init_options()
+
+Devices['atmega328p'].template_file = { 'generic_mic.h', 'atmega328p_prob.c'}
+
+Devices['atmega328p'].display      = true
+Devices['atmega328p'].name         = "AtMega 328p Probabilistic"
+
 
 --*********************************++*********************************--
 --**                     GenericMic Distributed                     **--

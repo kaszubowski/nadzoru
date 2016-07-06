@@ -54,7 +54,7 @@ function Simulator:automaton_load( automaton )
     
     --State Event Map
     for state_index, state in automaton.states:ipairs() do
-        self.state_event_map[ state_index ] = {}
+        --~ self.state_event_map[ state_index ] = {}
         for pos, transition in state.transitions_out:ipairs() do
             local event_index  = self.event_map[ transition.event ]
             local target_index = self.state_map[ transition.target ]
