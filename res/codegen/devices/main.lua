@@ -218,12 +218,23 @@ Devices['GenericMic'].name         = "Generic Mic."
 --*********************************++*********************************--
 --**                       GenericMicShared                         **--
 --********************************************************************--
-Devices['GenericMic'] = letk.Class( Devices['base'] ):init_options()
+--This was used for the object cluster with intruder
+--~ Devices['GenericMicShared'] = letk.Class( Devices['base'] ):init_options()
 
-Devices['GenericMic'].template_file = { 'generic_mic_shared.h', 'generic_mic_shared.c'}
+--~ Devices['GenericMicShared'].template_file = { 'generic_mic_shared.h', 'generic_mic_shared.c'}
 
-Devices['GenericMic'].display      = true
-Devices['GenericMic'].name         = "Generic Mic. Shared"
+--~ Devices['GenericMicShared'].display      = true
+--~ Devices['GenericMicShared'].name         = "Generic Mic. Shared"
+
+--*********************************++*********************************--
+--**       GenericMicShared with controllable events (Global)       **--
+--********************************************************************--
+Devices['GenericMicGlobal'] = letk.Class( Devices['base'] ):init_options()
+
+Devices['GenericMicGlobal'].template_file = { 'generic_mic_shared2.h', 'generic_mic_shared2.c'}
+
+Devices['GenericMicGlobal'].display      = true
+Devices['GenericMicGlobal'].name         = "Generic Mic. Global"
 
 --*********************************++*********************************--
 --**                           atmega328p                          **--
@@ -241,7 +252,8 @@ Devices['atmega328p'].name         = "AtMega 328p"
 --********************************************************************--
 Devices['atmega328p'] = letk.Class( Devices['base'] ):init_options()
 
-Devices['atmega328p'].template_file = { 'generic_mic.h', 'atmega328p_prob.c'}
+--~ Devices['atmega328p'].template_file = { 'generic_mic.h', 'atmega328p_prob.c'}
+Devices['atmega328p'].template_file = { 'generic_mic.h', 'atmega328p_prob_v3.c'}
 
 Devices['atmega328p'].display      = true
 Devices['atmega328p'].name         = "AtMega 328p Probabilistic"

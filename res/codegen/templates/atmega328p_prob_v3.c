@@ -18,6 +18,7 @@
 
     var_data_prob     = {},
     var_data_prob_pos = {},
+    var_data_prob_pos_state = {},
     prob              = 0,
     num_controllable  = 0,
 %}
@@ -36,10 +37,18 @@
                 {% set var_data[#var_data +1] = var_state_map[ transition.target ] % 256 %}
                 {% if transition.event.controllable %}
                     {% set num_controllable = num_controllable + 1 %}
+                    {% if transition.probability >= 1.0 %}
+                        {% set var_data_prob[#var_data_prob +1] = "1" %}
+                    {% else %}
+                        {% set var_data_prob[#var_data_prob +1] = string.format( "%0.8f", transition.probability ) %}
+                    {% end %}
+                {% else %}
+                    {% set var_data_prob[#var_data_prob +1] = "1" %}
                 {% end %}
             {% end %}
 
-            {% if num_controllable > 1 %}{# TODO: same probability #}
+            {#
+            {% if num_controllable > 1 %}
                 {% set var_data_prob[#var_data_prob +1] = num_controllable %}
                 {% for k_transition, transition in state.transitions_out:ipairs() %}
                     {% if transition.event.controllable %}
@@ -51,6 +60,7 @@
             {% else %}
                 {% set var_data_prob[#var_data_prob +1] = 0 %}
             {% end %}
+            #}
         {% end %}
     {% end %}
     unsigned char     ev_controllable[{{ #events }}] = { {% for k_event, event in ipairs(events) %}{{ event.controllable and 1 or 0 }}{% notlast %},{% end %} };
@@ -60,8 +70,10 @@
     unsigned long int sup_data_pos[{{ automata:len() }}] = { {{ table.concat(var_data_pos, ',') }} };
     const unsigned char     sup_data[ {{ #var_data }} ] PROGMEM = { {{ table.concat( var_data,',' ) }} };
     unsigned long int sup_data_prob_pos[{{ automata:len() }}] = { {{ table.concat(var_data_prob_pos, ',') }} };
-    const unsigned char     sup_data_prob[ {{ #var_data_prob }} ] PROGMEM = { {{ table.concat( var_data_prob,',' ) }} };
-    unsigned char DECAY;
+    //~ const unsigned char     sup_data_prob[ {{ #var_data_prob }} ] PROGMEM = { {{ table.concat( var_data_prob,',' ) }} };
+    float     sup_data_prob[ {{ #var_data_prob }} ] = { {{ table.concat( var_data_prob,',' ) }} };
+    //~ unsigned char DECAY;
+    float DECAY;
 {% endwith %}
 {% endnoblankline %}
 #endif
@@ -70,7 +82,8 @@ typedef struct Scallback {
     void (*callback)( void* data );
     unsigned char (*check_input) ( void* data );
     void* data;
-    char decay;
+    float decay;
+    float acc_decay;
 } Tcallback;
 
 Tcallback callback[ NUM_EVENTS ];
@@ -88,16 +101,29 @@ unsigned long int get_state_position( unsigned char supervisor, unsigned long in
 }
 
 unsigned long int get_state_position_prob( unsigned char supervisor, unsigned long int state ){
-    unsigned long int position;
-    unsigned long int s;
-    unsigned long int en;
-    position = sup_data_prob_pos[ supervisor ];
+    unsigned long int s, en;
+    unsigned long int position      = sup_data_pos[ supervisor ];
+    unsigned long int prob_position = sup_data_prob_pos[ supervisor ];
     for(s=0; s<state; s++){
-        en       =  pgm_read_byte(&(sup_data_prob[position]));
-        position += en * 2 + 1;
+        en       =  pgm_read_byte(&(sup_data[position]));
+        position += en * 3 + 1;
+        //~ prob_position++;
+        prob_position += en;
     }
-    return position;
+    return prob_position;
 }
+
+//~ unsigned long int get_state_position_prob( unsigned char supervisor, unsigned long int state ){
+    //~ unsigned long int position;
+    //~ unsigned long int s;
+    //~ unsigned long int en;
+    //~ position = sup_data_prob_pos[ supervisor ];
+    //~ for(s=0; s<state; s++){
+        //~ en       =  pgm_read_byte(&(sup_data_prob[position]));
+        //~ position += en * 2 + 1;
+    //~ }
+    //~ return position;
+//~ }
 
 void make_transition( unsigned char event ){
     unsigned char i;
@@ -120,14 +146,16 @@ void make_transition( unsigned char event ){
     }
 }
 
-unsigned long get_active_controllable_events_prob( unsigned int *events ){
+//~ unsigned long get_active_controllable_events_prob( unsigned int *events ){
+float get_active_controllable_events_prob( float *events ){
     unsigned char i,j;
-    unsigned long count_actives = 0;
+    float count_actives = 0;
 
     /* Disable all non controllable events */
     for( i=0; i<NUM_EVENTS; i++ ){
         if( ev_controllable[i] ){
-            events[i] = 65535;
+            //~ events[i] = 65535;
+            events[i] = 1.0;
         } else {
             events[i] = 0;
         }
@@ -139,7 +167,7 @@ unsigned long get_active_controllable_events_prob( unsigned int *events ){
         unsigned char num_transitions;
         unsigned char ev_disable[NUM_EVENTS];
         unsigned long int position_prob;
-        unsigned char num_transitions_prob;
+        //~ unsigned char num_transitions_prob;
         for( j=0; j<NUM_EVENTS; j++ ){
             if( sup_events[i][j] ){
                 /* Unless this event has a transition in the current state, this event will be disabled*/
@@ -151,23 +179,26 @@ unsigned long get_active_controllable_events_prob( unsigned int *events ){
         }
         
         /*if supervisor have a transition with the event in the current state, it can't disable the event */
-        position             = get_state_position(i, sup_current_state[i]);
-        position_prob        = get_state_position_prob(i, sup_current_state[i]);
+        position             = get_state_position(i, sup_current_state[i]); //Points to the byte that indicate the number of 3-bytes parts (each part describle one transition)
+        position_prob        = get_state_position_prob(i, sup_current_state[i]); //Points to the first probability
         num_transitions      = pgm_read_byte(&(sup_data[position]));
-        num_transitions_prob = pgm_read_byte(&(sup_data_prob[position_prob]));
+        //~ num_transitions_prob = pgm_read_byte(&(sup_data_prob[position_prob]));
         position++;
-        position_prob++;
+        //~ position_prob++;
         while(num_transitions--){
             unsigned char event = pgm_read_byte(&(sup_data[position]));
-            if( ev_controllable[ event ] && sup_events[i][ event ] && events[ event ]){
-                ev_disable[ event ]       = 0; /*Transition with this event, do not disable it, just calculate its probability contribution*/
-                if( num_transitions_prob ){    /* Are there probabilities specified for this state? */
-                    unsigned long currentProb = (unsigned long) events[ event ];
-                    unsigned long transProb   = pgm_read_byte(&(sup_data_prob[position_prob])) * 256ul + pgm_read_byte(&(sup_data_prob[position_prob + 1]));
-                    events[ event ]           = (unsigned int) ( (currentProb*transProb)/65535ul );
+            if( ev_controllable[ event ] && sup_events[i][ event ] ){
+            //~ if( ev_controllable[ event ] && sup_events[i][ event ] && events[ event ]){
+                ev_disable[ event ] = 0; /*Transition with this event, do not disable it, just calculate its probability contribution*/
+                //~ if( num_transitions_prob ){    /* Are there probabilities specified for this state? */
+                    //~ unsigned long currentProb = (unsigned long) events[ event ];
+                    //~ unsigned long transProb   = pgm_read_byte(&(sup_data_prob[position_prob])) * 256ul + pgm_read_byte(&(sup_data_prob[position_prob + 1]));
+                    //~ events[ event ]           = (unsigned int) ( (currentProb*transProb)/65535ul );
+                    events[ event ] = events[ event ] * sup_data_prob[position_prob];
                     //~ events[ event ]           = (currentProb+transProb)/2;
-                    position_prob += 2;
-                }
+                    //~ position_prob += 2;
+                    position_prob++;
+                //~ }
             }
             position += 3;
         }
@@ -180,16 +211,24 @@ unsigned long get_active_controllable_events_prob( unsigned int *events ){
     }
 
     //Decay
+    //~ for( j=0; j<NUM_EVENTS; j++ ){
+        //~ if( events[ j ] ){
+            //~ unsigned long currentProb = events[ j ];
+            //~ if (callback[j].decay == 1){//100% - 0.5%
+                //~ unsigned long decayProb = (256 - DECAY ) * 257;
+                //~ events[ j ] = (unsigned int) ( currentProb * decayProb )/65535ul;
+            //~ } else if (callback[i].decay == -1) { //0.5% - 100%
+                //~ unsigned long decayProb = DECAY * 257;
+                //~ events[ j ] = (unsigned int) ( currentProb * decayProb )/65535ul;
+            //~ }
+        //~ }
+    //~ }
+    
     for( j=0; j<NUM_EVENTS; j++ ){
-        if( events[ j ] ){
-            unsigned long currentProb = events[ j ];
-            if (callback[i].decay == 1){//100% - 0.5%
-                unsigned long decayProb = (256 - DECAY ) * 257;
-                events[ j ] = (unsigned int) ( currentProb * decayProb )/65535ul;
-            } else if (callback[i].decay == -1) { //0.5% - 100%
-                unsigned long decayProb = DECAY * 257;
-                events[ j ] = (unsigned int) ( currentProb * decayProb )/65535ul;
-            }
+        if( events[ j ] > 0.0 ){
+            //~ float decayProb = 1.0 - ( DECAY * callback[j].decay );
+            //~ events[ j ]      = events[ j ] * decayProb;
+            events[ j ] = events[ j ] * callback[j].acc_decay;
         }
     }
     
@@ -286,14 +325,16 @@ void update_input2(){
 }
 
 /*choices*/
+#define RAND_SCALE 1000000
 unsigned char get_next_controllable( unsigned char *event ){
-    unsigned int events[NUM_EVENTS], i;
-    unsigned long random_value, random_sum = 0;
-    unsigned long count_actives = get_active_controllable_events_prob( events );
+    float events[NUM_EVENTS], random_value, random_sum = 0;
+    unsigned long i;
+    float count_actives = get_active_controllable_events_prob( events );
     
-    if( count_actives ){
-        //~ random_pos = rand() % count_actives;
-        random_value = random() % count_actives;
+    if( count_actives > 0.0001 ){
+        unsigned long scale = count_actives * RAND_SCALE;
+        //~ random_value = ( (float) (random() % scale) ) / (scale-1);
+        random_value = ( (float) (random() % scale) ) / (RAND_SCALE-1);
         for(i=0; i<NUM_EVENTS; i++){
             random_sum += events[ i ];
             if( (random_value < random_sum) && ev_controllable[ i ] ){
@@ -322,8 +363,8 @@ void SCT_init(){
         callback[i].check_input       = NULL;
         callback[i].data              = NULL;
         callback[i].decay             = 0;
+        callback[i].acc_decay         = 1.0;
     }
-    //srandom() ?
 }
 
 void SCT_reset(){
@@ -359,12 +400,21 @@ void SCT_run_step(){
     }
 }
 
-void SCT_set_decay_prob_event( unsigned char event, char factor ){
-    callback[ event ].decay = factor;
+void SCT_set_decay_prob_event( unsigned char event, float init_decay, float decay ){
+    callback[ event ].acc_decay = init_decay;
+    callback[ event ].decay     = decay;
 }
 
 void SCT_decay_prob(){
-    if( DECAY < 255 )
-        DECAY++;
+    //~ if( DECAY < 0.999 )
+        //~ DECAY += 0.001;
+    int i;
+    for( i=0; i<NUM_EVENTS; i++ ){
+        if( callback[ i ].decay > 0 ){
+            callback[ i ].acc_decay += (1.0 - callback[ i ].acc_decay) * callback[ i ].decay;
+        } else {
+            callback[ i ].acc_decay += callback[ i ].acc_decay * callback[ i ].decay;
+        }
+    }
 }
 #endif

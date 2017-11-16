@@ -323,9 +323,9 @@ end
 --@param y New y coordinate of the state.
 --@return True if no problems occurred, false/nil otherwise.
 function Automaton:state_set_position( id, x, y )
-    letk.debug.assertType( id, 'number', 'table' )
-    letk.debug.assertType( x, 'number' )
-    letk.debug.assertType( y, 'number' )
+    letk.debug.assertTypeMsg( "On Automaton:state_set_position", id, 'number', 'table' )
+    letk.debug.assertTypeMsg( "On Automaton:state_set_position", x, 'number' )
+    letk.debug.assertTypeMsg( "On Automaton:state_set_position", y, 'number' )
     
     local state = self.states:find( id )
     if not state then return end
@@ -515,12 +515,15 @@ end
 --@param id Forced id of the event.
 --@return Id of the new event.
 --@return New event itself.
-function Automaton:event_add(name, observable, controllable, refinement, id)
+function Automaton:event_add(name, observable, controllable, refinement, id, options )
     letk.debug.assertType( name, 'string', 'nil' )
     letk.debug.assertType( observable, 'boolean', 'nil' )
     letk.debug.assertType( controllable, 'boolean', 'nil' )
     letk.debug.assertType( refinement, 'string', 'nil' )
     letk.debug.assertType( id, 'number', 'nil' )
+    letk.debug.assertType( options, 'table', 'nil' )
+
+    options = options or {}
     
     if observable == nil   then observable = true end
     if controllable == nil then controllable = true end
@@ -529,9 +532,10 @@ function Automaton:event_add(name, observable, controllable, refinement, id)
         observable   = observable,
         controllable = controllable,
         refinement   = refinement or '',
+        
         transitions  = letk.List.new(),
 
-        shared       = false,
+        shared       = options.shared or false,
     }
 
     if not id then
@@ -649,7 +653,7 @@ end
 function Automaton:event_set_shared( id, shared )
     letk.debug.assertType( id, 'number', 'table' )
     letk.debug.assertType( shared, 'boolean' )
-    
+
     local event = self.events:find( id )
     if not event then return false end
 
@@ -1009,6 +1013,7 @@ function Automaton:IDES_import( file_name, get_layout )
 
             ---*** DATA ***---
             if run == 'data' and name == 'state' then
+                --~ print("state_add")
                 sm                          = t.s
                 last_id, last_obj           = self:state_add( tags['id'], false, false )
                 map_state[ tags['id'] ]     = last_id
@@ -1016,15 +1021,18 @@ function Automaton:IDES_import( file_name, get_layout )
             end
 
             if run == 'data' and name == 'initial' and sm == t.s then
+                --~ print("state_set_initial")
                 self:state_set_initial( last_id, true )
             end
 
             if run == 'data' and name == 'marked'  and sm == t.s then
+                --~ print("state_set_marked")
                 self:state_set_marked( last_id, true )
             end
 
             --Event
             if run == 'data' and name == 'event' then
+                --~ print("event_add")
                 sm                          = t.e
                 last_ev, last_obj           = self:event_add(nil,false,false) --IDES3 will specify in properties if any, otherwise it is false
                 map_event[ tags['id'] ]     = last_ev
@@ -1032,16 +1040,19 @@ function Automaton:IDES_import( file_name, get_layout )
             end
 
             if run == 'data' and name == 'observable'   and sm == t.e then
+                --~ print("event_set_observable")
                 self:event_set_observable( last_ev, true )
             end
 
             if run == 'data' and name == 'controllable' and sm == t.e then
+                --~ print("event_set_controllable")
                 self:event_set_controllable( last_ev, true )
             end
 
             --Transition
 
             if run == 'data' and name == 'transition' then
+                --~ print("transition_add")
                 local source = map_state_obj[ tags['source'] ]
                 local target = map_state_obj[ tags['target'] ]
                 local event  = map_event_obj[ tags['event'] ]
@@ -1064,8 +1075,9 @@ function Automaton:IDES_import( file_name, get_layout )
             end
 
             if run == 'layout' and get_layout and name == 'circle' and sm == t.s then
-                local x,y = select( 3, tags['x']:find('(%d+)') ),  select( 3, tags['y']:find('(%d+)') )
-                self:state_set_position( last_id, x, y)
+                --~ print("state_set_position")
+                local x,y = tonumber( select( 3, tags['x']:find('(%d+)') ) ),  tonumber( select( 3, tags['y']:find('(%d+)') ) )
+                self:state_set_position( last_id, x or 10, y or 10)
             end
         end,
 
@@ -1073,11 +1085,13 @@ function Automaton:IDES_import( file_name, get_layout )
 
             --State:
             if run == 'data' and last_tag == 'name' and sm == t.s and #select( 3, text:find( "([%a%d%p]*)" ) ) > 0 then
+                --~ print("state_set_name")
                 self:state_set_name( last_id, text )
             end
 
             --Event:
             if run == 'data' and  last_tag == 'name' and sm == t.e and #select( 3, text:find( "([%a%d%p]*)" ) ) > 0 then
+                --~ print("event_set_name")
                 self:event_set_name( last_ev, text )
             end
 
@@ -1522,6 +1536,7 @@ function Automaton:save_serialize()
             controllable = event.controllable or false,
             observable   = event.observable  or false,
             refinement   = event.refinement or '',
+            shared       = event.shared,
         }
     end
 
@@ -1623,7 +1638,9 @@ function Automaton:load_file( file_name )
                 state_map[id]       = new_state
             end
             for k_event, event in ipairs( data.events ) do
-                local id, new_event = self:event_add( event.name, event.observable, event.controllable, event.refinement )
+                local id, new_event = self:event_add( event.name, event.observable, event.controllable, event.refinement, nil, {
+                    shared = event.shared,
+                } )
                 event_map[id]       = new_event
             end
             for k_transition, transition in ipairs( data.transitions ) do
@@ -1705,8 +1722,10 @@ function Automaton:clone()
         state_map[v].x = v.x
         state_map[v].y = v.y
     end
-    for c, v in self.events:ipairs() do
-        _, event_map[v]= new_automaton:event_add(v.name, v.observable, v.controllable, v.refinement, v.workspace)
+    for c, v in self.events:ipairs() do --TODO: change 'v' for 'event'
+        _, event_map[v]= new_automaton:event_add(v.name, v.observable, v.controllable, v.refinement, nil, {
+            shared = v.shared,
+        } )
     end
     for c, v in self.transitions:ipairs() do
         new_automaton:transition_add( state_map[v.source], state_map[v.target], event_map[v.event], true, nil, { probability = v.probability } )
@@ -1945,9 +1964,9 @@ function Automaton:selfloop( ... )
     for k_a, a in ipairs( all ) do
         for k_event, event in a.events:ipairs() do
             if not self_events[ event.name ] and not loop_events[ event.name ] then
-               loop_events[ event.name ] = newautomaton:event_add(
-                   event.name, event.observable, event.controllable, event.refinement, event.workspace
-               )
+               loop_events[ event.name ] = newautomaton:event_add( event.name, event.observable, event.controllable, event.refinement, nil, {
+                    shared = event.shared,
+               } )
             end
         end
     end
@@ -1979,9 +1998,9 @@ local function selfloopall( ... )
         new_events[ k_a ] = {}
         for nm_event, event in pairs( all_events ) do
             if not map_events[ k_a ][ event.name ] then
-                new_events[ k_a ][ event.name ] = a:event_add(
-                    event.name, event.observable, event.controllable, event.refinement, event.workspace
-                )
+                new_events[ k_a ][ event.name ] = a:event_add( event.name, event.observable, event.controllable, event.refinement, nil, {
+                    shared = event.shared,
+                } )
             end
         end
     end
@@ -2070,9 +2089,9 @@ function Automaton:product( ... )
     local events_names_id,  events_names_data = {}, {}
     for e_nm, count in pairs( events_count ) do
         if count == #all then
-            events_names_id[ e_nm ], events_names_data[ e_nm ] = new_automaton:event_add(
-                events[ e_nm ].name, events[ e_nm ].observable, events[ e_nm ].controllable, events[ e_nm ].refinement
-            )
+            events_names_id[ e_nm ], events_names_data[ e_nm ] = new_automaton:event_add( events[ e_nm ].name, events[ e_nm ].observable, events[ e_nm ].controllable, events[ e_nm ].refinement, nil, {
+                shared = events[ e_nm ].shared,
+            } )
         else
             events[ e_nm ] = nil
         end
@@ -2236,9 +2255,9 @@ function Automaton:projection( ... )
     local events_names_id,  events_names_data = {}, {}
     for e_nm, count in pairs( events_count ) do
         if count == #all then
-            events_names_id[ e_nm ], events_names_data[ e_nm ] = new_automaton:event_add(
-                events[ e_nm ].name, events[ e_nm ].observable, events[ e_nm ].controllable, events[ e_nm ].refinement, events[ e_nm ].workspace
-            )
+            events_names_id[ e_nm ], events_names_data[ e_nm ] = new_automaton:event_add( events[ e_nm ].name, events[ e_nm ].observable, events[ e_nm ].controllable, events[ e_nm ].refinement, nil, {
+                shared = events[ e_nm ].shared,
+            } )
         else
             events[ e_nm ] = nil
         end
@@ -2333,6 +2352,7 @@ function Automaton.supC(G, K)
     local S                   = K:clone()
     local univocalRel, errMsg = Automaton.univocal(G, S)
     if not univocalRel then
+        print( errMsg )
         return false, errMsg
     end
 
@@ -2790,7 +2810,9 @@ function Automaton:determinize()
     local dfa = Automaton.new()
     for k_event, event in self.events:ipairs() do
         --~ if event.name ~='&' then
-            dfa:event_add( event.name, event.observable, event.controllable, event.refinement )
+            dfa:event_add( event.name, event.observable, event.controllable, event.refinement, nil, {
+                shared = event.shared,
+            } )
         --~ end
     end
 
@@ -3145,6 +3167,7 @@ end
 --@param keep If true, the operation is directly applied on 'self', otherwise, in a copy of it.
 --@param masks Event masks whose refinements shall be replaced.
 --@return Masked automaton.
+--DEPRECATED?
 function Automaton:mask(keep, masks)
     local new_automaton = keep and self or self:clone()
     local ev_map = {}
@@ -3166,7 +3189,10 @@ function Automaton:mask(keep, masks)
             --add mask to automaton (if doesn't exist yet)
             local event = ev_map[mask.name].event
             if not event then
-                _, event = new_automaton:event_add(mask.name, mask.level[self.level].observable, mask.level[self.level].controllable, mask.refinement, mask)
+                --~ _, event = new_automaton:event_add(mask.name, mask.level[self.level].observable, mask.level[self.level].controllable, mask.refinement, mask)
+                _, event = new_automaton:event_add(mask.name, mask.level[self.level].observable, mask.level[self.level].controllable, mask.refinement, nil, {
+                shared = mask.shared,
+            } )
             end
 
             for k_ref, ref in ipairs(ev_map[mask.name]) do
@@ -3194,6 +3220,7 @@ end
 --@param keep If true, the operation is directly applied on 'self', otherwise, in a copy of it.
 --@param masks Event refinements whose masks shall be replaced.
 --@return Distinguished automaton.
+--DEPRECATED? REDO?
 function Automaton:distinguish(keep, refinements)
     local new_automaton = keep and self or self:clone()
     local ev_map = {}
@@ -3222,7 +3249,8 @@ function Automaton:distinguish(keep, refinements)
                 --add refinement to automaton (if doesn't exist yet)
                 local event = ev_map[ref.name]
                 if not event then
-                    _, event = new_automaton:event_add(ref.name, ref.level[self.level].observable, ref.level[self.level].controllable, ref.refinement, ref)
+                    --~ _, event = new_automaton:event_add(ref.name, ref.level[self.level].observable, ref.level[self.level].controllable, ref.refinement, ref) --TODO
+                    _, event = new_automaton:event_add(ref.name, ref.level[self.level].observable, ref.level[self.level].controllable, ref.refinement, nil) --TODO
                 end
                 for k_transition, transition in mask.event.transitions:ipairs() do
                     new_automaton:transition_add(transition.source, transition.target, event, true)

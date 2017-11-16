@@ -30,7 +30,7 @@ ScriptEnv.Export.Automaton.infoStringMultiple = {'infom'}
 ScriptEnv.Export.Automaton.localityString = {'localityinfo'}
 ScriptEnv.Export.Automaton.localPlant = {'localplant'}
 ScriptEnv.Export.Automaton.localTarget = {'localtarget'}
-ScriptEnv.Export.Automaton.localSupervisor = {'localsupc'}
+ScriptEnv.Export.Automaton.localSupervisor = {'localsupc', params={ { "E", 'combobox', 'automaton' }, { "Gloc", 'multiple', 'automaton' } }}
 ScriptEnv.Export.Automaton.determinize = {'determinize'}
 
 function ScriptEnv:setPrintCallback( fn, object )
@@ -101,7 +101,8 @@ end -- err
 
 function ScriptEnv:execScript( script, printErrors )
     if not self.fnEnv then self:loadFnEnv() end
-    if not self.env then self:loadEnv() end
+    --~ if not self.env then self:loadEnv() end
+    self:loadEnv()
     local f, loadErr = loadstring( script )
     if f then
         setfenv( f, self.env )
