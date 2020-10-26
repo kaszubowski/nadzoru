@@ -156,9 +156,11 @@ function OperationsGui.select_run( result, result_size, selector, self )
         end
         local method = _G[ className ][ methodName ]
         local newElement = method( unpack( params ) )
-        newElement:set ('file_name', result[1] )
-        self.elements:append( newElement )
-        self:select_menu()
+        if not def.keep then
+            newElement:set ('file_name', result[1] )
+            self.elements:append( newElement )
+            self:select_menu()
+        end
     end
 end
 

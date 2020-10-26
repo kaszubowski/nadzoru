@@ -32,6 +32,14 @@ ScriptEnv.Export.Automaton.localPlant = {'localplant'}
 ScriptEnv.Export.Automaton.localTarget = {'localtarget'}
 ScriptEnv.Export.Automaton.localSupervisor = {'localsupc', params={ { "E", 'combobox', 'automaton' }, { "Gloc", 'multiple', 'automaton' } }}
 ScriptEnv.Export.Automaton.determinize = {'determinize'}
+ScriptEnv.Export.Automaton.checkAccessible = {'checkAccessible', params={{ "Automaton", 'combobox', 'automaton' }}, keep=true}
+ScriptEnv.Export.Automaton.checkCoaccessible = {'checkCoaccessible', params={{ "Automaton", 'combobox', 'automaton' }}, keep=true}
+
+--TODO: below methods need to deal with the keep parameter (should not exist of be false by default?) and other bool parameters
+--~ ScriptEnv.Export.Automaton.check_choice_problem = {'check_choice_problem', params={ { "Automaton", 'combobox', 'automaton' } }}
+--~ ScriptEnv.Export.Automaton.check_avalanche_effect = {'check_avalanche_effect', params={ { "Automaton", 'combobox', 'automaton' } }}
+--~ ScriptEnv.Export.Automaton.check_inexact_synchronization = {'check_inexact_synchronization', params={ { "Automaton", 'combobox', 'automaton' } }}
+--~ ScriptEnv.Export.Automaton.check_simultaneity = {'check_simultaneity', params={ { "Automaton", 'combobox', 'automaton' } }}
 
 function ScriptEnv:setPrintCallback( fn, object )
     self.print    = fn

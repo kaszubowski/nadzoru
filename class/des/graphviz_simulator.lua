@@ -44,7 +44,7 @@ end
 --Verifies if the no accessible states have already been calculated. If they weren't, just shows a message saying that. Otherwise, shows the number of no accessible states and the index of each one.
 --@param self TODO
 function info.accessible( self )
-    if not self.automaton.accessible_calc then
+    if not self.automaton.info.accessible_calc then
         gtk.InfoDialog.showInfo("Accessible are NOT processed!")
         return
     end
@@ -71,7 +71,7 @@ end
 --Verifies if the no coaccessible states have already been calculated. If they weren't, just shows a message saying that. Otherwise, shows the number of no coaccessible states and the index of each one.
 --@param self TODO
 function info.coaccessible( self )
-    if not self.automaton.coaccessible_calc then
+    if not self.automaton.info.coaccessible_calc then
         gtk.InfoDialog.showInfo("Coaccessible are NOT processed!")
         return
     end
@@ -99,7 +99,7 @@ end
 --Verifies if the choice problem states have already been calculated. If they weren't, just shows a message saying that. Otherwise, shows the number of choice problem states and the index of each one.
 --@param self TODO
 function info.choice_problem( self )
-    if not self.automaton.choice_problem_calc then
+    if not self.automaton.info.choice_problem_calc then
         gtk.InfoDialog.showInfo("Choice problem check are NOT processed!")
         return
     end
@@ -127,7 +127,7 @@ end
 --Verifies if the avalanche effect states have already been calculated. If they weren't, just shows a message saying that. Otherwise, shows the number of avalanche effect states and the index of each one.
 --@param self TODO
 function info.avalanche_effect( self )
-    if not self.automaton.avalanche_effect_calc then
+    if not self.automaton.info.avalanche_effect_calc then
         gtk.InfoDialog.showInfo("Avalanche effect check are NOT processed!")
         return
     end
@@ -161,7 +161,7 @@ end
 --TODO
 --@param self TODO
 function info.inexact_synchronization( self )
-    if not self.automaton.inexact_synchronization_calc then
+    if not self.automaton.info.inexact_synchronization_calc then
         gtk.InfoDialog.showInfo("Inexact Synchronization check are NOT processed!")
         return
     end
@@ -195,7 +195,7 @@ end
 --TODO
 --@param self TODO
 function info.simultaneity( self )
-    if not self.automaton.simultaneity_calc then
+    if not self.automaton.info.simultaneity_calc then
         gtk.InfoDialog.showInfo("Simultaneity check are NOT processed!")
         return
     end

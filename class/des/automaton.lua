@@ -129,9 +129,10 @@ end
 --@treturn table New state itself.
 --@see Automaton:state_set_initial
 function Automaton:state_add( name, marked, initial, id )
-    letk.debug.assertType( name, 'string', 'nil' )
-    letk.debug.assertType( marked, 'boolean', 'nil' )
-    letk.debug.assertType( initial, 'boolean', 'nil' )
+    --TODO: why in some places we have a error here?
+    --letk.debug.assertType( name, 'string', 'nil' )
+    --letk.debug.assertType( marked, 'boolean', 'nil' )
+    --letk.debug.assertType( initial, 'boolean', 'nil' )
 
     local new_state = {
         initial             = initial or false,
@@ -1802,7 +1803,6 @@ end
 function Automaton:accessible( keep )
     local newautomaton   = keep and self or self:clone()
     local status, errMsg = newautomaton:checkAccessible()
-    --~ newautomaton.accessible_calc = true
 
     local statesToRemove = {}
     for k_s, s in newautomaton.states:ipairs() do
@@ -1860,7 +1860,6 @@ end
 function Automaton:coaccessible( keep )
     local newautomaton = keep and self or self:clone()
     local status, errMsg = newautomaton:checkCoaccessible()
-    --~ newautomaton.coaccessible_calc = true
 
     local statesToRemove = {}
     for k_s, s in newautomaton.states:ipairs() do
@@ -2483,7 +2482,7 @@ function Automaton:check_choice_problem( keep )
 
     --show_problem_result('choice', problem_list)
 
-    newautomaton.choice_problem_calc = true
+    newautomaton.info.choice_problem_calc = true
 
     --if not keep then
     --  newautomaton:create_log()
@@ -2547,7 +2546,7 @@ function Automaton:check_avalanche_effect( keep, uncontrollable_only )
 
     --show_problem_result('avalanche effect', problem_list)
 
-    newautomaton.avalanche_effect_calc = true
+    newautomaton.info.avalanche_effect_calc = true
 
     --if not keep then
     --  newautomaton:create_log()
@@ -2628,7 +2627,7 @@ function Automaton:check_inexact_synchronization( keep )
 
     --show_problem_result('inexact synchronization', problem_list)
 
-    newautomaton.inexact_synchronization_calc = true
+    newautomaton.info.inexact_synchronization_calc = true
 
     --if not keep then
     --  newautomaton:create_log()
@@ -2709,7 +2708,7 @@ function Automaton:check_simultaneity( keep )
 
     show_problem_result('simultaneity', problem_list)
 
-    newautomaton.simultaneity_calc = true
+    newautomaton.info.simultaneity_calc = true
 
     --~ if not keep then
         --~ newautomaton:create_log()

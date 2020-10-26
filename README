@@ -15,7 +15,7 @@
         luarocks-5.1 install <PACKAGE>
 
         lpeg
-        lxp (Optional to load IDES3 files)
+        lxp or LuaExpat (Optional to load IDES3 files, the new name is LuaExpat)
         redis (Optional to MES/SCADA client-server)
         
 2.) Functions:
